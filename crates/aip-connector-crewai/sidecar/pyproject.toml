@@ -9,7 +9,7 @@ description = "Production sidecar binding CrewAI execution to the AIP connector 
 requires-python = ">=3.10,<3.14"
 license = { text = "BUSL-1.1" }
 dependencies = [
-  "crewai==1.15.2",
+  "crewai==1.15.10",
   "fastapi==0.139.2",
   "pydantic==2.12.5",
   "uvicorn[standard]==0.51.0",
