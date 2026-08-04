@@ -200,7 +200,7 @@ jobs:
           done
 
       - name: Upload npm publication evidence
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: npm-publication-${{ env.RELEASE_TAG }}-${{ github.sha }}
           path: |
@@ -271,7 +271,7 @@ jobs:
 
       - name: Upload platform installation evidence
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: npm-install-${{ matrix.asset }}-${{ github.sha }}
           path: ${{ runner.temp }}/getaip-public-install/*.json
@@ -458,7 +458,7 @@ jobs:
             --notes-file release-notes.txt
 
       - name: Retain final production evidence
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: production-marker-${{ env.RELEASE_TAG }}-${{ github.sha }}
           path: |

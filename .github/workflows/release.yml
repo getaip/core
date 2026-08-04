@@ -67,7 +67,7 @@ jobs:
           cargo run -p xtask -- connector-repository-inventory --output .getaip-connector-repository-inventory.json
 
       - name: Retain exact source-boundary inventories
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-source-boundary-${{ github.sha }}
           path: |
@@ -196,7 +196,7 @@ jobs:
           upload-release-assets: false
 
       - name: Upload the target candidate
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: native-target-${{ matrix.asset }}-${{ github.sha }}
           path: native/${{ matrix.asset }}/*
@@ -279,7 +279,7 @@ jobs:
             --signature native-release/getaip-distribution-manifest.v1.json.sig
 
       - name: Upload the signed private release candidate
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: native-release-${{ github.ref_name }}-${{ github.sha }}
           path: native-release/*
@@ -485,7 +485,7 @@ jobs:
         run: printf '%s@%s\n' "$IMAGE" "$DIGEST" > "${{ matrix.image }}.digest"
 
       - name: Upload immutable digest evidence
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: digest-${{ matrix.image }}
           path: |
@@ -541,7 +541,7 @@ jobs:
 
       - name: Retain exact platform qualification evidence
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: native-qualification-${{ matrix.asset }}-${{ github.sha }}
           path: native-qualification/*
