@@ -1,0 +1,23 @@
+# Merge this block into the deployment-owned Hermes config.yaml. Provider
+# credentials remain in the Hermes secret store or environment, not this file.
+mcp_servers:
+  aip:
+    url: "http://host.docker.internal:18080/mcp"
+    enabled: true
+    timeout: 300
+    connect_timeout: 15
+    skip_preflight: true
+    supports_parallel_tool_calls: false
+    tools:
+      include:
+        - aip_capabilities
+        - aip_call
+        - aip_action_status
+        - aip_action_result
+        - aip_action_events
+        - aip_action_cancel
+        # The external AIP orchestrator owns first-class delegation. Do not add
+        # aip_delegate here unless a separate broker propagates the original
+        # delegation chain and the Hermes identity has delegation:create.
+      resources: false
+      prompts: false

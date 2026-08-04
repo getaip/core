@@ -1,0 +1,1230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CapabilityContract",
+  "description": "Versioned enterprise contract for a capability.",
+  "type": "object",
+  "properties": {
+    "side_effects": {
+      "description": "Side effects a caller must assume.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/SideEffect"
+      }
+    },
+    "idempotency": {
+      "description": "Idempotency requirements.",
+      "$ref": "#/$defs/IdempotencyContract"
+    },
+    "execution": {
+      "description": "Execution support matrix.",
+      "$ref": "#/$defs/ExecutionContract"
+    },
+    "data": {
+      "description": "Data handling policy.",
+      "$ref": "#/$defs/DataContract"
+    },
+    "credentials": {
+      "description": "Credential reference and scope requirements.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CredentialPolicy"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "approval": {
+      "description": "Approval policy.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ApprovalPolicy"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sla": {
+      "description": "Service-level scheduling hints.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ServiceLevelContract"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "transaction": {
+      "description": "Transactional behavior.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TransactionContract"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "compensation": {
+      "description": "Compensation behavior.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CompensationContract"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "idempotency",
+    "execution",
+    "data"
+  ],
+  "$defs": {
+    "SideEffect": {
+      "description": "Side effect category for an enterprise capability.",
+      "oneOf": [
+        {
+          "description": "Read data without intended mutation.",
+          "type": "string",
+          "const": "read"
+        },
+        {
+          "description": "Mutate existing state or create new state.",
+          "type": "string",
+          "const": "write"
+        },
+        {
+          "description": "Delete or destroy state.",
+          "type": "string",
+          "const": "delete"
+        },
+        {
+          "description": "Send a user-visible or external message.",
+          "type": "string",
+          "const": "send_message"
+        },
+        {
+          "description": "Move money, create financial obligations, or change billing state.",
+          "type": "string",
+          "const": "financial"
+        },
+        {
+          "description": "Change identity, account, access, or credential state.",
+          "type": "string",
+          "const": "identity"
+        },
+        {
+          "description": "Touch medical or health-related records.",
+          "type": "string",
+          "const": "medical"
+        },
+        {
+          "description": "Touch legal, contractual, or compliance-sensitive records.",
+          "type": "string",
+          "const": "legal"
+        },
+        {
+          "description": "Call an external network service.",
+          "type": "string",
+          "const": "external_network"
+        },
+        {
+          "description": "Execute code or scripts supplied at runtime.",
+          "type": "string",
+          "const": "code_execution"
+        }
+      ]
+    },
+    "IdempotencyContract": {
+      "description": "Idempotency requirements declared by a capability.",
+      "type": "object",
+      "properties": {
+        "requirement": {
+          "description": "Requirement level.",
+          "$ref": "#/$defs/IdempotencyRequirement"
+        },
+        "collision_behavior": {
+          "description": "Duplicate key behavior.",
+          "$ref": "#/$defs/IdempotencyCollisionBehavior"
+        },
+        "key_scope": {
+          "description": "Namespace used to evaluate key uniqueness.",
+          "$ref": "#/$defs/IdempotencyKeyScope"
+        },
+        "ttl_ms": {
+          "description": "Optional retention period for stored keys.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "requirement",
+        "collision_behavior",
+        "key_scope"
+      ],
+      "additionalProperties": false
+    },
+    "IdempotencyRequirement": {
+      "description": "Whether an idempotency key is required for a capability invocation.",
+      "oneOf": [
+        {
+          "description": "Runtime must reject invocations without an idempotency key.",
+          "type": "string",
+          "const": "required"
+        },
+        {
+          "description": "Runtime may accept invocations without an idempotency key.",
+          "type": "string",
+          "const": "optional"
+        },
+        {
+          "description": "Downstream operation cannot provide idempotent behavior.",
+          "type": "string",
+          "const": "unsupported"
+        }
+      ]
+    },
+    "IdempotencyCollisionBehavior": {
+      "description": "Behavior when a duplicate idempotency key is observed.",
+      "oneOf": [
+        {
+          "description": "Return the originally stored result for the key.",
+          "type": "string",
+          "const": "return_original_result"
+        },
+        {
+          "description": "Reject duplicate keys as conflicts.",
+          "type": "string",
+          "const": "reject_conflict"
+        },
+        {
+          "description": "Return the original result only when an input hash matches.",
+          "type": "string",
+          "const": "revalidate_input_hash"
+        }
+      ]
+    },
+    "IdempotencyKeyScope": {
+      "description": "Scope used when evaluating an idempotency key.",
+      "oneOf": [
+        {
+          "description": "Key is unique per action id.",
+          "type": "string",
+          "const": "action"
+        },
+        {
+          "description": "Key is unique per capability.",
+          "type": "string",
+          "const": "capability"
+        },
+        {
+          "description": "Key is unique per principal.",
+          "type": "string",
+          "const": "principal"
+        },
+        {
+          "description": "Key is unique per tenant.",
+          "type": "string",
+          "const": "tenant"
+        },
+        {
+          "description": "Key is unique per external account.",
+          "type": "string",
+          "const": "external_account"
+        }
+      ]
+    },
+    "ExecutionContract": {
+      "description": "Execution behavior declared by a capability.",
+      "type": "object",
+      "properties": {
+        "supports_sync": {
+          "description": "Whether synchronous invocation is supported.",
+          "type": "boolean"
+        },
+        "supports_async": {
+          "description": "Whether asynchronous invocation is supported.",
+          "type": "boolean"
+        },
+        "supports_streaming": {
+          "description": "Whether streaming invocation is supported.",
+          "type": "boolean"
+        },
+        "supports_cancel": {
+          "description": "Whether cancellation is supported.",
+          "type": "boolean"
+        },
+        "supports_retry": {
+          "description": "Whether retry is supported by the connector/downstream operation.",
+          "type": "boolean"
+        },
+        "expected_completion": {
+          "description": "Expected completion behavior.",
+          "$ref": "#/$defs/ExpectedCompletionMode"
+        },
+        "retry_safety": {
+          "description": "Retry safety classification.",
+          "$ref": "#/$defs/RetrySafety"
+        }
+      },
+      "required": [
+        "supports_sync",
+        "supports_async",
+        "supports_streaming",
+        "supports_cancel",
+        "supports_retry",
+        "expected_completion",
+        "retry_safety"
+      ],
+      "additionalProperties": false
+    },
+    "ExpectedCompletionMode": {
+      "description": "Expected completion style for an invocation.",
+      "oneOf": [
+        {
+          "description": "Caller should expect a synchronous final result.",
+          "type": "string",
+          "const": "sync"
+        },
+        {
+          "description": "Caller should expect asynchronous completion.",
+          "type": "string",
+          "const": "async"
+        },
+        {
+          "description": "Caller should expect streamed progress or output.",
+          "type": "string",
+          "const": "streaming"
+        },
+        {
+          "description": "Runtime may choose any supported completion mode.",
+          "type": "string",
+          "const": "any"
+        }
+      ]
+    },
+    "RetrySafety": {
+      "description": "Retry safety declared by a capability.",
+      "oneOf": [
+        {
+          "description": "Retry is safe without additional idempotency constraints.",
+          "type": "string",
+          "const": "safe"
+        },
+        {
+          "description": "Retry is safe only when an idempotency key is present.",
+          "type": "string",
+          "const": "safe_with_idempotency_key"
+        },
+        {
+          "description": "Retry is unsafe and should not be automatic.",
+          "type": "string",
+          "const": "unsafe"
+        },
+        {
+          "description": "Retry safety is unknown and must be treated conservatively.",
+          "type": "string",
+          "const": "unknown"
+        }
+      ]
+    },
+    "DataContract": {
+      "description": "Data handling contract for a capability.",
+      "type": "object",
+      "properties": {
+        "sensitivity": {
+          "description": "Sensitivity classification.",
+          "$ref": "#/$defs/DataSensitivity"
+        },
+        "contains_pii": {
+          "description": "Whether personally identifiable information may be present.",
+          "type": "boolean"
+        },
+        "redaction_required": {
+          "description": "Whether redaction is required before logging or cross-domain delegation.",
+          "type": "boolean"
+        },
+        "residency": {
+          "description": "Data residency restrictions.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DataResidency"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retention": {
+          "description": "Data retention policy.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RetentionPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "sensitivity",
+        "contains_pii",
+        "redaction_required"
+      ],
+      "additionalProperties": false
+    },
+    "DataSensitivity": {
+      "description": "Data sensitivity classification.",
+      "oneOf": [
+        {
+          "description": "Public data.",
+          "type": "string",
+          "const": "public"
+        },
+        {
+          "description": "Internal operational data.",
+          "type": "string",
+          "const": "internal"
+        },
+        {
+          "description": "Confidential business data.",
+          "type": "string",
+          "const": "confidential"
+        },
+        {
+          "description": "Restricted data requiring strong access controls.",
+          "type": "string",
+          "const": "restricted"
+        },
+        {
+          "description": "Regulated data such as medical, legal, or financial records.",
+          "type": "string",
+          "const": "regulated"
+        },
+        {
+          "description": "Data sensitivity was not declared by the provider.",
+          "type": "string",
+          "const": "unknown"
+        }
+      ]
+    },
+    "DataResidency": {
+      "description": "Data residency restrictions.",
+      "type": "object",
+      "properties": {
+        "allowed_regions": {
+          "description": "Regions where processing is allowed.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "prohibited_regions": {
+          "description": "Regions where processing is prohibited.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RetentionPolicy": {
+      "description": "Data retention declaration.",
+      "type": "object",
+      "properties": {
+        "retain_for_ms": {
+          "description": "Minimum retention period.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "delete_after_ms": {
+          "description": "Maximum retention period.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "legal_hold_allowed": {
+          "description": "Whether legal hold can override deletion.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "legal_hold_allowed"
+      ],
+      "additionalProperties": false
+    },
+    "CredentialPolicy": {
+      "description": "Credential requirements declared by a capability contract.\n\nThis policy never carries raw credential material. It only describes the\ncredential reference, issuer, and scope requirements that a runtime must\nverify before dispatching an action to a connector or downstream system.",
+      "type": "object",
+      "properties": {
+        "required": {
+          "description": "Whether an external credential reference or OAuth state is required.",
+          "type": "boolean"
+        },
+        "accepted_issuers": {
+          "description": "Accepted credential issuers. An empty list means any issuer is accepted.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "required_scopes": {
+          "description": "Required downstream scopes.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allow_oauth_refresh": {
+          "description": "Whether an expired OAuth state can proceed when refresh is available.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "required",
+        "allow_oauth_refresh"
+      ],
+      "additionalProperties": false
+    },
+    "ApprovalPolicy": {
+      "description": "Approval policy declared by a capability.",
+      "type": "object",
+      "properties": {
+        "required": {
+          "description": "Whether approval is required before execution.",
+          "type": "boolean"
+        },
+        "reason": {
+          "description": "Reason shown to an approver or audit trail.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "approver_selector": {
+          "description": "Approver selection rule.",
+          "$ref": "#/$defs/ApproverSelector"
+        },
+        "ttl_ms": {
+          "description": "Time-to-live for approval requests.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "evidence_requirements": {
+          "description": "Required evidence.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvidenceRequirement"
+          }
+        },
+        "delegated_authority": {
+          "description": "Delegated approval authority.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DelegatedApprovalAuthority"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rule": {
+          "description": "Composable authority expression. When absent, the legacy\n`approver_selector` is interpreted as one leaf predicate.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ApprovalRule"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "minimum_distinct_principals": {
+          "description": "Minimum number of distinct approving principals for the workflow.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0,
+          "default": 1
+        },
+        "separation_of_duties": {
+          "description": "Separation-of-duties requirements.",
+          "$ref": "#/$defs/SeparationOfDuties",
+          "default": {
+            "requester_must_differ": false,
+            "operator_must_differ": false,
+            "allow_self_approval": false
+          }
+        },
+        "policy_version": {
+          "description": "Stable policy version retained in approval evidence.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "required",
+        "approver_selector"
+      ],
+      "additionalProperties": false
+    },
+    "ApproverSelector": {
+      "description": "Principal, role, group, policy, or external system that can approve work.",
+      "oneOf": [
+        {
+          "description": "Specific approving principal.",
+          "type": "object",
+          "properties": {
+            "id": {
+              "description": "Principal id.",
+              "$ref": "#/$defs/PrincipalId"
+            },
+            "type": {
+              "type": "string",
+              "const": "principal"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Role name.",
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Role identifier.",
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "role"
+            }
+          },
+          "required": [
+            "type",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Group name.",
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Group identifier.",
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "group"
+            }
+          },
+          "required": [
+            "type",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Tenant-owned approval policy.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "tenant_policy"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "External approval system.",
+          "type": "object",
+          "properties": {
+            "system": {
+              "description": "External system identifier.",
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "external_system"
+            }
+          },
+          "required": [
+            "type",
+            "system"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "PrincipalId": {
+      "description": "Stable principal identifier.",
+      "type": "string"
+    },
+    "EvidenceRequirement": {
+      "description": "Evidence required before approval can be decided.",
+      "oneOf": [
+        {
+          "description": "Human-readable reason.",
+          "type": "string",
+          "const": "reason"
+        },
+        {
+          "description": "Snapshot of the action input.",
+          "type": "string",
+          "const": "input_snapshot"
+        },
+        {
+          "description": "Policy engine decision.",
+          "type": "string",
+          "const": "policy_decision"
+        },
+        {
+          "description": "External ticket or case.",
+          "type": "string",
+          "const": "external_ticket"
+        },
+        {
+          "description": "Attachment or artifact.",
+          "type": "string",
+          "const": "attachment"
+        }
+      ]
+    },
+    "DelegatedApprovalAuthority": {
+      "description": "Delegated approval authority.",
+      "type": "object",
+      "properties": {
+        "principal": {
+          "description": "Principal receiving delegated approval authority.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "scope": {
+          "description": "Delegated scope labels.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_at": {
+          "description": "Expiration timestamp.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "principal"
+      ],
+      "additionalProperties": false
+    },
+    "ApprovalRule": {
+      "description": "Composable approval authority expression.\n\nLeaf predicates are evaluated only against authority memberships returned\nby a trusted resolver. Values carried in an action or decision payload are\nnever sufficient to satisfy a predicate.",
+      "oneOf": [
+        {
+          "description": "Every child expression must be satisfied.",
+          "type": "object",
+          "properties": {
+            "rules": {
+              "description": "Child expressions.",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ApprovalRule"
+              }
+            },
+            "allow_decision_reuse": {
+              "description": "Explicitly permits one verified decision to satisfy more than one child.",
+              "type": "boolean",
+              "default": false
+            },
+            "operator": {
+              "type": "string",
+              "const": "all"
+            }
+          },
+          "required": [
+            "operator",
+            "rules"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "At least one child expression must be satisfied.",
+          "type": "object",
+          "properties": {
+            "rules": {
+              "description": "Child expressions.",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ApprovalRule"
+              }
+            },
+            "operator": {
+              "type": "string",
+              "const": "any"
+            }
+          },
+          "required": [
+            "operator",
+            "rules"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "At least `required` distinct matching decisions must be present.",
+          "type": "object",
+          "properties": {
+            "required": {
+              "description": "Required number of decisions.",
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            },
+            "rules": {
+              "description": "Expressions that can contribute to the quorum.",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ApprovalRule"
+              }
+            },
+            "distinct_principals": {
+              "description": "Whether one principal may contribute at most one vote.",
+              "type": "boolean",
+              "default": true
+            },
+            "operator": {
+              "type": "string",
+              "const": "quorum"
+            }
+          },
+          "required": [
+            "operator",
+            "required",
+            "rules"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A specific principal must approve.",
+          "type": "object",
+          "properties": {
+            "id": {
+              "description": "Required principal id.",
+              "$ref": "#/$defs/PrincipalId"
+            },
+            "operator": {
+              "type": "string",
+              "const": "principal"
+            }
+          },
+          "required": [
+            "operator",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A member of a trusted role must approve.",
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Required role name.",
+              "type": "string"
+            },
+            "operator": {
+              "type": "string",
+              "const": "role"
+            }
+          },
+          "required": [
+            "operator",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A member of a trusted group must approve.",
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Required group name.",
+              "type": "string"
+            },
+            "operator": {
+              "type": "string",
+              "const": "group"
+            }
+          },
+          "required": [
+            "operator",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A member authorized by a tenant policy must approve.",
+          "type": "object",
+          "properties": {
+            "policy_id": {
+              "description": "Stable tenant policy id.",
+              "type": "string"
+            },
+            "operator": {
+              "type": "string",
+              "const": "tenant_policy"
+            }
+          },
+          "required": [
+            "operator",
+            "policy_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A verified external approval system must approve.",
+          "type": "object",
+          "properties": {
+            "system": {
+              "description": "External system id.",
+              "type": "string"
+            },
+            "operator": {
+              "type": "string",
+              "const": "external_system"
+            }
+          },
+          "required": [
+            "operator",
+            "system"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A non-revoked delegated authority grant must match the operation.",
+          "type": "object",
+          "properties": {
+            "scope": {
+              "description": "Required delegated scope.",
+              "type": "string"
+            },
+            "max_risk": {
+              "description": "Maximum accepted risk for this grant.",
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/RiskLevel"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "max_value": {
+              "description": "Maximum governed numeric value for this grant.",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0
+            },
+            "operator": {
+              "type": "string",
+              "const": "delegated_authority"
+            }
+          },
+          "required": [
+            "operator",
+            "scope"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "RiskLevel": {
+      "description": "Operational risk classification.",
+      "oneOf": [
+        {
+          "description": "Low-risk capability.",
+          "type": "string",
+          "const": "low"
+        },
+        {
+          "description": "Medium-risk capability.",
+          "type": "string",
+          "const": "medium"
+        },
+        {
+          "description": "High-risk capability.",
+          "type": "string",
+          "const": "high"
+        },
+        {
+          "description": "Critical-risk capability.",
+          "type": "string",
+          "const": "critical"
+        }
+      ]
+    },
+    "SeparationOfDuties": {
+      "description": "Separation-of-duties requirements for an approval workflow.",
+      "type": "object",
+      "properties": {
+        "requester_must_differ": {
+          "description": "The requester cannot approve the request.",
+          "type": "boolean",
+          "default": false
+        },
+        "operator_must_differ": {
+          "description": "The action operator cannot approve the request.",
+          "type": "boolean",
+          "default": false
+        },
+        "allow_self_approval": {
+          "description": "Explicitly permits self-approval when no stricter rule prohibits it.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "ServiceLevelContract": {
+      "description": "Service-level declaration for scheduling and operations.",
+      "type": "object",
+      "properties": {
+        "expected_latency_ms": {
+          "description": "Expected end-to-end latency.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "timeout_ms": {
+          "description": "Runtime timeout.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "async_expected": {
+          "description": "Whether the provider expects async execution for this capability.",
+          "type": "boolean"
+        },
+        "max_queue_delay_ms": {
+          "description": "Maximum acceptable queue delay before escalation.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "availability_target": {
+          "description": "Human-readable availability target, for example `99.9%`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "async_expected"
+      ],
+      "additionalProperties": false
+    },
+    "TransactionContract": {
+      "description": "Transaction modes supported by a capability.",
+      "type": "object",
+      "properties": {
+        "supported_modes": {
+          "description": "Supported modes.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TransactionMode"
+          }
+        },
+        "requires_plan_before_commit": {
+          "description": "Whether commit must reference a previously produced plan.",
+          "type": "boolean"
+        },
+        "dry_run_fidelity": {
+          "description": "Dry-run fidelity.",
+          "$ref": "#/$defs/DryRunFidelity"
+        }
+      },
+      "required": [
+        "requires_plan_before_commit",
+        "dry_run_fidelity"
+      ],
+      "additionalProperties": false
+    },
+    "TransactionMode": {
+      "description": "Transactional action mode.",
+      "oneOf": [
+        {
+          "description": "Execute the action normally.",
+          "type": "string",
+          "const": "execute"
+        },
+        {
+          "description": "Validate without committing side effects.",
+          "type": "string",
+          "const": "dry_run"
+        },
+        {
+          "description": "Produce a durable execution plan.",
+          "type": "string",
+          "const": "plan"
+        },
+        {
+          "description": "Commit a previously planned operation.",
+          "type": "string",
+          "const": "commit"
+        },
+        {
+          "description": "Execute a declared compensating operation.",
+          "type": "string",
+          "const": "compensate"
+        },
+        {
+          "description": "Reconcile a provider operation whose commit outcome is unknown.",
+          "type": "string",
+          "const": "reconcile"
+        },
+        {
+          "description": "Explicit state for operations that cannot roll back.",
+          "type": "string",
+          "const": "rollback_not_supported"
+        }
+      ]
+    },
+    "DryRunFidelity": {
+      "description": "Dry-run fidelity declared by a capability.",
+      "oneOf": [
+        {
+          "description": "Only schema validation is performed.",
+          "type": "string",
+          "const": "schema_only"
+        },
+        {
+          "description": "Schema and policy validation are performed.",
+          "type": "string",
+          "const": "policy_and_schema"
+        },
+        {
+          "description": "Downstream validation is performed without commit.",
+          "type": "string",
+          "const": "downstream_validation"
+        },
+        {
+          "description": "Provider can simulate the full operation.",
+          "type": "string",
+          "const": "full_simulation"
+        }
+      ]
+    },
+    "CompensationContract": {
+      "description": "Compensation behavior declared by a capability.",
+      "type": "object",
+      "properties": {
+        "mode": {
+          "description": "Compensation mode.",
+          "$ref": "#/$defs/CompensationMode"
+        },
+        "compensation_capability_id": {
+          "description": "Capability used to compensate this operation, when available.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CapabilityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "compensation_window_ms": {
+          "description": "Maximum window for compensation.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "requires_approval": {
+          "description": "Whether compensation itself requires approval.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "mode",
+        "requires_approval"
+      ],
+      "additionalProperties": false
+    },
+    "CompensationMode": {
+      "description": "Compensation support declared by a capability.",
+      "oneOf": [
+        {
+          "description": "No compensation is required for successful execution.",
+          "type": "string",
+          "const": "not_required"
+        },
+        {
+          "description": "A compensating capability is supported.",
+          "type": "string",
+          "const": "supported"
+        },
+        {
+          "description": "Compensation is attempted but cannot be guaranteed.",
+          "type": "string",
+          "const": "best_effort"
+        },
+        {
+          "description": "Rollback or compensation is not supported.",
+          "type": "string",
+          "const": "rollback_not_supported"
+        }
+      ]
+    },
+    "CapabilityId": {
+      "description": "Stable capability identifier.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/capability_contract.schema.json",
+  "additionalProperties": false
+}

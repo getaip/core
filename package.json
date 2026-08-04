@@ -1,0 +1,18 @@
+{
+  "name": "@getaip/release-workspace",
+  "version": "2.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@11.5.1",
+  "workspaces": [
+    "packages/getaip-cli",
+    "packages/getaip"
+  ],
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "scripts": {
+    "check": "node tools/npm/check-packages.mjs",
+    "test": "node --test packages/getaip-cli/test/*.test.js"
+  }
+}

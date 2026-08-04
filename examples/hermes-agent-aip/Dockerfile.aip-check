@@ -1,0 +1,12 @@
+FROM rust:1.94-bookworm AS builder
+
+WORKDIR /workspace
+COPY . .
+RUN cargo build --release -p aip-connector-hermes-agent --bin aip-hermes-smoke
+
+FROM debian:13.4
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /workspace/target/release/aip-hermes-smoke /usr/local/bin/aip-hermes-smoke
+ENTRYPOINT ["/usr/local/bin/aip-hermes-smoke"]

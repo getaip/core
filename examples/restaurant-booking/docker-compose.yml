@@ -1,0 +1,494 @@
+name: aip-restaurant-production-e2e
+
+services:
+  runtime-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: aip_runtime
+      POSTGRES_USER: aip_runtime
+      POSTGRES_PASSWORD: ${AIP_POSTGRES_PASSWORD:?set by prepare-runtime.py}
+    volumes:
+      - runtime-postgres-data:/var/lib/postgresql/data
+    networks: [control-core]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aip_runtime -d aip_runtime -h 127.0.0.1"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 5s
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  cal-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: cal
+      POSTGRES_USER: cal
+      POSTGRES_PASSWORD: ${CAL_POSTGRES_PASSWORD:?set by prepare-runtime.py}
+    volumes:
+      - cal-postgres-data:/var/lib/postgresql/data
+    networks: [cal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cal -d cal -h 127.0.0.1"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 5s
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  cal-redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "yes"]
+    volumes:
+      - cal-redis-data:/data
+    networks: [cal]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 3s
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  getaip-server:
+    build:
+      context: ../..
+      dockerfile: crates/getaip-server-legacy-bundled/Dockerfile
+    image: getaip/server:restaurant-production
+    command:
+      - --bind
+      - 0.0.0.0:8080
+      - --service-id
+      - agent:getaip:server:restaurant-production
+      - --trust-domain
+      - restaurant.production
+    environment:
+      GETAIP_SERVER_POSTGRES_URL: postgresql://aip_runtime:${AIP_POSTGRES_PASSWORD}@runtime-postgres:5432/aip_runtime
+      AIP_HERMES_ENDPOINTS: manager=http://hermes-manager:8642,supervisor=http://hermes-supervisor:8642
+      AIP_HERMES_API_KEY: ${HERMES_API_KEY:?set by prepare-runtime.py}
+      AIP_HERMES_OPERATOR_DELEGATION_ENABLED: "true"
+      AIP_HERMES_OPERATOR_CAPABILITY_PREFIXES: cap:cal_diy:slot.list
+      AIP_HERMES_OPERATOR_APPROVAL_EXEMPT_CAPABILITY_PREFIXES: cap:cal_diy:slot.list
+      AIP_HERMES_OPERATOR_SCOPE_PREFIXES: cal_diy.slot.read
+      AIP_HERMES_OPERATOR_MODEL: openai/gpt-5-mini
+      AIP_HERMES_OPERATOR_TIMEOUT_MS: "300000"
+      GETAIP_SERVER_APPROVAL_AUTHORITY_FILE: /run/secrets/approval-authorities.json
+      GETAIP_SERVER_TRUSTED_IDENTITY_FILE: /run/secrets/trusted-identities.json
+      AIP_CAL_DIY_BASE_URL: http://127.0.0.1:18182
+      AIP_CAL_DIY_ACCOUNT_ID: aip-bistro
+      AIP_CAL_DIY_BEARER_TOKEN_FILE: /run/secrets/cal-api-key
+      AIP_CAL_DIY_MAX_RESPONSE_BYTES: "4194304"
+      GETAIP_SERVER_MCP_RESOURCE: http://getaip-server:8080/mcp
+      GETAIP_SERVER_MCP_AUTHORIZATION_SERVERS: https://local-idp.test
+      GETAIP_SERVER_MCP_SCOPES: mcp:connect,action:write,action:read,action:read:any,approval:read,approval:read:any,approval:decide,approval:export,approval:sensitive,transaction:read,transaction:read:any,receipt:read,receipt:read:any,audit:read,audit:read:any,audit:export,delegation:create
+      GETAIP_SERVER_MCP_REQUIRED_SCOPES: mcp:connect
+      GETAIP_SERVER_MCP_INTROSPECTION_URL: http://127.0.0.1:19090/introspect
+      GETAIP_SERVER_MCP_INTROSPECTION_ISSUER: https://local-idp.test
+      GETAIP_SERVER_MCP_INTROSPECTION_CLIENT_ID: getaip-server-restaurant-production
+      GETAIP_SERVER_MCP_INTROSPECTION_CLIENT_SECRET_FILE: /run/secrets/introspection-client-secret
+      GETAIP_SERVER_MCP_INTROSPECTION_ALLOW_LOOPBACK_HTTP: "true"
+      GETAIP_SERVER_MCP_PRINCIPAL_SCOPES: mcp:connect,action:write,action:read,action:read:any,approval:read,approval:read:any,approval:decide,approval:export,approval:sensitive,transaction:read,transaction:read:any,receipt:read,receipt:read:any,audit:read,audit:read:any,audit:export,delegation:create
+    volumes:
+      - ./.runtime/secrets/approval-authorities.json:/run/secrets/approval-authorities.json:ro
+      - ./.runtime/secrets/trusted-identities.json:/run/secrets/trusted-identities.json:ro
+      - ./.runtime/secrets/cal-api-key:/run/secrets/cal-api-key:ro
+      - ./.runtime/secrets/introspection-client-secret:/run/secrets/introspection-client-secret:ro
+    networks: [control-core, manager-control, supervisor-control, cal]
+    ports:
+      - 127.0.0.1:18180:8080
+      - 127.0.0.1:18182:18182
+    depends_on:
+      runtime-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  oauth-central:
+    image: python:3.13-alpine
+    network_mode: service:getaip-server
+    command: ["python", "-u", "/fixture/oauth-introspection.py"]
+    environment:
+      INTROSPECTION_CLIENT_ID: getaip-server-restaurant-production
+      INTROSPECTION_CLIENT_SECRET_FILE: /run/secrets/introspection-client-secret
+      INTROSPECTION_IDENTITIES_FILE: /run/secrets/identities.json
+      INTROSPECTION_ISSUER: https://local-idp.test
+      INTROSPECTION_AUDIENCE: http://getaip-server:8080/mcp
+    volumes:
+      - ../getaip-server-docker/oauth-introspection.py:/fixture/oauth-introspection.py:ro
+      - ./.runtime/secrets/introspection-client-secret:/run/secrets/introspection-client-secret:ro
+      - ./.runtime/secrets/central-identities.json:/run/secrets/identities.json:ro
+    depends_on:
+      getaip-server:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:19090/health', timeout=2).read()",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 2s
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  cal-migrate:
+    image: cal-diy-api:aip-f004349-runtime
+    network_mode: service:getaip-server
+    command: ["yarn", "workspace", "@calcom/prisma", "db-deploy"]
+    environment:
+      DATABASE_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      DATABASE_DIRECT_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      USE_POOL: "true"
+    depends_on:
+      getaip-server:
+        condition: service_started
+      cal-postgres:
+        condition: service_healthy
+    restart: "no"
+
+  cal-seed:
+    image: cal-diy-api:aip-f004349-runtime
+    network_mode: service:getaip-server
+    command:
+      [
+        "/calcom/node_modules/.bin/ts-node",
+        "--transpile-only",
+        "./scripts/aip-restaurant-seed.ts",
+      ]
+    environment:
+      DATABASE_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      DATABASE_DIRECT_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      USE_POOL: "true"
+      CAL_API_KEY_FILE: /run/secrets/cal-api-key
+    volumes:
+      - ./cal-seed.ts:/calcom/scripts/aip-restaurant-seed.ts:ro
+      - ./.runtime/secrets/cal-api-key:/run/secrets/cal-api-key:ro
+    depends_on:
+      cal-migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  cal-api:
+    image: cal-diy-api:aip-f004349-runtime
+    network_mode: service:getaip-server
+    environment:
+      NODE_ENV: production
+      API_PORT: "18182"
+      API_URL: http://127.0.0.1:18182
+      DATABASE_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      DATABASE_READ_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      DATABASE_WRITE_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      DATABASE_DIRECT_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      REDIS_URL: redis://cal-redis:6379
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?set by prepare-runtime.py}
+      JWT_SECRET: ${JWT_SECRET:?set by prepare-runtime.py}
+      CALENDSO_ENCRYPTION_KEY: ${CALENDSO_ENCRYPTION_KEY:?set by prepare-runtime.py}
+      STRIPE_API_KEY: ${STRIPE_API_KEY:?set by prepare-runtime.py}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:?set by prepare-runtime.py}
+      IS_TEAM_BILLING_ENABLED: "false"
+      API_KEY_PREFIX: cal_
+      WEB_APP_URL: http://127.0.0.1:3000
+      REWRITE_API_V2_PREFIX: "1"
+      ENABLE_SLOTS_WORKERS: "false"
+      ENABLE_ASYNC_TASKER: "false"
+      CALCOM_TELEMETRY_DISABLED: "1"
+      LOG_LEVEL: info
+    depends_on:
+      cal-seed:
+        condition: service_completed_successfully
+      cal-redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:18182/health').then(r=>{if(!r.ok)process.exit(1)})",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 36
+      start_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  hermes-manager:
+    image: hermes-agent:aip-lite
+    environment:
+      API_SERVER_ENABLED: "true"
+      API_SERVER_HOST: 0.0.0.0
+      API_SERVER_PORT: "8642"
+      API_SERVER_KEY: ${HERMES_API_KEY:?set by prepare-runtime.py}
+      HERMES_HOME: /opt/data
+      HERMES_WRITE_SAFE_ROOT: /opt/data
+      AIP_RESTAURANT_HERMES_ROLE: manager
+    command: ["gateway", "run", "--force"]
+    volumes:
+      - hermes-manager-data:/opt/data
+    networks: [manager-control, manager-egress]
+    depends_on:
+      getaip-server:
+        condition: service_healthy
+      oauth-central:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8642/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 36
+      start_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  hermes-supervisor:
+    image: hermes-agent:aip-lite
+    environment:
+      API_SERVER_ENABLED: "true"
+      API_SERVER_HOST: 0.0.0.0
+      API_SERVER_PORT: "8642"
+      API_SERVER_KEY: ${HERMES_API_KEY:?set by prepare-runtime.py}
+      HERMES_HOME: /opt/data
+      HERMES_WRITE_SAFE_ROOT: /opt/data
+      AIP_RESTAURANT_HERMES_ROLE: supervisor
+    command: ["gateway", "run", "--force"]
+    volumes:
+      - hermes-supervisor-data:/opt/data
+    networks: [supervisor-control, supervisor-egress]
+    depends_on:
+      getaip-server:
+        condition: service_healthy
+      oauth-central:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8642/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 36
+      start_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  restaurant-coordinator:
+    build:
+      context: ./coordinator
+    image: aip-restaurant-coordinator:local
+    environment:
+      DATABASE_URL: postgresql://aip_runtime:${AIP_POSTGRES_PASSWORD}@runtime-postgres:5432/aip_runtime
+      AIP_MCP_URL: http://getaip-server:8080/mcp
+      AIP_MCP_TOKEN_FILE: /run/secrets/central-token
+      AIP_REQUEST_TIMEOUT_SECONDS: "300"
+      INTROSPECTION_URL: http://127.0.0.1:19090/introspect
+      INTROSPECTION_ISSUER: https://local-idp.test
+      INTROSPECTION_AUDIENCE: http://restaurant-coordinator:8081/mcp
+      INTROSPECTION_CLIENT_ID: restaurant-coordinator
+      INTROSPECTION_CLIENT_SECRET_FILE: /run/secrets/introspection-client-secret
+      MCP_ALLOWED_SUBJECT: agent:restaurant-concierge
+      MCP_RESOURCE_URL: http://restaurant-coordinator:8081/mcp
+      RESTAURANT_NAME: AIP Bistro
+      DEFAULT_CUSTOMER_TIME_ZONE: Asia/Dubai
+      CAL_EVENT_TYPE_ID: "70001"
+      LISTEN_HOST: 0.0.0.0
+      LISTEN_PORT: "8081"
+    volumes:
+      - coordinator-secrets:/run/secrets:ro
+    networks: [front, control-core]
+    ports:
+      - 127.0.0.1:18181:8081
+    depends_on:
+      runtime-postgres:
+        condition: service_healthy
+      cal-api:
+        condition: service_healthy
+      hermes-manager:
+        condition: service_healthy
+      hermes-supervisor:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/health', timeout=2).read()",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 5s
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  oauth-edge:
+    image: python:3.13-alpine
+    network_mode: service:restaurant-coordinator
+    command: ["python", "-u", "/fixture/oauth-introspection.py"]
+    environment:
+      INTROSPECTION_CLIENT_ID: restaurant-coordinator
+      INTROSPECTION_CLIENT_SECRET_FILE: /run/secrets/introspection-client-secret
+      INTROSPECTION_IDENTITIES_FILE: /run/secrets/identities.json
+      INTROSPECTION_ISSUER: https://local-idp.test
+      INTROSPECTION_AUDIENCE: http://restaurant-coordinator:8081/mcp
+    volumes:
+      - ../getaip-server-docker/oauth-introspection.py:/fixture/oauth-introspection.py:ro
+      - ./.runtime/secrets/introspection-client-secret:/run/secrets/introspection-client-secret:ro
+      - ./.runtime/secrets/edge-identities.json:/run/secrets/identities.json:ro
+    depends_on:
+      restaurant-coordinator:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:19090/health', timeout=2).read()",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 2s
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  hermes-concierge:
+    image: hermes-agent:aip-lite
+    environment:
+      API_SERVER_ENABLED: "true"
+      API_SERVER_HOST: 0.0.0.0
+      API_SERVER_PORT: "8642"
+      API_SERVER_KEY: ${CONCIERGE_API_KEY:?set by prepare-runtime.py}
+      HERMES_HOME: /opt/data
+      HERMES_WRITE_SAFE_ROOT: /opt/data
+      AIP_RESTAURANT_HERMES_ROLE: concierge
+    command: ["gateway", "run", "--force"]
+    volumes:
+      - hermes-concierge-data:/opt/data
+    networks: [front, concierge-egress]
+    ports:
+      - 127.0.0.1:18651:8642
+    depends_on:
+      restaurant-coordinator:
+        condition: service_healthy
+      oauth-edge:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8642/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 36
+      start_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  e2e:
+    profiles: [test]
+    image: aip-restaurant-coordinator:local
+    user: "0:0"
+    command: ["python", "/test/run-e2e.py"]
+    environment:
+      CENTRAL_COORDINATOR_TOKEN_FILE: /run/secrets/central-coordinator-token
+      CENTRAL_AUDITOR_TOKEN_FILE: /run/secrets/central-auditor-token
+      EDGE_CONCIERGE_TOKEN_FILE: /run/secrets/edge-concierge-token
+      CONCIERGE_API_KEY_FILE: /run/secrets/concierge-api-key
+      WORKFLOW_DATABASE_URL: postgresql://aip_runtime:${AIP_POSTGRES_PASSWORD}@runtime-postgres:5432/aip_runtime
+      CAL_DATABASE_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      EVIDENCE_FILE: /evidence/restaurant-booking-e2e.json
+    volumes:
+      - ./run-e2e.py:/test/run-e2e.py:ro
+      - ./.runtime/secrets/central-coordinator-token:/run/secrets/central-coordinator-token:ro
+      - ./.runtime/secrets/central-auditor-token:/run/secrets/central-auditor-token:ro
+      - ./.runtime/secrets/edge-concierge-token:/run/secrets/edge-concierge-token:ro
+      - ./.runtime/secrets/concierge-api-key:/run/secrets/concierge-api-key:ro
+      - ./.runtime/evidence:/evidence
+    networks: [front, control-core, cal]
+    depends_on:
+      hermes-concierge:
+        condition: service_healthy
+      hermes-manager:
+        condition: service_healthy
+      hermes-supervisor:
+        condition: service_healthy
+      restaurant-coordinator:
+        condition: service_healthy
+      cal-api:
+        condition: service_healthy
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: "no"
+
+networks:
+  front:
+    internal: true
+  control-core:
+    internal: true
+  manager-control:
+    internal: true
+  supervisor-control:
+    internal: true
+  cal:
+    internal: true
+  concierge-egress:
+  manager-egress:
+  supervisor-egress:
+
+volumes:
+  runtime-postgres-data:
+  cal-postgres-data:
+  cal-redis-data:
+  hermes-concierge-data:
+    external: true
+    name: aip-restaurant-hermes-concierge-data
+  hermes-manager-data:
+    external: true
+    name: aip-restaurant-hermes-manager-data
+  hermes-supervisor-data:
+    external: true
+    name: aip-restaurant-hermes-supervisor-data
+  coordinator-secrets:
+    external: true
+    name: aip-restaurant-coordinator-secrets

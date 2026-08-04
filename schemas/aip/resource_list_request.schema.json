@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ResourceListRequest",
+  "description": "Native resource list request.",
+  "type": "object",
+  "properties": {
+    "capability_id": {
+      "description": "Capability id filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CapabilityId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "kind": {
+      "description": "Resource kind label filter.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tenant_id": {
+      "description": "Tenant id filter.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cursor": {
+      "description": "Opaque page cursor.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "limit": {
+      "description": "Maximum number of resources to return.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint32",
+      "minimum": 0
+    }
+  },
+  "$defs": {
+    "CapabilityId": {
+      "description": "Stable capability identifier.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/resource_list_request.schema.json",
+  "additionalProperties": false
+}

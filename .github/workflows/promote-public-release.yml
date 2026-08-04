@@ -1,0 +1,284 @@
+name: promote-verified-public-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Exact verified GetAIP release tag to promote
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+  attestations: write
+  id-token: write
+  packages: write
+
+concurrency:
+  group: promote-public-${{ inputs.tag }}
+  cancel-in-progress: false
+
+env:
+  CARGO_INCREMENTAL: "0"
+  CARGO_PROFILE_DEV_DEBUG: "0"
+
+jobs:
+  promote:
+    name: verify-private-candidate-and-publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: public-release-promotion
+    steps:
+      - name: Validate the explicit immutable tag
+        id: release
+        shell: bash
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "invalid release tag: $TAG" >&2
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout the exact release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Install Rust for standalone release verification
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          key: public-release-promotion
+
+      - name: Prove source, repository, and completed private workflow identity
+        id: private
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=${TAG#v}
+          release_commit=$(git rev-parse HEAD)
+          test "$version" = "$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml | head -n 1)"
+          test "$(git cat-file -t "refs/tags/$TAG")" = tag
+          test "$(git rev-list --count HEAD)" = 1
+          test -z "$(git status --short)"
+          test -z "$(git ls-files | awk 'tolower($0) ~ /\.md$/')"
+          test ! -e CHANGELOG
+          test "$(gh api "repos/$GITHUB_REPOSITORY" --jq .visibility)" = public
+          test "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true
+
+          immutable_run=$(gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow release.yml \
+            --commit "$release_commit" \
+            --status success \
+            --limit 20 \
+            --json databaseId,event,headSha,conclusion \
+            | jq -er --arg sha "$release_commit" \
+              '[.[] | select(.event == "push" and .headSha == $sha and .conclusion == "success")][0].databaseId')
+          release_check_run=$(gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow release-check.yml \
+            --commit "$release_commit" \
+            --status success \
+            --limit 20 \
+            --json databaseId,event,headSha,conclusion \
+            | jq -er --arg sha "$release_commit" \
+              '[.[] | select(.event == "push" and .headSha == $sha and .conclusion == "success")][0].databaseId')
+          test -n "$immutable_run"
+          test "$immutable_run" != null
+          test -n "$release_check_run"
+          test "$release_check_run" != null
+          echo "release_commit=$release_commit" >> "$GITHUB_OUTPUT"
+          echo "immutable_run=$immutable_run" >> "$GITHUB_OUTPUT"
+          echo "release_check_run=$release_check_run" >> "$GITHUB_OUTPUT"
+
+      - name: Download and independently verify every draft asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=${TAG#v}
+          mkdir native-release
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir native-release
+          for asset in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
+            chmod 0755 "native-release/getaip-${version}-${asset}"
+          done
+          cargo run --locked -p xtask -- verify-native-release \
+            --directory native-release \
+            --manifest native-release/getaip-distribution-manifest.v1.json \
+            --signature native-release/getaip-distribution-manifest.v1.json.sig
+
+      - name: Attest every verified public native release asset
+        # GitHub Free supports artifact attestations only after the repository
+        # is public. The private workflow has already built, signed, qualified,
+        # and clone-back verified these exact checksummed bytes.
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-checksums: native-release/SHA256SUMS
+
+      - name: Verify the public GitHub attestations before publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          while read -r _digest name; do
+            verified=false
+            for attempt in 1 2 3 4 5 6; do
+              if gh attestation verify "native-release/$name" \
+                --repo "$GITHUB_REPOSITORY"; then
+                verified=true
+                break
+              fi
+              test "$attempt" -lt 6
+              sleep 10
+            done
+            test "$verified" = true
+          done < native-release/SHA256SUMS
+
+      - name: Install Cosign for the public container boundary
+        uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62 # v3.10.0
+
+      - name: Publish and anonymously verify every immutable container digest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMMUTABLE_RUN: ${{ steps.private.outputs.immutable_run }}
+          TAG: ${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir image-evidence public-image-verification
+          gh run download "$IMMUTABLE_RUN" --repo "$GITHUB_REPOSITORY" \
+            --pattern 'digest-*' --dir image-evidence
+          anonymous_docker=$(mktemp -d)
+          certificate_identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release.yml@refs/tags/${TAG}"
+          find image-evidence -type f -name '*.digest' -print0 \
+            | sort -z \
+            | while IFS= read -r -d '' path; do
+                reference=$(tr -d '\n' < "$path")
+                if [[ ! "$reference" =~ ^ghcr\.io/getaip/([a-z0-9-]+)@sha256:[0-9a-f]{64}$ ]]; then
+                  echo "invalid immutable image evidence: $reference" >&2
+                  exit 1
+                fi
+                package=${BASH_REMATCH[1]}
+                encoded=$(jq -rn --arg value "$package" '$value | @uri')
+                gh api --method PATCH \
+                  "/orgs/getaip/packages/container/${encoded}" \
+                  -f visibility=public > /dev/null
+                DOCKER_CONFIG="$anonymous_docker" docker manifest inspect "$reference" \
+                  > "public-image-verification/${package}.manifest.json"
+                cosign verify \
+                  --certificate-identity "$certificate_identity" \
+                  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+                  --output json \
+                  "$reference" > "public-image-verification/${package}.cosign.json"
+              done
+          test "$(find public-image-verification -type f -name '*.manifest.json' | wc -l | tr -d ' ')" = 14
+          test "$(find public-image-verification -type f -name '*.cosign.json' | wc -l | tr -d ' ')" = 14
+
+      - name: Repeat clean clone-back verification after the visibility change
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          clone="$RUNNER_TEMP/getaip-core-public-clone-back"
+          gh repo clone "$GITHUB_REPOSITORY" "$clone" -- --no-tags
+          git -C "$clone" fetch --no-tags origin "refs/tags/$TAG:refs/tags/$TAG"
+          test "$(git -C "$clone" rev-parse HEAD)" = "${{ steps.private.outputs.release_commit }}"
+          test "$(git -C "$clone" rev-parse 'HEAD^{tree}')" = "$(git rev-parse 'HEAD^{tree}')"
+          test "$(git -C "$clone" rev-list --count HEAD)" = 1
+          test -z "$(git -C "$clone" status --short)"
+          test -z "$(git -C "$clone" ls-files | awk 'tolower($0) ~ /\.md$/')"
+          test ! -e "$clone/CHANGELOG"
+          test "$(git -C "$clone" cat-file -t "refs/tags/$TAG")" = tag
+          test "$(git -C "$clone" rev-parse "refs/tags/$TAG^{commit}")" = "${{ steps.private.outputs.release_commit }}"
+
+      - name: Retain public-promotion evidence
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          IMMUTABLE_RUN: ${{ steps.private.outputs.immutable_run }}
+          RELEASE_CHECK_RUN: ${{ steps.private.outputs.release_check_run }}
+        shell: bash
+        run: |
+          python3 - "$TAG" "${{ steps.private.outputs.release_commit }}" \
+            "$IMMUTABLE_RUN" "$RELEASE_CHECK_RUN" <<'PY'
+          import json
+          import os
+          import pathlib
+          import subprocess
+          import sys
+
+          tag, commit, immutable_run, release_check_run = sys.argv[1:]
+          marker = {
+              "schema": "org.getaip.release.public-promotion.v1",
+              "tag": tag,
+              "github_commit": commit,
+              "github_tree": subprocess.check_output(
+                  ["git", "rev-parse", "HEAD^{tree}"], text=True
+              ).strip(),
+              "immutable_release_run_id": int(immutable_run),
+              "release_check_run_id": int(release_check_run),
+              "public_attestation_run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "native_attestation_subjects": [
+                  {"sha256": digest, "name": name}
+                  for digest, name in (
+                      line.split(maxsplit=1)
+                      for line in pathlib.Path("native-release/SHA256SUMS")
+                      .read_text(encoding="utf-8")
+                      .splitlines()
+                      if line.strip()
+                  )
+              ],
+              "public_container_images": [
+                  {
+                      "reference": path.read_text(encoding="utf-8").strip(),
+                      "anonymous_manifest": "verified",
+                      "cosign": "verified",
+                  }
+                  for path in sorted(pathlib.Path("image-evidence").rglob("*.digest"))
+              ],
+              "private_candidate": "verified",
+              "public_clone_back": "verified",
+          }
+          pathlib.Path("public-promotion-evidence.json").write_text(
+              json.dumps(marker, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+          )
+          PY
+
+      - name: Publish the exact verified draft and trigger the gated npm boundary
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true
+          gh release edit "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --draft=false \
+            --prerelease=false
+          test "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = false
+
+      - name: Upload promotion evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: public-promotion-${{ steps.release.outputs.tag }}-${{ steps.private.outputs.release_commit }}
+          path: public-promotion-evidence.json
+          if-no-files-found: error
+          retention-days: 90

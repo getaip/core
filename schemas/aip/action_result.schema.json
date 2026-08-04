@@ -1,0 +1,500 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ActionResult",
+  "description": "Final action result.",
+  "type": "object",
+  "properties": {
+    "action_id": {
+      "description": "Source action.",
+      "$ref": "#/$defs/ActionId"
+    },
+    "status": {
+      "description": "Result status.",
+      "$ref": "#/$defs/ActionResultStatus"
+    },
+    "output": {
+      "description": "Structured output."
+    },
+    "message": {
+      "description": "User-facing message parts.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/MessagePart"
+      }
+    },
+    "memory_update": {
+      "description": "Memory/state update."
+    },
+    "usage": {
+      "description": "Usage/cost metadata.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Usage"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "receipt": {
+      "description": "Signed receipt reference.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReceiptRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "error": {
+      "description": "Error details.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ProtocolError"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "action_id",
+    "status"
+  ],
+  "$defs": {
+    "ActionId": {
+      "description": "Action identifier.",
+      "type": "string"
+    },
+    "ActionResultStatus": {
+      "description": "Final action status.",
+      "oneOf": [
+        {
+          "description": "Action completed.",
+          "type": "string",
+          "const": "completed"
+        },
+        {
+          "description": "Action failed.",
+          "type": "string",
+          "const": "failed"
+        },
+        {
+          "description": "Action was cancelled.",
+          "type": "string",
+          "const": "cancelled"
+        },
+        {
+          "description": "Action is blocked on a durable approval request.",
+          "type": "string",
+          "const": "pending_approval"
+        },
+        {
+          "description": "Action requires human input or approval.",
+          "type": "string",
+          "const": "requires_human"
+        }
+      ]
+    },
+    "MessagePart": {
+      "description": "Rich content part carried by a message, result, or channel event.",
+      "oneOf": [
+        {
+          "description": "Text content.",
+          "type": "object",
+          "properties": {
+            "text": {
+              "description": "Text body.",
+              "type": "string"
+            },
+            "format": {
+              "description": "Optional text format, for example `plain` or `markdown`.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "text"
+            }
+          },
+          "required": [
+            "type",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Image content.",
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "Remote URL.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "data": {
+              "description": "Inline data.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mime_type": {
+              "description": "MIME type.",
+              "type": "string"
+            },
+            "alt": {
+              "description": "Accessibility alt text.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "image"
+            }
+          },
+          "required": [
+            "type",
+            "mime_type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "File content.",
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "Remote URL.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "data": {
+              "description": "Inline data.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mime_type": {
+              "description": "MIME type.",
+              "type": "string"
+            },
+            "filename": {
+              "description": "File name.",
+              "type": "string"
+            },
+            "size_bytes": {
+              "description": "File size in bytes.",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "file"
+            }
+          },
+          "required": [
+            "type",
+            "mime_type",
+            "filename"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Audio content.",
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "Remote URL.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "data": {
+              "description": "Inline data.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mime_type": {
+              "description": "MIME type.",
+              "type": "string"
+            },
+            "transcript": {
+              "description": "Optional transcript.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "audio"
+            }
+          },
+          "required": [
+            "type",
+            "mime_type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Interactive form.",
+          "type": "object",
+          "properties": {
+            "fields": {
+              "description": "Form fields.",
+              "type": "array",
+              "items": true
+            },
+            "actions": {
+              "description": "Form actions.",
+              "type": "array",
+              "items": true
+            },
+            "type": {
+              "type": "string",
+              "const": "form"
+            }
+          },
+          "required": [
+            "type",
+            "fields",
+            "actions"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Rich card.",
+          "type": "object",
+          "properties": {
+            "title": {
+              "description": "Card title.",
+              "type": "string"
+            },
+            "body": {
+              "description": "Card body.",
+              "type": "string"
+            },
+            "actions": {
+              "description": "Card actions.",
+              "type": "array",
+              "items": true
+            },
+            "media": {
+              "description": "Card media."
+            },
+            "type": {
+              "type": "string",
+              "const": "card"
+            }
+          },
+          "required": [
+            "type",
+            "title",
+            "body"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Structured JSON payload.",
+          "type": "object",
+          "properties": {
+            "data": {
+              "description": "JSON data."
+            },
+            "schema": {
+              "description": "Optional JSON Schema."
+            },
+            "type": {
+              "type": "string",
+              "const": "json"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Tool result payload.",
+          "type": "object",
+          "properties": {
+            "tool_call_id": {
+              "description": "Tool call id.",
+              "type": "string"
+            },
+            "data": {
+              "description": "Result data."
+            },
+            "error": {
+              "description": "Error data."
+            },
+            "type": {
+              "type": "string",
+              "const": "tool_result"
+            }
+          },
+          "required": [
+            "type",
+            "tool_call_id"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Usage": {
+      "description": "Usage and cost metadata.",
+      "type": "object",
+      "properties": {
+        "tokens": {
+          "description": "Token usage."
+        },
+        "tools": {
+          "description": "Tool usage."
+        },
+        "latency_ms": {
+          "description": "End-to-end latency.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "cost": {
+          "description": "Cost metadata."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ReceiptRef": {
+      "description": "Reference to a signed receipt.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Receipt id.",
+          "$ref": "#/$defs/ReceiptId"
+        },
+        "hash": {
+          "description": "Receipt hash.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "hash"
+      ],
+      "additionalProperties": false
+    },
+    "ReceiptId": {
+      "description": "Receipt identifier.",
+      "type": "string"
+    },
+    "ProtocolError": {
+      "description": "Machine-readable protocol or action error.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "description": "Stable machine code.",
+          "type": "string"
+        },
+        "message": {
+          "description": "Human-readable message.",
+          "type": "string"
+        },
+        "category": {
+          "description": "Error category.",
+          "$ref": "#/$defs/ErrorCategory"
+        },
+        "retryable": {
+          "description": "Whether retry is safe.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "retry_after_ms": {
+          "description": "Suggested retry delay.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "details": {
+          "description": "Structured details."
+        },
+        "source": {
+          "description": "Connector/profile/source metadata."
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "category"
+      ],
+      "additionalProperties": false
+    },
+    "ErrorCategory": {
+      "description": "Protocol error category.",
+      "oneOf": [
+        {
+          "description": "Temporary failure.",
+          "type": "string",
+          "const": "temporary"
+        },
+        {
+          "description": "Permanent failure.",
+          "type": "string",
+          "const": "permanent"
+        },
+        {
+          "description": "Authentication or authorization failure.",
+          "type": "string",
+          "const": "auth"
+        },
+        {
+          "description": "Policy failure.",
+          "type": "string",
+          "const": "policy"
+        },
+        {
+          "description": "Economic/settlement failure.",
+          "type": "string",
+          "const": "economic"
+        },
+        {
+          "description": "Connector failure.",
+          "type": "string",
+          "const": "connector"
+        },
+        {
+          "description": "Transport failure.",
+          "type": "string",
+          "const": "transport"
+        }
+      ]
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/action_result.schema.json",
+  "additionalProperties": false
+}

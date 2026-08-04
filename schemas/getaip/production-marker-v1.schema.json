@@ -1,0 +1,31 @@
+{
+  "$id": "https://getaip.org/schemas/getaip/production-marker-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "containers": { "items": { "type": "object" }, "minItems": 1, "type": "array" },
+    "marked_at": { "format": "date-time", "type": "string" },
+    "native": { "type": "object" },
+    "npm": { "items": { "type": "object" }, "minItems": 2, "type": "array" },
+    "qualification": { "type": "object" },
+    "release": { "type": "object" },
+    "schema": { "const": "org.getaip.release.production-marker.v1" },
+    "source": { "type": "object" },
+    "status": { "const": "production" },
+    "workflows": { "type": "object" }
+  },
+  "required": [
+    "schema",
+    "status",
+    "marked_at",
+    "release",
+    "source",
+    "workflows",
+    "native",
+    "npm",
+    "containers",
+    "qualification"
+  ],
+  "title": "GetAIP production marker v1",
+  "type": "object"
+}

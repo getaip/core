@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TransactionQueryRequest",
+  "description": "Request for one transaction view.",
+  "type": "object",
+  "properties": {
+    "transaction_id": {
+      "description": "Transaction id selector.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TransactionId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "plan_id": {
+      "description": "Plan id selector.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "action_id": {
+      "description": "Action id selector.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ActionId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "tenant_id": {
+      "description": "Optional tenant boundary expected by the caller.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "include_result": {
+      "description": "Include terminal action result when available.",
+      "type": "boolean",
+      "default": false
+    },
+    "include_receipts": {
+      "description": "Include receipt chain when available.",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "$defs": {
+    "TransactionId": {
+      "description": "Transactional action or saga identifier.",
+      "type": "string"
+    },
+    "ActionId": {
+      "description": "Action identifier.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/transaction_query_request.schema.json",
+  "additionalProperties": false
+}

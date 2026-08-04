@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "keys": [
+    {
+      "key_id": "getaip-release-2026-01-5e8a972bae4003e8",
+      "algorithm": "ed25519",
+      "public_key_base64": "MAanw4FMpaJzP7Y871+sx14rRrP2a+muPbTlXAac5Hc=",
+      "revoked": false
+    }
+  ]
+}

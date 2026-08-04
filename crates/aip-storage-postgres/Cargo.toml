@@ -1,0 +1,32 @@
+[package]
+name = "aip-storage-postgres"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-core.workspace = true
+aip-mcp-session.workspace = true
+aip-profile-mcp.workspace = true
+aip-runtime.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+sqlx-core.workspace = true
+sqlx-postgres.workspace = true
+thiserror.workspace = true
+time.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+aip-auth.workspace = true
+aip-testkit.workspace = true
+tokio.workspace = true
+
+[lints]
+workspace = true

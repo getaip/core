@@ -1,0 +1,21 @@
+[package]
+name = "aip-profile-webhook"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+base64.workspace = true
+constant_time_eq.workspace = true
+hmac.workspace = true
+serde.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+time.workspace = true
+
+[lints]
+workspace = true

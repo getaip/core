@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AuditQueryRequest",
+  "description": "Request for filtered audit event records.",
+  "type": "object",
+  "properties": {
+    "action_id": {
+      "description": "Action id filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ActionId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "session_id": {
+      "description": "Session id filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SessionId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "principal_id": {
+      "description": "Principal id filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PrincipalId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "transaction_id": {
+      "description": "Transaction id filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TransactionId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "tenant_id": {
+      "description": "Tenant id filter.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "from": {
+      "description": "Inclusive lower timestamp bound.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "to": {
+      "description": "Inclusive upper timestamp bound.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cursor": {
+      "description": "Opaque page cursor.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "limit": {
+      "description": "Maximum number of records to return.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint32",
+      "minimum": 0
+    },
+    "include_receipts": {
+      "description": "Include related receipt chains.",
+      "type": "boolean",
+      "default": false
+    },
+    "export": {
+      "description": "Treat the query as an evidence export requiring export authority.\n\nExport mode is intentionally explicit so normal audit browsing can use\n`audit:read`, while evidence packages that may leave the runtime trust\nboundary require `audit:export`.",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "$defs": {
+    "ActionId": {
+      "description": "Action identifier.",
+      "type": "string"
+    },
+    "SessionId": {
+      "description": "Session identifier.",
+      "type": "string"
+    },
+    "PrincipalId": {
+      "description": "Stable principal identifier.",
+      "type": "string"
+    },
+    "TransactionId": {
+      "description": "Transactional action or saga identifier.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/audit_query_request.schema.json",
+  "additionalProperties": false
+}

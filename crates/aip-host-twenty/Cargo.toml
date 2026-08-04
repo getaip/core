@@ -1,0 +1,23 @@
+[package]
+name = "aip-host-twenty"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-connector.workspace = true
+aip-connector-host.workspace = true
+aip-connector-host-bootstrap.workspace = true
+aip-connector-twenty.workspace = true
+aip-runtime.workspace = true
+axum.workspace = true
+clap.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+
+[lints]
+workspace = true

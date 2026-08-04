@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SessionRequest",
+  "description": "Request for one durable session view.",
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "description": "Session to inspect.",
+      "$ref": "#/$defs/SessionId"
+    }
+  },
+  "required": [
+    "session_id"
+  ],
+  "$defs": {
+    "SessionId": {
+      "description": "Session identifier.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/session_request.schema.json",
+  "additionalProperties": false
+}

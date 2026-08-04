@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ack",
+  "description": "Acknowledgement for an action.",
+  "type": "object",
+  "properties": {
+    "action_id": {
+      "description": "Acknowledged action.",
+      "$ref": "#/$defs/ActionId"
+    },
+    "status": {
+      "description": "Acknowledgement state.",
+      "$ref": "#/$defs/AckStatus"
+    },
+    "reason": {
+      "description": "Machine/human reason.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "retry_after_ms": {
+      "description": "Retry hint.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint64",
+      "minimum": 0
+    },
+    "queue": {
+      "description": "Queue metadata."
+    }
+  },
+  "required": [
+    "action_id",
+    "status"
+  ],
+  "$defs": {
+    "ActionId": {
+      "description": "Action identifier.",
+      "type": "string"
+    },
+    "AckStatus": {
+      "description": "Action acknowledgement state.",
+      "oneOf": [
+        {
+          "description": "Action accepted for processing.",
+          "type": "string",
+          "const": "accepted"
+        },
+        {
+          "description": "Action rejected before processing.",
+          "type": "string",
+          "const": "rejected"
+        },
+        {
+          "description": "Action queued.",
+          "type": "string",
+          "const": "queued"
+        },
+        {
+          "description": "Action accepted and stream will follow.",
+          "type": "string",
+          "const": "streaming"
+        },
+        {
+          "description": "Idempotent replay returned cached result.",
+          "type": "string",
+          "const": "cached"
+        }
+      ]
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/ack.schema.json",
+  "additionalProperties": false
+}

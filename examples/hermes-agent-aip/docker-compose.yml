@@ -1,0 +1,73 @@
+services:
+  hermes-a:
+    build:
+      context: ../../../hermes-agent
+    image: hermes-agent:aip-local
+    environment:
+      API_SERVER_ENABLED: "true"
+      API_SERVER_HOST: "0.0.0.0"
+      API_SERVER_PORT: "8642"
+      API_SERVER_KEY: "hermes-aip-smoke-key-0000000000000000"
+      HERMES_UID: "10000"
+      HERMES_GID: "10000"
+    command: ["gateway", "run"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8642/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+    volumes:
+      - hermes_a_data:/opt/data
+    networks:
+      - aip_hermes
+
+  hermes-b:
+    build:
+      context: ../../../hermes-agent
+    image: hermes-agent:aip-local
+    environment:
+      API_SERVER_ENABLED: "true"
+      API_SERVER_HOST: "0.0.0.0"
+      API_SERVER_PORT: "8642"
+      API_SERVER_KEY: "hermes-aip-smoke-key-0000000000000000"
+      HERMES_UID: "10000"
+      HERMES_GID: "10000"
+    command: ["gateway", "run"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8642/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+    volumes:
+      - hermes_b_data:/opt/data
+    networks:
+      - aip_hermes
+
+  aip-check:
+    build:
+      context: ../..
+      dockerfile: examples/hermes-agent-aip/Dockerfile.aip-check
+    depends_on:
+      hermes-a:
+        condition: service_healthy
+      hermes-b:
+        condition: service_healthy
+    command:
+      - "--api-key"
+      - "hermes-aip-smoke-key-0000000000000000"
+      - "--agent"
+      - "hermes-a=http://hermes-a:8642"
+      - "--agent"
+      - "hermes-b=http://hermes-b:8642"
+    networks:
+      - aip_hermes
+
+volumes:
+  hermes_a_data:
+  hermes_b_data:
+
+networks:
+  aip_hermes:
+    driver: bridge

@@ -1,0 +1,25 @@
+[package]
+name = "aip-host-cal-diy"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-connector.workspace = true
+aip-connector-cal-diy.workspace = true
+aip-connector-host-bootstrap.workspace = true
+aip-connector-host.workspace = true
+aip-core.workspace = true
+aip-runtime.workspace = true
+axum.workspace = true
+clap.workspace = true
+serde_json.workspace = true
+time.workspace = true
+tokio.workspace = true
+
+[lints]
+workspace = true

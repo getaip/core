@@ -1,0 +1,192 @@
+[workspace]
+resolver = "2"
+exclude = ["forconnect/wa-rust", "forconnect/twenty"]
+members = [
+  "crates/aip",
+  "crates/aip-core",
+  "crates/aip-schema",
+  "crates/aip-crypto",
+  "crates/aip-auth",
+  "crates/aip-discovery",
+  "crates/aip-connector-registry",
+  "crates/aip-connector-admission",
+  "crates/aip-connector-orchestration",
+  "crates/aip-connector-registry-postgres",
+  "crates/aip-connector-remote",
+  "crates/aip-connector-host",
+  "crates/aip-connector-host-bootstrap",
+  "crates/aip-connector-control-plane",
+  "crates/aip-runtime",
+  "crates/aip-storage-postgres",
+  "crates/aip-transport",
+  "crates/aip-transport-http",
+  "crates/aip-transport-nats",
+  "crates/aip-transport-sse",
+  "crates/aip-transport-websocket",
+  "crates/aip-profile-mcp",
+  "crates/aip-mcp-session",
+  "crates/aip-mcp-server",
+  "crates/aip-mcp-client",
+  "crates/aip-transport-mcp-stdio",
+  "crates/aip-transport-mcp-legacy-http-sse",
+  "crates/aip-transport-mcp-streamable-http",
+  "crates/aip-mcp-conformance",
+  "crates/aip-profile-a2a",
+  "crates/aip-profile-webhook",
+  "crates/aip-connector",
+  "crates/aip-connector-dify",
+  "crates/aip-connector-crewai",
+  "crates/aip-connector-chatwoot",
+  "crates/aip-connector-cal-diy",
+  "crates/aip-connector-hermes-agent",
+  "crates/aip-connector-twenty",
+  "crates/aip-connector-wa-archive",
+  "crates/aip-connector-support-sandbox",
+  "crates/aip-connector-enterprise-sandbox",
+  "crates/aip-host-support-sandbox",
+  "crates/aip-host-enterprise-sandbox",
+  "crates/aip-host-cal-diy",
+  "crates/aip-host-hermes-agent",
+  "crates/aip-host-chatwoot",
+  "crates/aip-host-dify",
+  "crates/aip-host-crewai",
+  "crates/aip-host-twenty",
+  "crates/aip-host-wa-archive",
+  "crates/aip-connector-fleet-fixture",
+  "crates/aip-product-upstream-fixture",
+  "crates/aip-gateway",
+  "crates/aip-observability",
+  "crates/aip-conformance",
+  "crates/aip-testkit",
+  "crates/getaip-distribution",
+  "crates/getaip-server",
+  "crates/getaip-server-legacy-bundled",
+  "crates/getaip-cli",
+  "crates/xtask",
+]
+
+[workspace.package]
+version = "2.1.0"
+edition = "2024"
+license = "BUSL-1.1"
+repository = "https://github.com/getaip/core"
+homepage = "https://getaip.org"
+rust-version = "1.88"
+readme = "README.md"
+
+[workspace.lints.rust]
+missing_docs = "warn"
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = "warn"
+expect_used = "warn"
+panic = "warn"
+unwrap_used = "warn"
+
+[workspace.dependencies]
+aip = { path = "crates/aip", version = "2.1.0" }
+aip-auth = { path = "crates/aip-auth", version = "2.1.0" }
+aip-conformance = { path = "crates/aip-conformance", version = "2.1.0" }
+aip-connector = { path = "crates/aip-connector", version = "2.1.0" }
+aip-connector-chatwoot = { path = "crates/aip-connector-chatwoot", version = "2.1.0" }
+aip-connector-cal-diy = { path = "crates/aip-connector-cal-diy", version = "2.1.0" }
+aip-connector-crewai = { path = "crates/aip-connector-crewai", version = "2.1.0" }
+aip-connector-dify = { path = "crates/aip-connector-dify", version = "2.1.0" }
+aip-connector-hermes-agent = { path = "crates/aip-connector-hermes-agent", version = "2.1.0" }
+aip-connector-twenty = { path = "crates/aip-connector-twenty", version = "2.1.0" }
+aip-connector-wa-archive = { path = "crates/aip-connector-wa-archive", version = "2.1.0" }
+aip-connector-support-sandbox = { path = "crates/aip-connector-support-sandbox", version = "2.1.0" }
+aip-connector-enterprise-sandbox = { path = "crates/aip-connector-enterprise-sandbox", version = "2.1.0" }
+aip-host-support-sandbox = { path = "crates/aip-host-support-sandbox", version = "2.1.0" }
+aip-host-enterprise-sandbox = { path = "crates/aip-host-enterprise-sandbox", version = "2.1.0" }
+aip-host-cal-diy = { path = "crates/aip-host-cal-diy", version = "2.1.0" }
+aip-host-hermes-agent = { path = "crates/aip-host-hermes-agent", version = "2.1.0" }
+aip-host-chatwoot = { path = "crates/aip-host-chatwoot", version = "2.1.0" }
+aip-host-dify = { path = "crates/aip-host-dify", version = "2.1.0" }
+aip-host-crewai = { path = "crates/aip-host-crewai", version = "2.1.0" }
+aip-host-twenty = { path = "crates/aip-host-twenty", version = "2.1.0" }
+aip-host-wa-archive = { path = "crates/aip-host-wa-archive", version = "2.1.0" }
+aip-core = { path = "crates/aip-core", version = "2.1.0", default-features = false }
+aip-crypto = { path = "crates/aip-crypto", version = "2.1.0" }
+aip-discovery = { path = "crates/aip-discovery", version = "2.1.0" }
+aip-connector-registry = { path = "crates/aip-connector-registry", version = "2.1.0" }
+aip-connector-admission = { path = "crates/aip-connector-admission", version = "2.1.0" }
+aip-connector-orchestration = { path = "crates/aip-connector-orchestration", version = "2.1.0" }
+aip-connector-registry-postgres = { path = "crates/aip-connector-registry-postgres", version = "2.1.0" }
+aip-connector-remote = { path = "crates/aip-connector-remote", version = "2.1.0" }
+aip-connector-host = { path = "crates/aip-connector-host", version = "2.1.0" }
+aip-connector-host-bootstrap = { path = "crates/aip-connector-host-bootstrap", version = "2.1.0" }
+aip-connector-control-plane = { path = "crates/aip-connector-control-plane", version = "2.1.0" }
+aip-gateway = { path = "crates/aip-gateway", version = "2.1.0" }
+aip-mcp-client = { path = "crates/aip-mcp-client", version = "2.1.0" }
+aip-mcp-conformance = { path = "crates/aip-mcp-conformance", version = "2.1.0" }
+aip-mcp-server = { path = "crates/aip-mcp-server", version = "2.1.0" }
+aip-mcp-session = { path = "crates/aip-mcp-session", version = "2.1.0" }
+aip-observability = { path = "crates/aip-observability", version = "2.1.0" }
+aip-profile-a2a = { path = "crates/aip-profile-a2a", version = "2.1.0" }
+aip-profile-mcp = { path = "crates/aip-profile-mcp", version = "2.1.0" }
+aip-profile-webhook = { path = "crates/aip-profile-webhook", version = "2.1.0" }
+aip-runtime = { path = "crates/aip-runtime", version = "2.1.0" }
+aip-schema = { path = "crates/aip-schema", version = "2.1.0" }
+aip-storage-postgres = { path = "crates/aip-storage-postgres", version = "2.1.0" }
+aip-testkit = { path = "crates/aip-testkit", version = "2.1.0" }
+aip-transport = { path = "crates/aip-transport", version = "2.1.0" }
+aip-transport-http = { path = "crates/aip-transport-http", version = "2.1.0" }
+aip-transport-mcp-stdio = { path = "crates/aip-transport-mcp-stdio", version = "2.1.0" }
+aip-transport-mcp-legacy-http-sse = { path = "crates/aip-transport-mcp-legacy-http-sse", version = "2.1.0" }
+aip-transport-mcp-streamable-http = { path = "crates/aip-transport-mcp-streamable-http", version = "2.1.0" }
+aip-transport-nats = { path = "crates/aip-transport-nats", version = "2.1.0" }
+aip-transport-sse = { path = "crates/aip-transport-sse", version = "2.1.0" }
+aip-transport-websocket = { path = "crates/aip-transport-websocket", version = "2.1.0" }
+getaip-distribution = { path = "crates/getaip-distribution", version = "2.1.0" }
+aes-gcm = "0.10"
+async-trait = "0.1"
+async-nats = "0.49"
+axum = "0.8"
+base64 = "0.22"
+bs58 = "0.5"
+bytes = "1"
+clap = { version = "4", features = ["derive", "env"] }
+constant_time_eq = "0.4"
+ed25519-dalek = { version = "2", features = ["pem", "rand_core"] }
+flate2 = "1"
+fs2 = "0.4"
+futures-core = "0.3"
+futures-util = "0.3"
+hex = "0.4"
+hkdf = "0.12"
+hmac = "0.12"
+http = "1"
+httpdate = "1"
+jsonschema = "0.29"
+jsonc-parser = { version = "0.33.1", features = ["cst", "serde_json"] }
+lru = "0.18.1"
+metrics = "0.24"
+metrics-exporter-prometheus = { version = "0.18", default-features = false }
+nix = { version = "0.29", default-features = false, features = ["fs", "signal", "user"] }
+proptest = "1"
+rand_core = { version = "0.6", features = ["getrandom"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "rustls-tls-native-roots", "stream"] }
+schemars = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+semver = "1"
+sha2 = "0.10"
+tar = "0.4"
+sqlx-core = { version = "0.8", default-features = false, features = ["_rt-tokio", "_tls-rustls-ring-webpki", "json"] }
+sqlx-postgres = { version = "0.8", default-features = false, features = ["json"] }
+thiserror = "2"
+time = { version = "0.3", features = ["formatting", "macros", "parsing", "serde", "serde-well-known"] }
+tokio = { version = "1", features = ["fs", "io-std", "io-util", "macros", "net", "process", "rt", "rt-multi-thread", "signal", "sync", "time"] }
+tokio-tungstenite = "0.29"
+toml_edit = "0.23"
+tower = "0.5"
+tracing = "0.1"
+url = { version = "2", features = ["serde"] }
+uuid = { version = "1", features = ["serde", "v7"] }
+x25519-dalek = "2"
+zeroize = { version = "1.9", features = ["derive"] }
+
+[workspace.dependencies.tempfile]
+version = "3"

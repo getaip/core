@@ -1,0 +1,1072 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Action",
+  "description": "Capability invocation.",
+  "type": "object",
+  "properties": {
+    "id": {
+      "description": "Stable action id.",
+      "$ref": "#/$defs/ActionId"
+    },
+    "capability_id": {
+      "description": "Target capability.",
+      "$ref": "#/$defs/CapabilityId"
+    },
+    "input": {
+      "description": "Structured input payload."
+    },
+    "mode": {
+      "description": "Invocation mode.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ActionMode"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "idempotency_key": {
+      "description": "Replay-safe dedupe key.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "timeout_ms": {
+      "description": "Caller timeout.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint64",
+      "minimum": 0
+    },
+    "conversation": {
+      "description": "Conversation context.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Conversation"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "memory_context": {
+      "description": "Shared memory/context."
+    },
+    "delegation_chain": {
+      "description": "Delegation authorization chain.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/DelegationEntry"
+      }
+    },
+    "federation": {
+      "description": "Federation routing context.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FederationContext"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "callback": {
+      "description": "Async callback target.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Callback"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "observability": {
+      "description": "Trace/span/log metadata.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ObservabilityContext"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "compliance": {
+      "description": "Policy/compliance context.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ComplianceContext"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "identity": {
+      "description": "Identity, tenant, and credential mapping context.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/IdentityContext"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "approval": {
+      "description": "Approval decision authorizing this invocation, if one has been granted.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ApprovalDecision"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "transaction": {
+      "description": "Transactional execution context.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ActionTransaction"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "capability_id",
+    "input"
+  ],
+  "$defs": {
+    "ActionId": {
+      "description": "Action identifier.",
+      "type": "string"
+    },
+    "CapabilityId": {
+      "description": "Stable capability identifier.",
+      "type": "string"
+    },
+    "ActionMode": {
+      "description": "Action invocation mode.",
+      "oneOf": [
+        {
+          "description": "Request/response action.",
+          "type": "string",
+          "const": "sync"
+        },
+        {
+          "description": "Asynchronous action.",
+          "type": "string",
+          "const": "async"
+        },
+        {
+          "description": "Streaming action.",
+          "type": "string",
+          "const": "streaming"
+        }
+      ]
+    },
+    "Conversation": {
+      "description": "Customer or user-facing conversation thread.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable AIP conversation id.",
+          "$ref": "#/$defs/ConversationId"
+        },
+        "channel": {
+          "description": "Channel metadata."
+        },
+        "status": {
+          "description": "Conversation status.",
+          "$ref": "#/$defs/ConversationStatus"
+        },
+        "external_refs": {
+          "description": "Product-specific ids.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExternalRef"
+          }
+        },
+        "contact": {
+          "description": "Customer/contact principal.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Principal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assignee": {
+          "description": "Human or bot assignee.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Principal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "priority": {
+          "description": "Priority.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Priority"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "labels": {
+          "description": "Labels/tags.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "metadata": {
+          "description": "Extension metadata."
+        }
+      },
+      "required": [
+        "id",
+        "channel",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "ConversationId": {
+      "description": "Conversation identifier.",
+      "type": "string"
+    },
+    "ConversationStatus": {
+      "description": "Conversation state in a user-facing channel.",
+      "oneOf": [
+        {
+          "description": "Conversation is open.",
+          "type": "string",
+          "const": "open"
+        },
+        {
+          "description": "Conversation is pending.",
+          "type": "string",
+          "const": "pending"
+        },
+        {
+          "description": "Conversation is resolved.",
+          "type": "string",
+          "const": "resolved"
+        },
+        {
+          "description": "Conversation is snoozed.",
+          "type": "string",
+          "const": "snoozed"
+        },
+        {
+          "description": "Conversation is archived.",
+          "type": "string",
+          "const": "archived"
+        }
+      ]
+    },
+    "ExternalRef": {
+      "description": "Product-specific identity reference preserved by connectors.",
+      "type": "object",
+      "properties": {
+        "system": {
+          "description": "Source system name, for example `chatwoot` or `dify`.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Source-local entity type.",
+          "type": "string"
+        },
+        "id": {
+          "description": "Source-local entity id.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "system",
+        "type",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "Principal": {
+      "description": "Actor or authorizing entity in AIP.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable AIP principal id.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "kind": {
+          "description": "Principal category.",
+          "$ref": "#/$defs/PrincipalKind"
+        },
+        "display_name": {
+          "description": "Human-readable display name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trust_domain": {
+          "description": "Trust domain that owns this principal.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "did": {
+          "description": "DID identity, if available.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "external_refs": {
+          "description": "Product-specific identities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExternalRef"
+          }
+        },
+        "delegated_authority": {
+          "description": "Scoped delegated authority granted to this principal.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DelegatedAuthorityGrant"
+          }
+        },
+        "auth_context": {
+          "description": "Authentication metadata supplied by a profile or gateway."
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "PrincipalId": {
+      "description": "Stable principal identifier.",
+      "type": "string"
+    },
+    "PrincipalKind": {
+      "description": "Entity category for a protocol principal.",
+      "oneOf": [
+        {
+          "description": "A human user or operator.",
+          "type": "string",
+          "const": "human"
+        },
+        {
+          "description": "An autonomous or semi-autonomous agent.",
+          "type": "string",
+          "const": "agent"
+        },
+        {
+          "description": "A service account or machine identity.",
+          "type": "string",
+          "const": "service"
+        },
+        {
+          "description": "A tenant/account boundary.",
+          "type": "string",
+          "const": "tenant"
+        },
+        {
+          "description": "A customer identity.",
+          "type": "string",
+          "const": "customer"
+        },
+        {
+          "description": "A contact identity in a channel product.",
+          "type": "string",
+          "const": "contact"
+        },
+        {
+          "description": "A system-level actor.",
+          "type": "string",
+          "const": "system"
+        }
+      ]
+    },
+    "DelegatedAuthorityGrant": {
+      "description": "Scoped authority delegated to this principal for another principal's work.\n\nDelegated authority is part of the native AIP identity model. It lets a\nruntime distinguish \"can read or operate on my own work\" from \"can read or\noperate on work owned by a specific principal\" without granting broad\n`*:any` scopes. Compatibility profiles may project this from their own\nauth systems, but the resulting grant is evaluated by AIP core/runtime\nsemantics.",
+      "type": "object",
+      "properties": {
+        "principal_id": {
+          "description": "Principal whose work is covered by the grant.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "scopes": {
+          "description": "Granted scope labels. `*` grants all scopes for this principal.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_at": {
+          "description": "Expiration timestamp. Expired grants MUST be ignored by runtimes.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "description": "Optional reason or authority reference retained for audit/debugging.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "principal_id"
+      ],
+      "additionalProperties": false
+    },
+    "Priority": {
+      "description": "Conversation priority.",
+      "oneOf": [
+        {
+          "description": "Low priority.",
+          "type": "string",
+          "const": "low"
+        },
+        {
+          "description": "Medium priority.",
+          "type": "string",
+          "const": "medium"
+        },
+        {
+          "description": "High priority.",
+          "type": "string",
+          "const": "high"
+        },
+        {
+          "description": "Urgent priority.",
+          "type": "string",
+          "const": "urgent"
+        }
+      ]
+    },
+    "DelegationEntry": {
+      "description": "Delegation chain entry used for multi-agent authorization.",
+      "type": "object",
+      "properties": {
+        "from": {
+          "description": "Delegating principal.",
+          "$ref": "#/$defs/Principal"
+        },
+        "to": {
+          "description": "Delegate principal.",
+          "$ref": "#/$defs/Principal"
+        },
+        "scope": {
+          "description": "Delegated scope.",
+          "type": "string"
+        },
+        "delegated_at": {
+          "description": "Delegation timestamp.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "to",
+        "scope",
+        "delegated_at"
+      ],
+      "additionalProperties": false
+    },
+    "FederationContext": {
+      "description": "Cross-domain routing context.",
+      "type": "object",
+      "properties": {
+        "trust_domain": {
+          "description": "Current trust domain.",
+          "type": "string"
+        },
+        "hops": {
+          "description": "Domains already traversed.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "trust_domain"
+      ],
+      "additionalProperties": false
+    },
+    "Callback": {
+      "description": "Async callback target.",
+      "type": "object",
+      "properties": {
+        "profile": {
+          "description": "Callback profile id.",
+          "$ref": "#/$defs/ProfileId"
+        },
+        "target": {
+          "description": "Callback target URI or subject.",
+          "type": "string"
+        },
+        "metadata": {
+          "description": "Profile-specific delivery configuration such as authentication or tokens."
+        }
+      },
+      "required": [
+        "profile",
+        "target"
+      ],
+      "additionalProperties": false
+    },
+    "ProfileId": {
+      "description": "AIP profile identifier such as `aip.native.http.v1`.",
+      "type": "string"
+    },
+    "ObservabilityContext": {
+      "description": "Trace/span metadata.",
+      "type": "object",
+      "properties": {
+        "trace_id": {
+          "description": "Trace id.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "span_id": {
+          "description": "Span id.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fields": {
+          "description": "Free-form fields."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ComplianceContext": {
+      "description": "Policy/compliance metadata.",
+      "type": "object",
+      "properties": {
+        "regimes": {
+          "description": "Required compliance regimes.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "data_classification": {
+          "description": "Data classification label.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "metadata": {
+          "description": "Additional policy metadata."
+        }
+      },
+      "additionalProperties": false
+    },
+    "IdentityContext": {
+      "description": "Identity, tenant, and credential mapping context for enterprise actions.",
+      "type": "object",
+      "properties": {
+        "tenant": {
+          "description": "Tenant boundary.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TenantRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "external_account": {
+          "description": "External account boundary.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExternalAccountRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "external_user": {
+          "description": "External user associated with the invocation.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExternalUserRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "human_actor": {
+          "description": "Human actor that initiated or owns the work.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Principal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "service_account": {
+          "description": "Service account executing the operation.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Principal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "acted_on_behalf_of": {
+          "description": "Principal on whose behalf the operation is performed.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Principal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "credential_ref": {
+          "description": "Reference to external credential material.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CredentialRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "oauth": {
+          "description": "OAuth lifecycle state without token material.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OAuthCredentialState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "TenantRef": {
+      "description": "Tenant reference used for policy and credential partitioning.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "AIP or external tenant id.",
+          "type": "string"
+        },
+        "system": {
+          "description": "Source system that owns the tenant id.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "ExternalAccountRef": {
+      "description": "External account reference used by product connectors.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Account id in the source system.",
+          "type": "string"
+        },
+        "system": {
+          "description": "Source system name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "system"
+      ],
+      "additionalProperties": false
+    },
+    "ExternalUserRef": {
+      "description": "External user reference used by product connectors.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "User id in the source system.",
+          "type": "string"
+        },
+        "system": {
+          "description": "Source system name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "system"
+      ],
+      "additionalProperties": false
+    },
+    "CredentialRef": {
+      "description": "Reference to credential material stored outside protocol envelopes.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Credential id or vault reference.",
+          "type": "string"
+        },
+        "issuer": {
+          "description": "Credential issuer or storage boundary.",
+          "type": "string"
+        },
+        "scopes": {
+          "description": "Granted scope labels known to the runtime.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "issuer"
+      ],
+      "additionalProperties": false
+    },
+    "OAuthCredentialState": {
+      "description": "OAuth credential lifecycle state without raw token material.",
+      "type": "object",
+      "properties": {
+        "issuer": {
+          "description": "Authorization server or provider id.",
+          "type": "string"
+        },
+        "client_id": {
+          "description": "OAuth client id or service identifier.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scopes": {
+          "description": "Granted scope labels.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_at": {
+          "description": "Token expiration timestamp, when known.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "refresh_available": {
+          "description": "Whether refresh is available without human reauthorization.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "issuer",
+        "refresh_available"
+      ],
+      "additionalProperties": false
+    },
+    "ApprovalDecision": {
+      "description": "First-class approval decision.",
+      "type": "object",
+      "properties": {
+        "approval_id": {
+          "description": "Approval workflow id.",
+          "$ref": "#/$defs/ApprovalId"
+        },
+        "decision": {
+          "description": "Decision kind.",
+          "$ref": "#/$defs/ApprovalDecisionKind"
+        },
+        "approver": {
+          "description": "Approver principal.",
+          "$ref": "#/$defs/Principal"
+        },
+        "decided_at": {
+          "description": "Decision timestamp.",
+          "type": "string"
+        },
+        "reason": {
+          "description": "Human-readable reason or comment.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "constraints": {
+          "description": "Constraints attached to the approval.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ApprovalConstraint"
+          }
+        },
+        "evidence": {
+          "description": "Decision evidence.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvidenceArtifact"
+          }
+        },
+        "decision_id": {
+          "description": "Stable id for idempotent decision replay.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "policy_hash": {
+          "description": "Policy hash the approver evaluated.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "authority_path": {
+          "description": "Resolver-produced authority path retained as audit evidence.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "target_decision_id": {
+          "description": "Prior decision being revoked, when `decision` is `revoked`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "approval_id",
+        "decision",
+        "approver",
+        "decided_at"
+      ],
+      "additionalProperties": false
+    },
+    "ApprovalId": {
+      "description": "Human approval workflow identifier.",
+      "type": "string"
+    },
+    "ApprovalDecisionKind": {
+      "description": "Approval decision outcome.",
+      "oneOf": [
+        {
+          "description": "Approval was granted.",
+          "type": "string",
+          "const": "approved"
+        },
+        {
+          "description": "Approval was denied.",
+          "type": "string",
+          "const": "denied"
+        },
+        {
+          "description": "Approval expired.",
+          "type": "string",
+          "const": "expired"
+        },
+        {
+          "description": "Approval was revoked after being granted.",
+          "type": "string",
+          "const": "revoked"
+        }
+      ]
+    },
+    "ApprovalConstraint": {
+      "description": "Restriction attached to an approval decision.",
+      "type": "object",
+      "properties": {
+        "field": {
+          "description": "Field or path being constrained.",
+          "type": "string"
+        },
+        "operator": {
+          "description": "Operator name, for example `lte`, `eq`, or `matches`.",
+          "type": "string"
+        },
+        "value": {
+          "description": "Constraint value."
+        }
+      },
+      "required": [
+        "field",
+        "operator",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "EvidenceArtifact": {
+      "description": "Evidence artifact used by approval and audit workflows.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable artifact id.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Evidence kind.",
+          "type": "string"
+        },
+        "uri": {
+          "description": "URI for retrievable evidence.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hash": {
+          "description": "Integrity hash for the artifact or redacted view.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "redacted": {
+          "description": "Whether the artifact has been redacted.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "redacted"
+      ],
+      "additionalProperties": false
+    },
+    "ActionTransaction": {
+      "description": "Transaction context for an action.",
+      "type": "object",
+      "properties": {
+        "mode": {
+          "description": "Transaction mode.",
+          "$ref": "#/$defs/TransactionMode"
+        },
+        "transaction_id": {
+          "description": "Stable transaction id.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TransactionId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plan_id": {
+          "description": "Plan id produced by a previous planning action.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "compensation_for": {
+          "description": "Action being compensated.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ActionId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "additionalProperties": false
+    },
+    "TransactionMode": {
+      "description": "Transactional action mode.",
+      "oneOf": [
+        {
+          "description": "Execute the action normally.",
+          "type": "string",
+          "const": "execute"
+        },
+        {
+          "description": "Validate without committing side effects.",
+          "type": "string",
+          "const": "dry_run"
+        },
+        {
+          "description": "Produce a durable execution plan.",
+          "type": "string",
+          "const": "plan"
+        },
+        {
+          "description": "Commit a previously planned operation.",
+          "type": "string",
+          "const": "commit"
+        },
+        {
+          "description": "Execute a declared compensating operation.",
+          "type": "string",
+          "const": "compensate"
+        },
+        {
+          "description": "Reconcile a provider operation whose commit outcome is unknown.",
+          "type": "string",
+          "const": "reconcile"
+        },
+        {
+          "description": "Explicit state for operations that cannot roll back.",
+          "type": "string",
+          "const": "rollback_not_supported"
+        }
+      ]
+    },
+    "TransactionId": {
+      "description": "Transactional action or saga identifier.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/action.schema.json",
+  "additionalProperties": false
+}

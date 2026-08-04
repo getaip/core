@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ResourceList",
+  "description": "Native resource list result.",
+  "type": "object",
+  "properties": {
+    "resources": {
+      "description": "Resources visible to the caller.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Resource"
+      }
+    },
+    "cursor": {
+      "description": "Cursor for the next page.",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "resources"
+  ],
+  "$defs": {
+    "Resource": {
+      "description": "Readable resource advertised by a manifest.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable resource id.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Resource name.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Native resource kind used by discovery and operational filters.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "capability_id": {
+          "description": "Capability that owns or exposes this resource.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CapabilityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "description": {
+          "description": "Resource description.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mime_type": {
+          "description": "Resource MIME type.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tenant_id": {
+          "description": "Tenant boundary that owns or can read the resource, when known.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "access": {
+          "description": "Native read policy for this resource.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResourceAccessPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_at": {
+          "description": "Resource expiration timestamp, when known.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "CapabilityId": {
+      "description": "Stable capability identifier.",
+      "type": "string"
+    },
+    "ResourceAccessPolicy": {
+      "description": "Native resource read policy used by discovery and operational read APIs.\n\nThe policy is intentionally generic: product-specific ACL objects remain in\nadapters, while AIP resources publish the minimal principal/scope/tenant\nrequirements needed by gateways and runtimes to avoid leaking resource\nmetadata across trust boundaries.",
+      "type": "object",
+      "properties": {
+        "public": {
+          "description": "Whether any authenticated principal can read the resource.",
+          "type": "boolean",
+          "default": false
+        },
+        "allowed_principals": {
+          "description": "Principals explicitly allowed to read the resource.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PrincipalId"
+          }
+        },
+        "required_scopes": {
+          "description": "Any one of these scopes authorizes the read.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tenant_required": {
+          "description": "Whether a matching tenant boundary is required when `tenant_id` exists.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "PrincipalId": {
+      "description": "Stable principal identifier.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/resource_list.schema.json",
+  "additionalProperties": false
+}

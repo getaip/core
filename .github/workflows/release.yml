@@ -1,0 +1,643 @@
+name: immutable-release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: immutable-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  release-gate:
+    name: release-gate
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout the exact release revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Require a clean semantic version tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_version=${GITHUB_REF_NAME#v}
+          workspace_version=$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml | head -n 1)
+          test "$GITHUB_REF_NAME" = "v${release_version}"
+          test "$workspace_version" = "$release_version"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --short)"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Install Node.js for the npm release boundary
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install pinned release tools
+        run: |
+          cargo install cargo-nextest --version 0.9.140 --locked
+          cargo install cargo-deny --version 0.19.0 --locked
+          cargo install cargo-audit --version 0.22.2 --locked
+          cargo install cargo-machete --version 0.9.2 --locked
+          cargo install cargo-semver-checks --version 0.48.0 --locked
+
+      - name: Execute every source release gate
+        run: |
+          tools/release/check-code-only-release.sh
+          cargo run -p xtask -- private-sdk-inventory --output .getaip-private-sdk-inventory.json
+          cargo run -p xtask -- connector-repository-inventory --output .getaip-connector-repository-inventory.json
+
+      - name: Retain exact source-boundary inventories
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: release-source-boundary-${{ github.sha }}
+          path: |
+            .getaip-private-sdk-inventory.json
+            .getaip-connector-repository-inventory.json
+          if-no-files-found: error
+          retention-days: 90
+
+  native-artifacts:
+    name: native-${{ matrix.asset }}
+    needs: release-gate
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            target: aarch64-apple-darwin
+            asset: darwin-arm64
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+            asset: darwin-x64
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            asset: linux-arm64
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            asset: linux-x64
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "13.0"
+    steps:
+      - name: Checkout the exact release revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+          targets: ${{ matrix.target }}
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          key: native-${{ matrix.target }}
+
+      - name: Build source-bound release binaries
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=${GITHUB_REF_NAME#v}
+          source_commit=$(git rev-parse HEAD)
+          source_tree=$(git rev-parse 'HEAD^{tree}')
+          source_epoch=$(git show -s --format=%ct HEAD)
+          test "$GITHUB_REF_TYPE" = tag
+          test "$GITHUB_REF_NAME" = "v${version}"
+          test "$version" = "$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml | head -n 1)"
+          test -z "$(git status --short)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "source_commit=$source_commit" >> "$GITHUB_OUTPUT"
+          echo "source_tree=$source_tree" >> "$GITHUB_OUTPUT"
+          echo "source_epoch=$source_epoch" >> "$GITHUB_OUTPUT"
+          GETAIP_BUILD_GIT_COMMIT=$source_commit \
+          GETAIP_BUILD_GIT_TREE=$source_tree \
+          GETAIP_BUILD_DIRTY=0 \
+          GETAIP_BUILD_PROFILE=release \
+            cargo build --release --locked --target "${{ matrix.target }}" \
+              -p getaip-cli -p getaip-server
+
+      - name: Execute both reviewed version contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          binary_dir="target/${{ matrix.target }}/release"
+          test "$("$binary_dir/getaip" --version)" = "getaip ${{ steps.source.outputs.version }}"
+          test "$("$binary_dir/getaip-server" --version)" = "getaip-server ${{ steps.source.outputs.version }}"
+          "$binary_dir/getaip" version --output json > version.json
+          python3 - "${{ steps.source.outputs.version }}" \
+            "${{ steps.source.outputs.source_commit }}" \
+            "${{ steps.source.outputs.source_tree }}" <<'PY'
+          import json
+          from pathlib import Path
+          import sys
+
+          value = json.loads(Path("version.json").read_text(encoding="utf-8"))
+          assert value["schema"] == "org.getaip.cli.version.v1"
+          assert value["software_version"] == sys.argv[1]
+          assert value["aip_protocol_version"] == "1.0"
+          assert value["source_commit"] == sys.argv[2]
+          assert value["source_tree"] == sys.argv[3]
+          assert value["release_build"] is True
+          assert value["dirty"] is False
+          PY
+
+      - name: Package deterministic native artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          binary_dir="target/${{ matrix.target }}/release"
+          output="native/${{ matrix.asset }}"
+          cargo run --locked -p xtask -- package-native \
+            --target "${{ matrix.target }}" \
+            --cli "$binary_dir/getaip" \
+            --server "$binary_dir/getaip-server" \
+            --output "$output" \
+            --source-commit "${{ steps.source.outputs.source_commit }}" \
+            --source-tree "${{ steps.source.outputs.source_tree }}" \
+            --source-date-epoch "${{ steps.source.outputs.source_epoch }}"
+          mkdir -p "sbom-input/${{ matrix.asset }}"
+          cp "$binary_dir/getaip" "$binary_dir/getaip-server" "sbom-input/${{ matrix.asset }}/"
+
+      - name: Generate the target SPDX SBOM with pinned Syft
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          path: sbom-input/${{ matrix.asset }}
+          format: spdx-json
+          output-file: native/${{ matrix.asset }}/getaip-sbom-${{ steps.source.outputs.version }}-${{ matrix.asset }}.spdx.json
+          syft-version: v1.44.0
+          dependency-snapshot: false
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Upload the target candidate
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: native-target-${{ matrix.asset }}-${{ github.sha }}
+          path: native/${{ matrix.asset }}/*
+          if-no-files-found: error
+          retention-days: 90
+
+  assemble-native-release:
+    name: assemble-signed-native-release
+    needs: [release-gate, native-artifacts]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: native-release-signing
+    permissions:
+      contents: read
+    env:
+      GETAIP_RELEASE_SIGNING_KEY_ID: getaip-release-2026-01-5e8a972bae4003e8
+    steps:
+      - name: Checkout the exact release revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          key: native-release-assembly
+
+      - name: Download all four target candidates
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: native-target-*-${{ github.sha }}
+          path: native-release
+          merge-multiple: true
+
+      - name: Assemble and sign exact release metadata
+        env:
+          GETAIP_RELEASE_SIGNING_KEY_PEM: ${{ secrets.GETAIP_RELEASE_SIGNING_KEY_PEM }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_TYPE" = tag
+          test "$(git cat-file -t "refs/tags/$GITHUB_REF_NAME")" = tag
+          version=${GITHUB_REF_NAME#v}
+          test "$version" = "$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml | head -n 1)"
+          published_at=$(git for-each-ref --format='%(taggerdate:iso-strict)' "refs/tags/$GITHUB_REF_NAME")
+          test -n "$published_at"
+          gitea_commit=$(jq -er '.source.revision' SOURCE_SNAPSHOT.json)
+          gitea_tree=$(jq -er '.source.tree' SOURCE_SNAPSHOT.json)
+          github_commit=$(git rev-parse HEAD)
+          github_tree=$(git rev-parse 'HEAD^{tree}')
+          for asset in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
+            chmod 0755 "native-release/getaip-${version}-${asset}"
+          done
+          signing_key="$RUNNER_TEMP/getaip-release-signing-key.pem"
+          umask 077
+          printf '%s' "$GETAIP_RELEASE_SIGNING_KEY_PEM" > "$signing_key"
+          chmod 0600 "$signing_key"
+          trap 'rm -f "$signing_key"' EXIT
+          cargo run --locked -p xtask -- assemble-native-manifest \
+            --directory native-release \
+            --manifest native-release/getaip-distribution-manifest.v1.json \
+            --signature native-release/getaip-distribution-manifest.v1.json.sig \
+            --signing-key "$signing_key" \
+            --signing-key-id "$GETAIP_RELEASE_SIGNING_KEY_ID" \
+            --channel stable \
+            --published-at "$published_at" \
+            --gitea-commit "$gitea_commit" \
+            --gitea-tree "$gitea_tree" \
+            --github-commit "$github_commit" \
+            --github-tree "$github_tree"
+          rm -f native-release/target-distribution-*.json
+          cargo run --locked -p xtask -- verify-native-release \
+            --directory native-release \
+            --manifest native-release/getaip-distribution-manifest.v1.json \
+            --signature native-release/getaip-distribution-manifest.v1.json.sig
+
+      - name: Upload the signed private release candidate
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: native-release-${{ github.ref_name }}-${{ github.sha }}
+          path: native-release/*
+          if-no-files-found: error
+          retention-days: 90
+
+  images:
+    name: image-${{ matrix.image }}
+    needs: release-gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: server
+            context: .
+            dockerfile: crates/getaip-server/Dockerfile
+            package: ""
+            binary: ""
+          - image: server-migration-bundle
+            context: .
+            dockerfile: crates/getaip-server-legacy-bundled/Dockerfile
+            package: ""
+            binary: ""
+          - image: aip-connector-control-plane
+            context: .
+            dockerfile: crates/aip-connector-control-plane/Dockerfile
+            package: ""
+            binary: ""
+          - image: cli
+            context: .
+            dockerfile: crates/getaip-cli/Dockerfile
+            package: ""
+            binary: ""
+          - image: aip-host-support-sandbox
+            context: .
+            dockerfile: deploy/connector-fleet/Dockerfile.host
+            package: aip-host-support-sandbox
+            binary: aip-host-support-sandbox
+          - image: aip-host-enterprise-sandbox
+            context: .
+            dockerfile: deploy/connector-fleet/Dockerfile.host
+            package: aip-host-enterprise-sandbox
+            binary: aip-host-enterprise-sandbox
+          - image: aip-host-cal-diy
+            context: .
+            dockerfile: deploy/connector-fleet/Dockerfile.host
+            package: aip-host-cal-diy
+            binary: aip-host-cal-diy
+          - image: aip-host-hermes-agent
+            context: .
+            dockerfile: deploy/connector-fleet/Dockerfile.host
+            package: aip-host-hermes-agent
+            binary: aip-host-hermes-agent
+          - image: aip-host-chatwoot
+            context: .
+            dockerfile: deploy/connector-fleet/Dockerfile.host
+            package: aip-host-chatwoot
+            binary: aip-host-chatwoot
+          - image: aip-host-dify
+            context: .
+            dockerfile: deploy/connector-fleet/Dockerfile.host
+            package: aip-host-dify
+            binary: aip-host-dify
+          - image: aip-host-crewai
+            context: .
+            dockerfile: deploy/connector-fleet/Dockerfile.host
+            package: aip-host-crewai
+            binary: aip-host-crewai
+          - image: aip-host-twenty
+            context: .
+            dockerfile: deploy/connector-fleet/Dockerfile.host
+            package: aip-host-twenty
+            binary: aip-host-twenty
+          - image: aip-host-wa-archive
+            context: .
+            dockerfile: deploy/connector-fleet/Dockerfile.host
+            package: aip-host-wa-archive
+            binary: aip-host-wa-archive
+          - image: aip-crewai-sidecar
+            context: crates/aip-connector-crewai/sidecar
+            dockerfile: crates/aip-connector-crewai/sidecar/Dockerfile.upstream
+            package: ""
+            binary: ""
+            build_contexts: crewai-source=.upstreams/crewai
+            crewai_revision: bfa652a7be8637562cc9b0833f75d927a64552d1
+    steps:
+      - name: Checkout the exact release revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Checkout the exact CrewAI source revision
+        if: matrix.image == 'aip-crewai-sidecar'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: crewAIInc/crewAI
+          ref: bfa652a7be8637562cc9b0833f75d927a64552d1
+          path: .upstreams/crewai
+          persist-credentials: false
+
+      - name: Derive immutable release coordinates
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=${GITHUB_REF_NAME#v}
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "image=${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/${{ matrix.image }}" >> "$GITHUB_OUTPUT"
+
+      - name: Install QEMU
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+
+      - name: Install Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Authenticate to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Reject an existing version tag
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}
+          VERSION: ${{ steps.release.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if docker buildx imagetools inspect "${IMAGE}:${VERSION}" >/dev/null 2>&1; then
+            echo "immutable release tag already exists: ${IMAGE}:${VERSION}" >&2
+            exit 1
+          fi
+
+      - name: Derive OCI metadata
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        with:
+          images: ${{ steps.release.outputs.image }}
+          tags: |
+            type=raw,value=${{ steps.release.outputs.version }}
+            type=sha,format=long
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.release.outputs.version }}
+
+      - name: Build, generate SBOM and provenance, and push by digest
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          build-contexts: ${{ matrix.build_contexts || '' }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          pull: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            SOURCE_REVISION=${{ github.sha }}
+            IMAGE_VERSION=${{ steps.release.outputs.version }}
+            PACKAGE=${{ matrix.package }}
+            BINARY=${{ matrix.binary }}
+            CREWAI_SOURCE_REVISION=${{ matrix.crewai_revision || '' }}
+          sbom: true
+          provenance: mode=max
+          cache-from: type=gha,scope=release-${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=release-${{ matrix.image }}
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62 # v3.10.0
+
+      - name: Sign the immutable multi-platform digest with GitHub OIDC
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: cosign sign --yes "${IMAGE}@${DIGEST}"
+
+      - name: Verify the published keyless signature
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          CERTIFICATE_IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/release.yml@refs/tags/${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cosign verify \
+            --certificate-identity "$CERTIFICATE_IDENTITY" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --output json \
+            "${IMAGE}@${DIGEST}" > "${{ matrix.image }}.cosign-verification.json"
+
+      - name: Persist exact release digest
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: printf '%s@%s\n' "$IMAGE" "$DIGEST" > "${{ matrix.image }}.digest"
+
+      - name: Upload immutable digest evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: digest-${{ matrix.image }}
+          path: |
+            ${{ matrix.image }}.digest
+            ${{ matrix.image }}.cosign-verification.json
+          if-no-files-found: error
+          retention-days: 90
+
+  native-platform-qualification:
+    name: qualify-native-${{ matrix.asset }}
+    needs: [release-gate, assemble-native-release]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            asset: darwin-arm64
+          - runner: macos-15-intel
+            asset: darwin-x64
+          - runner: ubuntu-24.04-arm
+            asset: linux-arm64
+          - runner: ubuntu-24.04
+            asset: linux-x64
+    steps:
+      - name: Checkout the exact release revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          key: native-qualification-${{ matrix.asset }}
+
+      - name: Download the exact signed candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: native-release-${{ github.ref_name }}-${{ github.sha }}
+          path: native-release
+
+      - name: Verify installation, service, and lifecycle contracts natively
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools/release/qualify-native-install.sh \
+            "$PWD/native-release" \
+            "$PWD/native-qualification"
+
+      - name: Retain exact platform qualification evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: native-qualification-${{ matrix.asset }}-${{ github.sha }}
+          path: native-qualification/*
+          if-no-files-found: error
+          retention-days: 90
+
+  private-release-candidate:
+    name: private-release-clone-back
+    needs: [assemble-native-release, native-platform-qualification, images]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: private-release-publication
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout the exact release revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          key: native-release-clone-back
+
+      - name: Download the signed release candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: native-release-${{ github.ref_name }}-${{ github.sha }}
+          path: native-release
+
+      - name: Create or prove the immutable private draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_TYPE" = tag
+          version=${GITHUB_REF_NAME#v}
+          expected_assets=$(find native-release -mindepth 1 -maxdepth 1 -type f -exec basename {} \; | LC_ALL=C sort)
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            actual_assets=$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+              --json assets --jq '.assets[].name' | LC_ALL=C sort)
+            test "$actual_assets" = "$expected_assets"
+          else
+            gh release create "$GITHUB_REF_NAME" native-release/* \
+              --repo "$GITHUB_REPOSITORY" \
+              --verify-tag \
+              --draft \
+              --title "GetAIP ${version}" \
+              --notes "Private GetAIP ${version} release candidate. Publication is gated by clone-back verification."
+          fi
+
+      - name: Download and independently verify every draft asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=${GITHUB_REF_NAME#v}
+          mkdir release-clone-back
+          gh release download "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir release-clone-back
+          expected_assets=$(find native-release -mindepth 1 -maxdepth 1 -type f -exec basename {} \; | LC_ALL=C sort)
+          actual_assets=$(find release-clone-back -mindepth 1 -maxdepth 1 -type f -exec basename {} \; | LC_ALL=C sort)
+          test "$actual_assets" = "$expected_assets"
+          while IFS= read -r name; do
+            cmp "native-release/$name" "release-clone-back/$name"
+          done <<EOF
+          $expected_assets
+          EOF
+          for asset in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
+            chmod 0755 "release-clone-back/getaip-${version}-${asset}"
+          done
+          cargo run --locked -p xtask -- verify-native-release \
+            --directory release-clone-back \
+            --manifest release-clone-back/getaip-distribution-manifest.v1.json \
+            --signature release-clone-back/getaip-distribution-manifest.v1.json.sig
+
+      - name: Prove the single-root GitHub source snapshot by clean clone-back
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          clone="$RUNNER_TEMP/getaip-core-clone-back"
+          gh repo clone "$GITHUB_REPOSITORY" "$clone" -- --no-tags
+          test "$(git -C "$clone" rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git -C "$clone" rev-parse 'HEAD^{tree}')" = "$(git rev-parse 'HEAD^{tree}')"
+          test "$(git -C "$clone" rev-list --count HEAD)" = 1
+          test -z "$(git -C "$clone" status --short)"
+          test -z "$(git -C "$clone" ls-files | awk 'tolower($0) ~ /\.md$/')"
+          test ! -e "$clone/CHANGELOG"

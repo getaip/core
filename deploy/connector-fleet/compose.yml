@@ -1,0 +1,1201 @@
+name: aip-connector-fleet-qualification
+
+x-rust-service: &rust-service
+  restart: unless-stopped
+  read_only: true
+  user: "10001:10001"
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=16m
+  networks: [fleet]
+  healthcheck:
+    test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8081/ready]
+    interval: 2s
+    timeout: 3s
+    retries: 90
+
+x-one-shot: &one-shot
+  restart: "no"
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=16m
+  networks: [fleet]
+
+x-host-environment: &host-environment
+  AIP_CONNECTOR_HOST_BIND: 0.0.0.0:8081
+  AIP_CONNECTOR_HOST_CONTROL_ENDPOINT: https://control.fleet.test:8443/aip/v1/connector-control
+  AIP_CONNECTOR_HOST_CONTROL_DID_FILE: /fleet-state/public/control-plane.did
+  AIP_CONNECTOR_HOST_GATEWAY_PRINCIPAL_ID: service:getaip:server:fleet
+  AIP_CONNECTOR_HOST_GATEWAY_DID_FILE: /fleet-state/public/gateway.did
+  AIP_CONNECTOR_HOST_TLS_CA_FILE: /caddy-data/caddy/pki/authorities/local/root.crt
+  AIP_CONNECTOR_HOST_TRUST_DOMAIN: fleet.test
+  AIP_CONNECTOR_HOST_TENANT_SYSTEM: connector-fleet-qualification
+  AIP_CONNECTOR_HOST_CONFIG_REVISION: ${AIP_CONNECTOR_RELEASE_REVISION:-1}
+  AIP_CONNECTOR_HOST_CREDENTIAL_ISSUER: qualification-secret-provider
+  AIP_CONNECTOR_HOST_CREDENTIAL_SCOPES: connector.execute
+  AIP_CONNECTOR_HOST_CREDENTIAL_REVISION: credential-v1
+  AIP_CONNECTOR_HOST_CALLBACK_ENDPOINT: https://getaip-server.fleet.test:8443/aip/v1/connector-callbacks
+  AIP_CONNECTOR_HOST_CALLBACK_ALLOW_PRIVATE: "true"
+  AIP_CONNECTOR_HOST_EVENT_ENDPOINT: https://getaip-server.fleet.test:8443/aip/v1/connector-events
+  AIP_CONNECTOR_HOST_EVENT_ALLOW_PRIVATE: "true"
+  AIP_CONNECTOR_HOST_REGION: qualification
+  AIP_CONNECTOR_HOST_CAPACITY_CLASS: standard
+  AIP_CONNECTOR_HOST_MAX_IN_FLIGHT: "16"
+  AIP_CONNECTOR_HOST_LEASE_TTL_MS: "15000"
+  AIP_CONNECTOR_HOST_HEARTBEAT_MS: "4000"
+  AIP_CONNECTOR_HOST_DRAIN_TIMEOUT_MS: "15000"
+
+services:
+  secrets-init:
+    image: alpine:3.22@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce
+    restart: "no"
+    read_only: true
+    user: "0:0"
+    network_mode: none
+    cap_drop: [ALL]
+    # The short-lived, network-isolated initializer creates files for both the
+    # PostgreSQL (70) and AIP (10001) identities. These are the only
+    # capabilities required to make an existing owner-only secret set
+    # idempotent; the service exits before any networked process starts.
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    volumes:
+      - fleet_state:/fleet-state
+      - qualification_evidence:/qualification-evidence
+      - qualification_checkpoints:/qualification-checkpoints
+      - crewai_sidecar_state:/crewai-sidecar-state
+      - wa_archive_provider_secrets:/wa-archive-secrets
+      - ./init-secrets.sh:/qualification/init-secrets.sh:ro
+    command: [/bin/sh, /qualification/init-secrets.sh]
+
+  postgres:
+    image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    restart: unless-stopped
+    depends_on:
+      secrets-init:
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_USER: aip_bootstrap
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD_FILE: /fleet-state/secrets/postgres-bootstrap-password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=trust
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - fleet_state:/fleet-state:ro
+      - ./init-databases.sh:/docker-entrypoint-initdb.d/010-databases.sh:ro
+      - ../../examples/support-sandbox/postgres/init:/qualification-schema:ro
+    networks: [fleet]
+    healthcheck:
+      test: [CMD-SHELL, "test -f /var/lib/postgresql/data/.getaip-qualification-initialized && pg_isready --username aip_bootstrap --dbname postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+    security_opt: [no-new-privileges:true]
+
+  getaip-cli:
+    <<: *one-shot
+    image: getaip/cli:${AIP_IMAGE_TAG:-qualification}
+    build:
+      context: ../..
+      dockerfile: crates/getaip-cli/Dockerfile
+      platforms:
+        - ${DOCKER_DEFAULT_PLATFORM:-linux/amd64}
+      args:
+        SOURCE_REVISION: ${SOURCE_REVISION:-workspace}
+        IMAGE_VERSION: ${IMAGE_VERSION:-2.1.0}
+    profiles: [build-only]
+    command: [--help]
+
+  registry-migrate:
+    <<: *one-shot
+    image: getaip/cli:${AIP_IMAGE_TAG:-qualification}
+    user: "10001:10001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - fleet_state:/fleet-state:ro
+    command:
+      - connector
+      - registry-migrate
+      - --database-url-file
+      - /fleet-state/secrets/registry-admin.url
+      - --control-max-connections
+      - "2"
+      - --data-max-connections
+      - "1"
+
+  registry-grants:
+    <<: *one-shot
+    image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    user: "10001:10001"
+    depends_on:
+      registry-migrate:
+        condition: service_completed_successfully
+    volumes:
+      - fleet_state:/fleet-state:ro
+      - ./apply-registry-grants.sh:/qualification/apply-registry-grants.sh:ro
+      - ./grant-registry.sql:/qualification/grant-registry.sql:ro
+    entrypoint: [/bin/sh, /qualification/apply-registry-grants.sh]
+
+  fleet-fixture:
+    <<: *one-shot
+    image: getaip/aip-connector-fleet-fixture:${AIP_IMAGE_TAG:-qualification}
+    build:
+      context: ../..
+      dockerfile: deploy/connector-fleet/Dockerfile.fixture
+      args:
+        SOURCE_REVISION: ${SOURCE_REVISION:-workspace}
+        IMAGE_VERSION: ${IMAGE_VERSION:-2.1.0}
+    depends_on:
+      secrets-init:
+        condition: service_completed_successfully
+    volumes:
+      - fleet_state:/fleet-state
+      - ./policies:/qualification/policies:ro
+    command:
+      - --secrets-dir
+      - /fleet-state/secrets
+      - --output-dir
+      - /fleet-state/public
+      - --support-artifact-digest
+      - ${SUPPORT_IMAGE_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      - --enterprise-artifact-digest
+      - ${ENTERPRISE_IMAGE_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      - --cal-artifact-digest
+      - ${CAL_IMAGE_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      - --hermes-artifact-digest
+      - ${HERMES_IMAGE_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      - --chatwoot-artifact-digest
+      - ${CHATWOOT_IMAGE_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      - --dify-artifact-digest
+      - ${DIFY_IMAGE_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      - --crewai-artifact-digest
+      - ${CREWAI_IMAGE_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      - --twenty-artifact-digest
+      - ${TWENTY_IMAGE_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      - --wa-archive-artifact-digest
+      - ${WA_ARCHIVE_HOST_IMAGE_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      - --wa-archive-account-id
+      - ${WA_ARCHIVE_ACCOUNT_ID:-971500000000@c.us}
+      - --wa-archive-operations-file
+      - /qualification/policies/wa-archive-operations.json
+      - --wa-archive-query-operations-file
+      - /qualification/policies/wa-archive-query-operations.json
+      - --wa-archive-control-operations-file
+      - /qualification/policies/wa-archive-control-operations.json
+      - --release-id
+      - ${AIP_CONNECTOR_RELEASE_ID:-local}
+      - --release-revision
+      - ${AIP_CONNECTOR_RELEASE_REVISION:-1}
+
+  admit-support:
+    <<: *one-shot
+    image: getaip/cli:${AIP_IMAGE_TAG:-qualification}
+    user: "10001:10001"
+    depends_on:
+      registry-grants:
+        condition: service_completed_successfully
+      fleet-fixture:
+        condition: service_completed_successfully
+    volumes:
+      - fleet_state:/fleet-state:ro
+    command:
+      - connector
+      - registry
+      - apply
+      - --package
+      - /fleet-state/public/support-admission.json
+      - --trust-policy
+      - /fleet-state/public/admission-policy.json
+      - --database-url-file
+      - /fleet-state/secrets/registry-admin.url
+
+  admit-enterprise:
+    <<: *one-shot
+    image: getaip/cli:${AIP_IMAGE_TAG:-qualification}
+    user: "10001:10001"
+    depends_on:
+      admit-support:
+        condition: service_completed_successfully
+    volumes:
+      - fleet_state:/fleet-state:ro
+    command:
+      - connector
+      - registry
+      - apply
+      - --package
+      - /fleet-state/public/enterprise-admission.json
+      - --trust-policy
+      - /fleet-state/public/admission-policy.json
+      - --database-url-file
+      - /fleet-state/secrets/registry-admin.url
+
+  control-plane:
+    <<: *rust-service
+    image: getaip/aip-connector-control-plane:${AIP_IMAGE_TAG:-qualification}
+    build:
+      context: ../..
+      dockerfile: crates/aip-connector-control-plane/Dockerfile
+      args:
+        SOURCE_REVISION: ${SOURCE_REVISION:-workspace}
+        IMAGE_VERSION: ${IMAGE_VERSION:-2.1.0}
+    depends_on:
+      admit-enterprise:
+        condition: service_completed_successfully
+    environment:
+      AIP_CONNECTOR_CONTROL_DATABASE_URL_FILE: /fleet-state/secrets/registry-lifecycle.url
+      AIP_CONNECTOR_CONTROL_SIGNING_SEED_FILE: /fleet-state/secrets/control-signing-seed.hex
+    volumes:
+      - fleet_state:/fleet-state:ro
+    command:
+      - --bind
+      - 0.0.0.0:8090
+      - --allow-proxy-network-bind
+      - --principal-id
+      - service:aip-connector-control-plane
+      - --lease-ttl-ms
+      - "15000"
+      - --max-connections
+      - "8"
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8090/ready]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  edge:
+    image: getaip/aip-connector-fleet-edge:${AIP_IMAGE_TAG:-qualification}
+    build:
+      context: ../..
+      dockerfile: deploy/connector-fleet/Dockerfile.edge
+      args:
+        SOURCE_REVISION: ${SOURCE_REVISION:-workspace}
+        IMAGE_VERSION: ${IMAGE_VERSION:-2.1.0}
+    restart: unless-stopped
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      - 127.0.0.1:18443:8443
+    networks:
+      fleet:
+        aliases:
+          - control.fleet.test
+          - getaip-server.fleet.test
+          - getaip-server-b.fleet.test
+          - support-acme-a.fleet.test
+          - support-acme-b.fleet.test
+          - support-beta-a.fleet.test
+          - enterprise-acme-a.fleet.test
+          - cal-acme-a.fleet.test
+          - hermes-acme-a.fleet.test
+          - chatwoot-acme-a.fleet.test
+          - dify-acme-a.fleet.test
+          - crewai-acme-a.fleet.test
+          - twenty-acme-a.fleet.test
+          - wa-archive-acme-a.fleet.test
+          - cal-provider.fleet.test
+          - hermes-provider.fleet.test
+          - chatwoot-provider.fleet.test
+          - dify-provider.fleet.test
+          - twenty-provider.fleet.test
+          - crewai-sidecar.fleet.test
+          - wa-archive-provider.fleet.test
+    healthcheck:
+      test: [CMD-SHELL, test -s /data/caddy/pki/authorities/local/root.crt]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  getaip-server:
+    <<: *rust-service
+    image: getaip/server:${AIP_IMAGE_TAG:-qualification}
+    build:
+      context: ../..
+      dockerfile: crates/getaip-server/Dockerfile
+      args:
+        SOURCE_REVISION: ${SOURCE_REVISION:-workspace}
+        IMAGE_VERSION: ${IMAGE_VERSION:-2.1.0}
+    depends_on:
+      admit-enterprise:
+        condition: service_completed_successfully
+      edge:
+        condition: service_healthy
+    environment:
+      GETAIP_SERVER_PUBLIC_BASE_URL: https://getaip-server.fleet.test:8443
+      GETAIP_SERVER_NATIVE_BEARER_TOKEN_FILE: /fleet-state/secrets/native-bearer-token
+      GETAIP_SERVER_NATIVE_PRINCIPAL: service:getaip:cli:qualification-acme
+      GETAIP_SERVER_NATIVE_TENANT_ID: tenant-acme
+      GETAIP_SERVER_POSTGRES_URL_FILE: /fleet-state/secrets/getaip-server-runtime.url
+      GETAIP_SERVER_CALLBACK_SIGNING_SEED_FILE: /fleet-state/secrets/gateway-signing-seed.hex
+      GETAIP_SERVER_CONNECTOR_REGISTRY_URL_FILE: /fleet-state/secrets/registry-data.url
+      GETAIP_SERVER_CONNECTOR_FLEET_SIGNING_SEED_FILE: /fleet-state/secrets/gateway-signing-seed.hex
+      GETAIP_SERVER_CONNECTOR_FLEET_CALLBACK_URL: https://getaip-server.fleet.test:8443/aip/v1/connector-callbacks
+      GETAIP_SERVER_CONNECTOR_FLEET_TRUST_REGISTRY_ENDPOINTS: "true"
+      GETAIP_SERVER_CONNECTOR_FLEET_ALLOW_PRIVATE_NETWORKS: "true"
+      GETAIP_SERVER_CONNECTOR_FLEET_TLS_CA_FILE: /caddy-data/caddy/pki/authorities/local/root.crt
+      GETAIP_SERVER_CONNECTOR_FLEET_REGION: qualification
+      GETAIP_SERVER_CONNECTOR_FLEET_ZONE: zone-a
+      GETAIP_SERVER_CONNECTOR_FLEET_CAPACITY_CLASS: standard
+      GETAIP_SERVER_CONNECTOR_FLEET_MAX_CACHED_CLIENTS: "64"
+      GETAIP_SERVER_TRUSTED_SIGNER_FILE: /fleet-state/public/trusted-signers.json
+      GETAIP_SERVER_TRUSTED_IDENTITY_FILE: /fleet-state/public/trusted-identities.json
+      GETAIP_SERVER_APPROVAL_AUTHORITY_FILE: /fleet-state/public/approval-authorities.json
+    volumes:
+      - fleet_state:/fleet-state:ro
+      - caddy_data:/caddy-data:ro
+    command:
+      - --bind
+      - 0.0.0.0:8080
+      - --service-id
+      - service:getaip:server:fleet
+      - --trust-domain
+      - fleet.test
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/ready]
+      interval: 2s
+      timeout: 3s
+      retries: 90
+
+  getaip-server-b:
+    <<: *rust-service
+    image: getaip/server:${AIP_IMAGE_TAG:-qualification}
+    depends_on:
+      admit-enterprise:
+        condition: service_completed_successfully
+      edge:
+        condition: service_healthy
+    environment:
+      GETAIP_SERVER_PUBLIC_BASE_URL: https://getaip-server-b.fleet.test:8443
+      GETAIP_SERVER_NATIVE_BEARER_TOKEN_FILE: /fleet-state/secrets/native-bearer-token
+      GETAIP_SERVER_NATIVE_PRINCIPAL: service:getaip:cli:qualification-acme
+      GETAIP_SERVER_NATIVE_TENANT_ID: tenant-acme
+      GETAIP_SERVER_POSTGRES_URL_FILE: /fleet-state/secrets/getaip-server-runtime.url
+      GETAIP_SERVER_CALLBACK_SIGNING_SEED_FILE: /fleet-state/secrets/gateway-signing-seed.hex
+      GETAIP_SERVER_CONNECTOR_REGISTRY_URL_FILE: /fleet-state/secrets/registry-data.url
+      GETAIP_SERVER_CONNECTOR_FLEET_SIGNING_SEED_FILE: /fleet-state/secrets/gateway-signing-seed.hex
+      GETAIP_SERVER_CONNECTOR_FLEET_CALLBACK_URL: https://getaip-server-b.fleet.test:8443/aip/v1/connector-callbacks
+      GETAIP_SERVER_CONNECTOR_FLEET_TRUST_REGISTRY_ENDPOINTS: "true"
+      GETAIP_SERVER_CONNECTOR_FLEET_ALLOW_PRIVATE_NETWORKS: "true"
+      GETAIP_SERVER_CONNECTOR_FLEET_TLS_CA_FILE: /caddy-data/caddy/pki/authorities/local/root.crt
+      GETAIP_SERVER_CONNECTOR_FLEET_REGION: qualification
+      GETAIP_SERVER_CONNECTOR_FLEET_ZONE: zone-b
+      GETAIP_SERVER_CONNECTOR_FLEET_CAPACITY_CLASS: standard
+      GETAIP_SERVER_CONNECTOR_FLEET_MAX_CACHED_CLIENTS: "64"
+      GETAIP_SERVER_TRUSTED_SIGNER_FILE: /fleet-state/public/trusted-signers.json
+      GETAIP_SERVER_TRUSTED_IDENTITY_FILE: /fleet-state/public/trusted-identities.json
+      GETAIP_SERVER_APPROVAL_AUTHORITY_FILE: /fleet-state/public/approval-authorities.json
+    volumes:
+      - fleet_state:/fleet-state:ro
+      - caddy_data:/caddy-data:ro
+    command:
+      - --bind
+      - 0.0.0.0:8080
+      - --service-id
+      - service:getaip:server:fleet
+      - --trust-domain
+      - fleet.test
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/ready]
+      interval: 2s
+      timeout: 3s
+      retries: 90
+
+  support-acme-a:
+    <<: *rust-service
+    image: getaip/aip-host-support-sandbox:${AIP_IMAGE_TAG:-qualification}
+    build:
+      context: ../..
+      dockerfile: deploy/connector-fleet/Dockerfile.host
+      args:
+        PACKAGE: aip-host-support-sandbox
+        BINARY: aip-host-support-sandbox
+        SOURCE_REVISION: ${SOURCE_REVISION:-workspace}
+        IMAGE_VERSION: ${IMAGE_VERSION:-2.1.0}
+    depends_on:
+      control-plane:
+        condition: service_healthy
+      getaip-server:
+        condition: service_healthy
+      getaip-server-b:
+        condition: service_healthy
+    environment:
+      <<: *host-environment
+      AIP_CONNECTOR_HOST_PUBLIC_ENDPOINT: https://support-acme-a.fleet.test:8443/aip/v1/messages
+      AIP_CONNECTOR_HOST_DATABASE_URL_FILE: /fleet-state/secrets/support-acme-runtime.url
+      AIP_CONNECTOR_HOST_SIGNING_SEED_FILE: /fleet-state/secrets/support-acme-a-signing-seed.hex
+      AIP_CONNECTOR_HOST_TYPE_ID: ctype_support_sandbox
+      AIP_CONNECTOR_HOST_VERSION_ID: cver_support_sandbox_1_0_0_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_INSTANCE_ID: cinst_support_acme
+      AIP_CONNECTOR_HOST_REPLICA_ID: crepl_support_acme_a_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_TENANT_ID: tenant-acme
+      AIP_CONNECTOR_HOST_MEMBERSHIP_ID: qualification-support-acme
+      AIP_CONNECTOR_HOST_ARTIFACT_DIGEST: ${SUPPORT_IMAGE_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      AIP_CONNECTOR_HOST_SECRET_PROVIDER_REF: secret://qualification/support/acme
+      AIP_CONNECTOR_HOST_CREDENTIAL_ID: support-acme-provider-credential
+      AIP_CONNECTOR_HOST_CREDENTIAL_POLICY_FILE: /fleet-state/public/support-acme-credential-policy.json
+      AIP_CONNECTOR_HOST_ZONE: zone-a
+      AIP_SUPPORT_SANDBOX_DATABASE_URL_FILE: /fleet-state/secrets/provider-support-acme.url
+    volumes:
+      - fleet_state:/fleet-state:ro
+      - caddy_data:/caddy-data:ro
+
+  support-acme-b:
+    <<: *rust-service
+    image: getaip/aip-host-support-sandbox:${AIP_IMAGE_TAG:-qualification}
+    depends_on:
+      control-plane:
+        condition: service_healthy
+      getaip-server:
+        condition: service_healthy
+      getaip-server-b:
+        condition: service_healthy
+    environment:
+      <<: *host-environment
+      AIP_CONNECTOR_HOST_PUBLIC_ENDPOINT: https://support-acme-b.fleet.test:8443/aip/v1/messages
+      AIP_CONNECTOR_HOST_DATABASE_URL_FILE: /fleet-state/secrets/support-acme-runtime.url
+      AIP_CONNECTOR_HOST_SIGNING_SEED_FILE: /fleet-state/secrets/support-acme-b-signing-seed.hex
+      AIP_CONNECTOR_HOST_TYPE_ID: ctype_support_sandbox
+      AIP_CONNECTOR_HOST_VERSION_ID: cver_support_sandbox_1_0_0_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_INSTANCE_ID: cinst_support_acme
+      AIP_CONNECTOR_HOST_REPLICA_ID: crepl_support_acme_b_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_TENANT_ID: tenant-acme
+      AIP_CONNECTOR_HOST_MEMBERSHIP_ID: qualification-support-acme
+      AIP_CONNECTOR_HOST_ARTIFACT_DIGEST: ${SUPPORT_IMAGE_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      AIP_CONNECTOR_HOST_SECRET_PROVIDER_REF: secret://qualification/support/acme
+      AIP_CONNECTOR_HOST_CREDENTIAL_ID: support-acme-provider-credential
+      AIP_CONNECTOR_HOST_CREDENTIAL_POLICY_FILE: /fleet-state/public/support-acme-credential-policy.json
+      AIP_CONNECTOR_HOST_ZONE: zone-b
+      AIP_SUPPORT_SANDBOX_DATABASE_URL_FILE: /fleet-state/secrets/provider-support-acme.url
+      AIP_SUPPORT_SANDBOX_QUALIFICATION_CHECKPOINT_CONTROL_FILE: /qualification-checkpoints/control.json
+      AIP_SUPPORT_SANDBOX_QUALIFICATION_CHECKPOINT_OBSERVED_FILE: /qualification-checkpoints/observed.json
+    volumes:
+      - fleet_state:/fleet-state:ro
+      - caddy_data:/caddy-data:ro
+      - qualification_checkpoints:/qualification-checkpoints
+
+  support-beta-a:
+    <<: *rust-service
+    image: getaip/aip-host-support-sandbox:${AIP_IMAGE_TAG:-qualification}
+    depends_on:
+      control-plane:
+        condition: service_healthy
+      getaip-server:
+        condition: service_healthy
+      getaip-server-b:
+        condition: service_healthy
+    environment:
+      <<: *host-environment
+      AIP_CONNECTOR_HOST_PUBLIC_ENDPOINT: https://support-beta-a.fleet.test:8443/aip/v1/messages
+      AIP_CONNECTOR_HOST_DATABASE_URL_FILE: /fleet-state/secrets/support-beta-runtime.url
+      AIP_CONNECTOR_HOST_SIGNING_SEED_FILE: /fleet-state/secrets/support-beta-a-signing-seed.hex
+      AIP_CONNECTOR_HOST_TYPE_ID: ctype_support_sandbox
+      AIP_CONNECTOR_HOST_VERSION_ID: cver_support_sandbox_1_0_0_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_INSTANCE_ID: cinst_support_beta
+      AIP_CONNECTOR_HOST_REPLICA_ID: crepl_support_beta_a_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_TENANT_ID: tenant-beta
+      AIP_CONNECTOR_HOST_MEMBERSHIP_ID: qualification-support-beta
+      AIP_CONNECTOR_HOST_ARTIFACT_DIGEST: ${SUPPORT_IMAGE_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      AIP_CONNECTOR_HOST_SECRET_PROVIDER_REF: secret://qualification/support/beta
+      AIP_CONNECTOR_HOST_CREDENTIAL_ID: support-beta-provider-credential
+      AIP_CONNECTOR_HOST_CREDENTIAL_POLICY_FILE: /fleet-state/public/support-beta-credential-policy.json
+      AIP_CONNECTOR_HOST_ZONE: zone-a
+      AIP_SUPPORT_SANDBOX_DATABASE_URL_FILE: /fleet-state/secrets/provider-support-beta.url
+    volumes:
+      - fleet_state:/fleet-state:ro
+      - caddy_data:/caddy-data:ro
+
+  enterprise-acme-a:
+    <<: *rust-service
+    image: getaip/aip-host-enterprise-sandbox:${AIP_IMAGE_TAG:-qualification}
+    build:
+      context: ../..
+      dockerfile: deploy/connector-fleet/Dockerfile.host
+      args:
+        PACKAGE: aip-host-enterprise-sandbox
+        BINARY: aip-host-enterprise-sandbox
+        SOURCE_REVISION: ${SOURCE_REVISION:-workspace}
+        IMAGE_VERSION: ${IMAGE_VERSION:-2.1.0}
+    depends_on:
+      control-plane:
+        condition: service_healthy
+      getaip-server:
+        condition: service_healthy
+      getaip-server-b:
+        condition: service_healthy
+    environment:
+      <<: *host-environment
+      AIP_CONNECTOR_HOST_PUBLIC_ENDPOINT: https://enterprise-acme-a.fleet.test:8443/aip/v1/messages
+      AIP_CONNECTOR_HOST_DATABASE_URL_FILE: /fleet-state/secrets/enterprise-acme-runtime.url
+      AIP_CONNECTOR_HOST_SIGNING_SEED_FILE: /fleet-state/secrets/enterprise-acme-a-signing-seed.hex
+      AIP_CONNECTOR_HOST_TYPE_ID: ctype_enterprise_sandbox
+      AIP_CONNECTOR_HOST_VERSION_ID: cver_enterprise_sandbox_1_0_0_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_INSTANCE_ID: cinst_enterprise_acme
+      AIP_CONNECTOR_HOST_REPLICA_ID: crepl_enterprise_acme_a_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_TENANT_ID: tenant-acme
+      AIP_CONNECTOR_HOST_MEMBERSHIP_ID: qualification-enterprise-acme
+      AIP_CONNECTOR_HOST_ARTIFACT_DIGEST: ${ENTERPRISE_IMAGE_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      AIP_CONNECTOR_HOST_SECRET_PROVIDER_REF: secret://qualification/enterprise/acme
+      AIP_CONNECTOR_HOST_CREDENTIAL_ID: enterprise-acme-provider-credential
+      AIP_CONNECTOR_HOST_CREDENTIAL_POLICY_FILE: /fleet-state/public/enterprise-acme-credential-policy.json
+      AIP_CONNECTOR_HOST_ZONE: zone-a
+      AIP_ENTERPRISE_SANDBOX_DATABASE_URL_FILE: /fleet-state/secrets/provider-enterprise-acme.url
+    volumes:
+      - fleet_state:/fleet-state:ro
+      - caddy_data:/caddy-data:ro
+
+  admit-cal:
+    <<: *one-shot
+    profiles: [products]
+    image: getaip/cli:${AIP_IMAGE_TAG:-qualification}
+    user: "10001:10001"
+    depends_on:
+      admit-enterprise:
+        condition: service_completed_successfully
+      fleet-fixture:
+        condition: service_completed_successfully
+    volumes:
+      - fleet_state:/fleet-state:ro
+    command: [connector, registry, apply, --package, /fleet-state/public/cal-admission.json, --trust-policy, /fleet-state/public/admission-policy.json, --database-url-file, /fleet-state/secrets/registry-admin.url]
+
+  admit-hermes:
+    <<: *one-shot
+    profiles: [products]
+    image: getaip/cli:${AIP_IMAGE_TAG:-qualification}
+    user: "10001:10001"
+    depends_on:
+      admit-cal:
+        condition: service_completed_successfully
+    volumes:
+      - fleet_state:/fleet-state:ro
+    command: [connector, registry, apply, --package, /fleet-state/public/hermes-admission.json, --trust-policy, /fleet-state/public/admission-policy.json, --database-url-file, /fleet-state/secrets/registry-admin.url]
+
+  admit-chatwoot:
+    <<: *one-shot
+    profiles: [products]
+    image: getaip/cli:${AIP_IMAGE_TAG:-qualification}
+    user: "10001:10001"
+    depends_on:
+      admit-hermes:
+        condition: service_completed_successfully
+    volumes:
+      - fleet_state:/fleet-state:ro
+    command: [connector, registry, apply, --package, /fleet-state/public/chatwoot-admission.json, --trust-policy, /fleet-state/public/admission-policy.json, --database-url-file, /fleet-state/secrets/registry-admin.url]
+
+  admit-dify:
+    <<: *one-shot
+    profiles: [products]
+    image: getaip/cli:${AIP_IMAGE_TAG:-qualification}
+    user: "10001:10001"
+    depends_on:
+      admit-chatwoot:
+        condition: service_completed_successfully
+    volumes:
+      - fleet_state:/fleet-state:ro
+    command: [connector, registry, apply, --package, /fleet-state/public/dify-admission.json, --trust-policy, /fleet-state/public/admission-policy.json, --database-url-file, /fleet-state/secrets/registry-admin.url]
+
+  admit-crewai:
+    <<: *one-shot
+    profiles: [products]
+    image: getaip/cli:${AIP_IMAGE_TAG:-qualification}
+    user: "10001:10001"
+    depends_on:
+      admit-dify:
+        condition: service_completed_successfully
+    volumes:
+      - fleet_state:/fleet-state:ro
+    command: [connector, registry, apply, --package, /fleet-state/public/crewai-admission.json, --trust-policy, /fleet-state/public/admission-policy.json, --database-url-file, /fleet-state/secrets/registry-admin.url]
+
+  admit-twenty:
+    <<: *one-shot
+    profiles: [products]
+    image: getaip/cli:${AIP_IMAGE_TAG:-qualification}
+    user: "10001:10001"
+    depends_on:
+      admit-crewai:
+        condition: service_completed_successfully
+    volumes:
+      - fleet_state:/fleet-state:ro
+    command: [connector, registry, apply, --package, /fleet-state/public/twenty-admission.json, --trust-policy, /fleet-state/public/admission-policy.json, --database-url-file, /fleet-state/secrets/registry-admin.url]
+
+  admit-wa-archive:
+    <<: *one-shot
+    profiles: [wa-archive]
+    image: getaip/cli:${AIP_IMAGE_TAG:-qualification}
+    user: "10001:10001"
+    depends_on:
+      admit-enterprise:
+        condition: service_completed_successfully
+    volumes:
+      - fleet_state:/fleet-state:ro
+    command: [connector, registry, apply, --package, /fleet-state/public/wa-archive-admission.json, --trust-policy, /fleet-state/public/admission-policy.json, --database-url-file, /fleet-state/secrets/registry-admin.url]
+
+  wa-archive-database-init:
+    <<: *one-shot
+    profiles: [wa-archive]
+    image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    user: "70:70"
+    depends_on:
+      secrets-init: {condition: service_completed_successfully}
+      postgres: {condition: service_healthy}
+    volumes:
+      - fleet_state:/fleet-state:ro
+      - ./ensure-wa-archive-database.sh:/qualification/ensure-wa-archive-database.sh:ro
+    entrypoint: [/bin/sh, /qualification/ensure-wa-archive-database.sh]
+
+  wa-archive-provider:
+    image: ${WA_ARCHIVE_PROVIDER_IMAGE:-getaip/wa-archive:qualification}
+    profiles: [wa-archive]
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 45s
+    read_only: true
+    user: "10001:10001"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 256
+    ulimits:
+      nofile:
+        soft: 8192
+        hard: 8192
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    depends_on:
+      wa-archive-database-init: {condition: service_completed_successfully}
+    environment:
+      DATABASE_URL_FILE: /wa-archive-secrets/database.url
+      WA_DATA_DIR: /var/lib/wa-archive/data
+      WA_SESSION_DATABASE: /var/lib/wa-archive/data/whatsapp-session.db
+      WA_HEALTH_FILE: /var/lib/wa-archive/data/health.json
+      WA_AUTH_FAILURE_FILE: /var/lib/wa-archive/data/auth-failures.json
+      WA_INBOUND_SPOOL: /var/lib/wa-archive/data/inbound-spool.jsonl
+      WA_EVENT_SPOOL: /var/lib/wa-archive/data/event-spool.jsonl
+      WA_MEDIA_DIR: /var/lib/wa-archive/media
+      WA_OUTGOING_MEDIA_DIR: /var/lib/wa-archive/outgoing-media
+      WA_BACKUP_DIR: /var/lib/wa-archive/backups
+      WA_LOG_DIR: /var/lib/wa-archive/logs
+      WA_LOG_FORMAT: json
+      RUST_LOG: wa_archive=info,wa_rs=info,wa_rs::download=off
+      WA_API_ENABLED: "true"
+      WA_API_HOST: 0.0.0.0
+      WA_ALLOW_NON_LOOPBACK_API: "true"
+      WA_API_PORT: "3210"
+      WA_API_TOKEN_FILE: /wa-archive-secrets/operator-token
+      WA_AIP_CONNECTOR_TOKEN_FILE: /wa-archive-secrets/connector-token
+      WA_API_RATE_LIMIT_PER_MINUTE: "600"
+      WA_API_BODY_MAX_BYTES: "90000000"
+      WA_CONNECTOR_CHANGE_RETENTION_DAYS: "30"
+      WA_MESSAGE_RETENTION_DAYS: "0"
+      WA_OUTBOX_RETENTION_DAYS: "0"
+      WA_ACK_RETENTION_DAYS: "30"
+      WA_REALTIME_AGENT_ENABLED: "false"
+      WA_NOTIFICATIONS_ENABLED: "false"
+      WA_DISK_WARNING_PERCENT: "90"
+      WA_DISK_CRITICAL_PERCENT: "97"
+      WA_DISK_MINIMUM_FREE_BYTES: "2147483648"
+    volumes:
+      - wa_archive_provider_secrets:/wa-archive-secrets:ro
+      - wa_archive_state:/var/lib/wa-archive
+    networks: [fleet, wa_archive_egress]
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, --show-error, --max-time, "3", http://127.0.0.1:3210/ready]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    logging:
+      driver: local
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  wa-archive-acme-a:
+    <<: *rust-service
+    profiles: [wa-archive]
+    image: getaip/aip-host-wa-archive:${AIP_IMAGE_TAG:-qualification}
+    build:
+      context: ../..
+      dockerfile: deploy/connector-fleet/Dockerfile.host
+      args:
+        PACKAGE: aip-host-wa-archive
+        BINARY: aip-host-wa-archive
+        SOURCE_REVISION: ${SOURCE_REVISION:-workspace}
+        IMAGE_VERSION: ${IMAGE_VERSION:-2.1.0}
+    depends_on:
+      admit-wa-archive: {condition: service_completed_successfully}
+      wa-archive-provider: {condition: service_healthy}
+      edge: {condition: service_healthy}
+      control-plane: {condition: service_healthy}
+      getaip-server: {condition: service_healthy}
+      getaip-server-b: {condition: service_healthy}
+    environment:
+      <<: *host-environment
+      SSL_CERT_FILE: /caddy-data/caddy/pki/authorities/local/root.crt
+      AIP_CONNECTOR_HOST_PUBLIC_ENDPOINT: https://wa-archive-acme-a.fleet.test:8443/aip/v1/messages
+      AIP_CONNECTOR_HOST_DATABASE_URL_FILE: /fleet-state/secrets/wa-archive-acme-runtime.url
+      AIP_CONNECTOR_HOST_SIGNING_SEED_FILE: /fleet-state/secrets/wa-archive-acme-a-signing-seed.hex
+      AIP_CONNECTOR_HOST_TYPE_ID: ctype_wa_archive
+      AIP_CONNECTOR_HOST_VERSION_ID: cver_wa_archive_1_0_0_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_INSTANCE_ID: cinst_wa_archive_acme
+      AIP_CONNECTOR_HOST_REPLICA_ID: crepl_wa_archive_acme_a_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_TENANT_ID: tenant-acme
+      AIP_CONNECTOR_HOST_MEMBERSHIP_ID: qualification-wa-archive-acme
+      AIP_CONNECTOR_HOST_EXTERNAL_ACCOUNT_ID: ${WA_ARCHIVE_ACCOUNT_ID:-971500000000@c.us}
+      AIP_CONNECTOR_HOST_EXTERNAL_ACCOUNT_SYSTEM: wa_archive
+      AIP_CONNECTOR_HOST_ARTIFACT_DIGEST: ${WA_ARCHIVE_HOST_IMAGE_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      AIP_CONNECTOR_HOST_SECRET_PROVIDER_REF: secret://qualification/wa_archive/acme
+      AIP_CONNECTOR_HOST_CREDENTIAL_ID: wa-archive-acme-provider-credential
+      AIP_CONNECTOR_HOST_CREDENTIAL_POLICY_FILE: /fleet-state/public/wa-archive-acme-credential-policy.json
+      AIP_CONNECTOR_HOST_ZONE: zone-a
+      AIP_WA_ARCHIVE_BASE_URL: https://wa-archive-provider.fleet.test:8443
+      AIP_WA_ARCHIVE_API_TOKEN_FILE: /fleet-state/secrets/wa-archive-connector-token
+      AIP_WA_ARCHIVE_OPERATIONS_FILE: /qualification/policies/wa-archive-operations.json
+      AIP_WA_ARCHIVE_QUERY_OPERATIONS_FILE: /qualification/policies/wa-archive-query-operations.json
+      AIP_WA_ARCHIVE_CONTROL_OPERATIONS_FILE: /qualification/policies/wa-archive-control-operations.json
+      AIP_WA_ARCHIVE_PROVIDER_SOURCE_REVISION: ${WA_ARCHIVE_PROVIDER_SOURCE_REVISION:-unknown}
+      AIP_WA_ARCHIVE_MAX_JSON_RESPONSE_BYTES: "94371840"
+      AIP_WA_ARCHIVE_MAX_MEDIA_BYTES: "67108864"
+    volumes:
+      - fleet_state:/fleet-state:ro
+      - caddy_data:/caddy-data:ro
+      - ./policies:/qualification/policies:ro
+
+  wa-archive-qualification:
+    <<: *one-shot
+    profiles: [wa-archive]
+    image: getaip/cli:${AIP_IMAGE_TAG:-qualification}
+    user: "10001:10001"
+    depends_on:
+      wa-archive-acme-a: {condition: service_healthy}
+    environment:
+      WA_ARCHIVE_ACCOUNT_ID: ${WA_ARCHIVE_ACCOUNT_ID:-971500000000@c.us}
+      WA_ARCHIVE_PROVIDER_SOURCE_REVISION: ${WA_ARCHIVE_PROVIDER_SOURCE_REVISION:-unknown}
+    volumes:
+      - fleet_state:/fleet-state:ro
+      - caddy_data:/caddy-data:ro
+      - qualification_evidence:/qualification-evidence
+      - ./run-wa-archive-qualification.sh:/qualification/run-wa-archive-qualification.sh:ro
+    entrypoint: [/bin/sh, /qualification/run-wa-archive-qualification.sh]
+
+  product-upstream:
+    image: getaip/aip-product-upstream-fixture:${AIP_IMAGE_TAG:-qualification}
+    profiles: [products]
+    build:
+      context: ../..
+      dockerfile: deploy/connector-fleet/Dockerfile.product-fixture
+      args:
+        SOURCE_REVISION: ${SOURCE_REVISION:-workspace}
+        IMAGE_VERSION: ${IMAGE_VERSION:-2.1.0}
+    restart: unless-stopped
+    read_only: true
+    user: "10001:10001"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    depends_on:
+      secrets-init:
+        condition: service_completed_successfully
+    networks: [fleet]
+    volumes:
+      - fleet_state:/fleet-state:ro
+    command:
+      - --cal-token-file
+      - /fleet-state/secrets/cal-api-token
+      - --hermes-token-file
+      - /fleet-state/secrets/hermes-api-token
+      - --chatwoot-token-file
+      - /fleet-state/secrets/chatwoot-api-token
+      - --dify-app-token-file
+      - /fleet-state/secrets/dify-app-api-token
+      - --dify-knowledge-token-file
+      - /fleet-state/secrets/dify-knowledge-api-token
+      - --twenty-token-file
+      - /fleet-state/secrets/twenty-api-token
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8095/ready]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  crewai-sidecar:
+    image: getaip/aip-crewai-sidecar:${AIP_IMAGE_TAG:-qualification}
+    profiles: [products]
+    build:
+      context: ../../crates/aip-connector-crewai/sidecar
+      dockerfile: Dockerfile.upstream
+      additional_contexts:
+        crewai-source: https://github.com/crewAIInc/crewAI.git#bfa652a7be8637562cc9b0833f75d927a64552d1
+      args:
+        CREWAI_SOURCE_REVISION: bfa652a7be8637562cc9b0833f75d927a64552d1
+        SOURCE_REVISION: ${SOURCE_REVISION:-workspace}
+        IMAGE_VERSION: ${IMAGE_VERSION:-2.1.0}
+    restart: unless-stopped
+    read_only: true
+    user: "10001:10001"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    depends_on:
+      secrets-init:
+        condition: service_completed_successfully
+    environment:
+      PYTHONPATH: /app
+      AIP_CREWAI_REGISTRY: qualification.registry:crews
+      AIP_CREWAI_BEARER_TOKEN_FILE: /fleet-state/secrets/crewai-sidecar-token
+      AIP_CREWAI_STATE_FILE: /var/lib/aip-crewai/runs.json
+      AIP_CREWAI_ALLOWED_OPERATIONS: run,batch_run,replay,train,test,knowledge_query,memory_reset
+      AIP_CREWAI_TRAINING_DIR: /var/lib/aip-crewai/training
+      AIP_CREWAI_MAX_CONCURRENCY: "4"
+      AIP_CREWAI_MAX_RETAINED_RUNS: "2000"
+      AIP_CREWAI_MAX_EVENTS_PER_RUN: "1000"
+      AIP_CREWAI_STREAM_CHECKPOINT_EVENTS: "128"
+    volumes:
+      - fleet_state:/fleet-state:ro
+      - crewai_sidecar_state:/var/lib/aip-crewai
+      - ../../crates/aip-connector-crewai/sidecar/qualification:/app/qualification:ro
+    networks: [fleet]
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c 'import pathlib,urllib.request; token=pathlib.Path("/fleet-state/secrets/crewai-sidecar-token").read_text().strip(); request=urllib.request.Request("http://127.0.0.1:8090/health",headers={"Authorization":"Bearer "+token}); raise SystemExit(0 if urllib.request.urlopen(request,timeout=2).status==200 else 1)'
+      interval: 2s
+      timeout: 4s
+      retries: 90
+
+  cal-acme-a:
+    <<: *rust-service
+    profiles: [products]
+    image: getaip/aip-host-cal-diy:${AIP_IMAGE_TAG:-qualification}
+    build:
+      context: ../..
+      dockerfile: deploy/connector-fleet/Dockerfile.host
+      args:
+        PACKAGE: aip-host-cal-diy
+        BINARY: aip-host-cal-diy
+        SOURCE_REVISION: ${SOURCE_REVISION:-workspace}
+        IMAGE_VERSION: ${IMAGE_VERSION:-2.1.0}
+    depends_on:
+      admit-cal: {condition: service_completed_successfully}
+      product-upstream: {condition: service_healthy}
+      edge: {condition: service_healthy}
+      control-plane: {condition: service_healthy}
+      getaip-server: {condition: service_healthy}
+      getaip-server-b: {condition: service_healthy}
+    environment:
+      <<: *host-environment
+      SSL_CERT_FILE: /caddy-data/caddy/pki/authorities/local/root.crt
+      AIP_CONNECTOR_HOST_PUBLIC_ENDPOINT: https://cal-acme-a.fleet.test:8443/aip/v1/messages
+      AIP_CONNECTOR_HOST_DATABASE_URL_FILE: /fleet-state/secrets/cal-acme-runtime.url
+      AIP_CONNECTOR_HOST_SIGNING_SEED_FILE: /fleet-state/secrets/cal-acme-a-signing-seed.hex
+      AIP_CONNECTOR_HOST_TYPE_ID: ctype_cal_diy
+      AIP_CONNECTOR_HOST_VERSION_ID: cver_cal_diy_1_0_0_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_INSTANCE_ID: cinst_cal_diy_acme
+      AIP_CONNECTOR_HOST_REPLICA_ID: crepl_cal_diy_acme_a_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_TENANT_ID: tenant-acme
+      AIP_CONNECTOR_HOST_MEMBERSHIP_ID: qualification-cal-acme
+      AIP_CONNECTOR_HOST_EXTERNAL_ACCOUNT_ID: "42"
+      AIP_CONNECTOR_HOST_EXTERNAL_ACCOUNT_SYSTEM: cal_diy
+      AIP_CONNECTOR_HOST_ARTIFACT_DIGEST: ${CAL_IMAGE_DIGEST}
+      AIP_CONNECTOR_HOST_SECRET_PROVIDER_REF: secret://qualification/cal_diy/acme
+      AIP_CONNECTOR_HOST_CREDENTIAL_ID: cal-acme-provider-credential
+      # Cal publishes a stable logical credential issuer in its immutable
+      # capability contracts. The physical provider remains independently
+      # selectable through SECRET_PROVIDER_REF without changing the manifest.
+      AIP_CONNECTOR_HOST_CREDENTIAL_ISSUER: cal_diy_deployment
+      # The qualification Bearer token represents the provider's full-account
+      # API credential. The Cal host contains only the frozen 81-operation
+      # catalogue, so wildcard validation cannot escape this product boundary.
+      # Deployments using a provider-scoped token should replace this with the
+      # exact comma-delimited Cal scopes granted by their secret issuer.
+      AIP_CONNECTOR_HOST_CREDENTIAL_SCOPES: "*"
+      AIP_CONNECTOR_HOST_CREDENTIAL_POLICY_FILE: /fleet-state/public/cal-acme-credential-policy.json
+      AIP_CONNECTOR_HOST_ZONE: zone-a
+      AIP_CAL_DIY_BASE_URL: https://cal-provider.fleet.test:8443
+      AIP_CAL_DIY_ACCOUNT_ID: "42"
+      AIP_CAL_DIY_BEARER_TOKEN_FILE: /fleet-state/secrets/cal-api-token
+    volumes: [fleet_state:/fleet-state:ro, caddy_data:/caddy-data:ro]
+
+  hermes-acme-a:
+    <<: *rust-service
+    profiles: [products]
+    image: getaip/aip-host-hermes-agent:${AIP_IMAGE_TAG:-qualification}
+    build:
+      context: ../..
+      dockerfile: deploy/connector-fleet/Dockerfile.host
+      args:
+        PACKAGE: aip-host-hermes-agent
+        BINARY: aip-host-hermes-agent
+        SOURCE_REVISION: ${SOURCE_REVISION:-workspace}
+        IMAGE_VERSION: ${IMAGE_VERSION:-2.1.0}
+    depends_on:
+      admit-hermes: {condition: service_completed_successfully}
+      product-upstream: {condition: service_healthy}
+      edge: {condition: service_healthy}
+      control-plane: {condition: service_healthy}
+      getaip-server: {condition: service_healthy}
+      getaip-server-b: {condition: service_healthy}
+    environment:
+      <<: *host-environment
+      SSL_CERT_FILE: /caddy-data/caddy/pki/authorities/local/root.crt
+      AIP_CONNECTOR_HOST_PUBLIC_ENDPOINT: https://hermes-acme-a.fleet.test:8443/aip/v1/messages
+      AIP_CONNECTOR_HOST_DATABASE_URL_FILE: /fleet-state/secrets/hermes-acme-runtime.url
+      AIP_CONNECTOR_HOST_SIGNING_SEED_FILE: /fleet-state/secrets/hermes-acme-a-signing-seed.hex
+      AIP_CONNECTOR_HOST_TYPE_ID: ctype_hermes_agent
+      AIP_CONNECTOR_HOST_VERSION_ID: cver_hermes_agent_1_0_0_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_INSTANCE_ID: cinst_hermes_agent_acme
+      AIP_CONNECTOR_HOST_REPLICA_ID: crepl_hermes_agent_acme_a_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_TENANT_ID: tenant-acme
+      AIP_CONNECTOR_HOST_MEMBERSHIP_ID: qualification-hermes-acme
+      AIP_CONNECTOR_HOST_EXTERNAL_ACCOUNT_ID: qualification
+      AIP_CONNECTOR_HOST_EXTERNAL_ACCOUNT_SYSTEM: hermes_agent
+      AIP_CONNECTOR_HOST_ARTIFACT_DIGEST: ${HERMES_IMAGE_DIGEST}
+      AIP_CONNECTOR_HOST_SECRET_PROVIDER_REF: secret://qualification/hermes_agent/acme
+      AIP_CONNECTOR_HOST_CREDENTIAL_ID: hermes-acme-provider-credential
+      AIP_CONNECTOR_HOST_CREDENTIAL_POLICY_FILE: /fleet-state/public/hermes-acme-credential-policy.json
+      AIP_CONNECTOR_HOST_ZONE: zone-a
+      AIP_HERMES_ENDPOINTS_FILE: /fleet-state/public/hermes-endpoints.json
+    volumes: [fleet_state:/fleet-state:ro, caddy_data:/caddy-data:ro]
+
+  chatwoot-acme-a:
+    <<: *rust-service
+    profiles: [products]
+    image: getaip/aip-host-chatwoot:${AIP_IMAGE_TAG:-qualification}
+    build:
+      context: ../..
+      dockerfile: deploy/connector-fleet/Dockerfile.host
+      args:
+        PACKAGE: aip-host-chatwoot
+        BINARY: aip-host-chatwoot
+        SOURCE_REVISION: ${SOURCE_REVISION:-workspace}
+        IMAGE_VERSION: ${IMAGE_VERSION:-2.1.0}
+    depends_on:
+      admit-chatwoot: {condition: service_completed_successfully}
+      product-upstream: {condition: service_healthy}
+      edge: {condition: service_healthy}
+      control-plane: {condition: service_healthy}
+      getaip-server: {condition: service_healthy}
+      getaip-server-b: {condition: service_healthy}
+    environment:
+      <<: *host-environment
+      SSL_CERT_FILE: /caddy-data/caddy/pki/authorities/local/root.crt
+      AIP_CONNECTOR_HOST_PUBLIC_ENDPOINT: https://chatwoot-acme-a.fleet.test:8443/aip/v1/messages
+      AIP_CONNECTOR_HOST_DATABASE_URL_FILE: /fleet-state/secrets/chatwoot-acme-runtime.url
+      AIP_CONNECTOR_HOST_SIGNING_SEED_FILE: /fleet-state/secrets/chatwoot-acme-a-signing-seed.hex
+      AIP_CONNECTOR_HOST_TYPE_ID: ctype_chatwoot
+      AIP_CONNECTOR_HOST_VERSION_ID: cver_chatwoot_1_0_0_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_INSTANCE_ID: cinst_chatwoot_acme
+      AIP_CONNECTOR_HOST_REPLICA_ID: crepl_chatwoot_acme_a_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_TENANT_ID: tenant-acme
+      AIP_CONNECTOR_HOST_MEMBERSHIP_ID: qualification-chatwoot-acme
+      AIP_CONNECTOR_HOST_EXTERNAL_ACCOUNT_ID: "42"
+      AIP_CONNECTOR_HOST_EXTERNAL_ACCOUNT_SYSTEM: chatwoot
+      AIP_CONNECTOR_HOST_ARTIFACT_DIGEST: ${CHATWOOT_IMAGE_DIGEST}
+      AIP_CONNECTOR_HOST_SECRET_PROVIDER_REF: secret://qualification/chatwoot/acme
+      AIP_CONNECTOR_HOST_CREDENTIAL_ID: chatwoot-acme-provider-credential
+      AIP_CONNECTOR_HOST_CREDENTIAL_POLICY_FILE: /fleet-state/public/chatwoot-acme-credential-policy.json
+      AIP_CONNECTOR_HOST_ZONE: zone-a
+      AIP_CHATWOOT_BASE_URL: https://chatwoot-provider.fleet.test:8443
+      AIP_CHATWOOT_ACCOUNT_ID: "42"
+      AIP_CHATWOOT_API_TOKEN_FILE: /fleet-state/secrets/chatwoot-api-token
+      AIP_CHATWOOT_WEBHOOK_SECRET_FILE: /fleet-state/secrets/chatwoot-webhook-secret
+    volumes: [fleet_state:/fleet-state:ro, caddy_data:/caddy-data:ro]
+
+  dify-acme-a:
+    <<: *rust-service
+    profiles: [products]
+    image: getaip/aip-host-dify:${AIP_IMAGE_TAG:-qualification}
+    build:
+      context: ../..
+      dockerfile: deploy/connector-fleet/Dockerfile.host
+      args:
+        PACKAGE: aip-host-dify
+        BINARY: aip-host-dify
+        SOURCE_REVISION: ${SOURCE_REVISION:-workspace}
+        IMAGE_VERSION: ${IMAGE_VERSION:-2.1.0}
+    depends_on:
+      admit-dify: {condition: service_completed_successfully}
+      product-upstream: {condition: service_healthy}
+      edge: {condition: service_healthy}
+      control-plane: {condition: service_healthy}
+      getaip-server: {condition: service_healthy}
+      getaip-server-b: {condition: service_healthy}
+    environment:
+      <<: *host-environment
+      SSL_CERT_FILE: /caddy-data/caddy/pki/authorities/local/root.crt
+      AIP_CONNECTOR_HOST_PUBLIC_ENDPOINT: https://dify-acme-a.fleet.test:8443/aip/v1/messages
+      AIP_CONNECTOR_HOST_DATABASE_URL_FILE: /fleet-state/secrets/dify-acme-runtime.url
+      AIP_CONNECTOR_HOST_SIGNING_SEED_FILE: /fleet-state/secrets/dify-acme-a-signing-seed.hex
+      AIP_CONNECTOR_HOST_TYPE_ID: ctype_dify
+      AIP_CONNECTOR_HOST_VERSION_ID: cver_dify_1_0_0_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_INSTANCE_ID: cinst_dify_acme
+      AIP_CONNECTOR_HOST_REPLICA_ID: crepl_dify_acme_a_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_TENANT_ID: tenant-acme
+      AIP_CONNECTOR_HOST_MEMBERSHIP_ID: qualification-dify-acme
+      AIP_CONNECTOR_HOST_EXTERNAL_ACCOUNT_ID: qualification-workspace
+      AIP_CONNECTOR_HOST_EXTERNAL_ACCOUNT_SYSTEM: dify
+      AIP_CONNECTOR_HOST_ARTIFACT_DIGEST: ${DIFY_IMAGE_DIGEST}
+      AIP_CONNECTOR_HOST_SECRET_PROVIDER_REF: secret://qualification/dify/acme
+      AIP_CONNECTOR_HOST_CREDENTIAL_ID: dify-acme-provider-credential
+      AIP_CONNECTOR_HOST_CREDENTIAL_POLICY_FILE: /fleet-state/public/dify-acme-credential-policy.json
+      AIP_CONNECTOR_HOST_ZONE: zone-a
+      AIP_DIFY_BASE_URL: https://dify-provider.fleet.test:8443
+      AIP_DIFY_APPS_FILE: /fleet-state/public/dify-apps.json
+      AIP_DIFY_KNOWLEDGE_FILE: /fleet-state/public/dify-knowledge.json
+    volumes: [fleet_state:/fleet-state:ro, caddy_data:/caddy-data:ro]
+
+  crewai-acme-a:
+    <<: *rust-service
+    profiles: [products]
+    image: getaip/aip-host-crewai:${AIP_IMAGE_TAG:-qualification}
+    build:
+      context: ../..
+      dockerfile: deploy/connector-fleet/Dockerfile.host
+      args:
+        PACKAGE: aip-host-crewai
+        BINARY: aip-host-crewai
+        SOURCE_REVISION: ${SOURCE_REVISION:-workspace}
+        IMAGE_VERSION: ${IMAGE_VERSION:-2.1.0}
+    depends_on:
+      admit-crewai: {condition: service_completed_successfully}
+      crewai-sidecar: {condition: service_healthy}
+      edge: {condition: service_healthy}
+      control-plane: {condition: service_healthy}
+      getaip-server: {condition: service_healthy}
+      getaip-server-b: {condition: service_healthy}
+    environment:
+      <<: *host-environment
+      SSL_CERT_FILE: /caddy-data/caddy/pki/authorities/local/root.crt
+      AIP_CONNECTOR_HOST_PUBLIC_ENDPOINT: https://crewai-acme-a.fleet.test:8443/aip/v1/messages
+      AIP_CONNECTOR_HOST_DATABASE_URL_FILE: /fleet-state/secrets/crewai-acme-runtime.url
+      AIP_CONNECTOR_HOST_SIGNING_SEED_FILE: /fleet-state/secrets/crewai-acme-a-signing-seed.hex
+      AIP_CONNECTOR_HOST_TYPE_ID: ctype_crewai
+      AIP_CONNECTOR_HOST_VERSION_ID: cver_crewai_1_0_0_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_INSTANCE_ID: cinst_crewai_acme
+      AIP_CONNECTOR_HOST_REPLICA_ID: crepl_crewai_acme_a_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_TENANT_ID: tenant-acme
+      AIP_CONNECTOR_HOST_MEMBERSHIP_ID: qualification-crewai-acme
+      AIP_CONNECTOR_HOST_EXTERNAL_ACCOUNT_ID: support-qualification
+      AIP_CONNECTOR_HOST_EXTERNAL_ACCOUNT_SYSTEM: crewai
+      AIP_CONNECTOR_HOST_ARTIFACT_DIGEST: ${CREWAI_IMAGE_DIGEST}
+      AIP_CONNECTOR_HOST_SECRET_PROVIDER_REF: secret://qualification/crewai/acme
+      AIP_CONNECTOR_HOST_CREDENTIAL_ID: crewai-acme-provider-credential
+      AIP_CONNECTOR_HOST_CREDENTIAL_POLICY_FILE: /fleet-state/public/crewai-acme-credential-policy.json
+      AIP_CONNECTOR_HOST_ZONE: zone-a
+      AIP_CREWAI_SIDECAR_URL: https://crewai-sidecar.fleet.test:8443
+      AIP_CREWAI_SIDECAR_TOKEN_FILE: /fleet-state/secrets/crewai-sidecar-token
+      AIP_CREWAI_CREWS_FILE: /fleet-state/public/crewai-crews.json
+    volumes: [fleet_state:/fleet-state:ro, caddy_data:/caddy-data:ro]
+
+  twenty-acme-a:
+    <<: *rust-service
+    profiles: [products]
+    image: getaip/aip-host-twenty:${AIP_IMAGE_TAG:-qualification}
+    build:
+      context: ../..
+      dockerfile: deploy/connector-fleet/Dockerfile.host
+      args:
+        PACKAGE: aip-host-twenty
+        BINARY: aip-host-twenty
+        SOURCE_REVISION: ${SOURCE_REVISION:-workspace}
+        IMAGE_VERSION: ${IMAGE_VERSION:-2.1.0}
+    depends_on:
+      admit-twenty: {condition: service_completed_successfully}
+      product-upstream: {condition: service_healthy}
+      edge: {condition: service_healthy}
+      control-plane: {condition: service_healthy}
+      getaip-server: {condition: service_healthy}
+      getaip-server-b: {condition: service_healthy}
+    environment:
+      <<: *host-environment
+      SSL_CERT_FILE: /caddy-data/caddy/pki/authorities/local/root.crt
+      AIP_CONNECTOR_HOST_PUBLIC_ENDPOINT: https://twenty-acme-a.fleet.test:8443/aip/v1/messages
+      AIP_CONNECTOR_HOST_DATABASE_URL_FILE: /fleet-state/secrets/twenty-acme-runtime.url
+      AIP_CONNECTOR_HOST_SIGNING_SEED_FILE: /fleet-state/secrets/twenty-acme-a-signing-seed.hex
+      AIP_CONNECTOR_HOST_TYPE_ID: ctype_twenty
+      AIP_CONNECTOR_HOST_VERSION_ID: cver_twenty_1_0_0_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_INSTANCE_ID: cinst_twenty_acme
+      AIP_CONNECTOR_HOST_REPLICA_ID: crepl_twenty_acme_a_${AIP_CONNECTOR_RELEASE_ID:-local}
+      AIP_CONNECTOR_HOST_TENANT_ID: tenant-acme
+      AIP_CONNECTOR_HOST_MEMBERSHIP_ID: qualification-twenty-acme
+      AIP_CONNECTOR_HOST_EXTERNAL_ACCOUNT_ID: b61e197a-0cb8-4035-acbc-3e9cf4fe8a0a
+      AIP_CONNECTOR_HOST_EXTERNAL_ACCOUNT_SYSTEM: twenty
+      AIP_CONNECTOR_HOST_ARTIFACT_DIGEST: ${TWENTY_IMAGE_DIGEST}
+      AIP_CONNECTOR_HOST_SECRET_PROVIDER_REF: secret://qualification/twenty/acme
+      AIP_CONNECTOR_HOST_CREDENTIAL_ID: twenty-acme-provider-credential
+      AIP_CONNECTOR_HOST_CREDENTIAL_POLICY_FILE: /fleet-state/public/twenty-acme-credential-policy.json
+      AIP_CONNECTOR_HOST_ZONE: zone-a
+      AIP_TWENTY_BASE_URL: https://twenty-provider.fleet.test:8443
+      AIP_TWENTY_WORKSPACE_ID: b61e197a-0cb8-4035-acbc-3e9cf4fe8a0a
+      AIP_TWENTY_API_TOKEN_FILE: /fleet-state/secrets/twenty-api-token
+      AIP_TWENTY_WEBHOOK_SECRET_FILE: /fleet-state/secrets/twenty-webhook-secret
+    volumes: [fleet_state:/fleet-state:ro, caddy_data:/caddy-data:ro]
+
+  product-qualification:
+    <<: *one-shot
+    profiles: [products]
+    image: getaip/cli:${AIP_IMAGE_TAG:-qualification}
+    user: "10001:10001"
+    depends_on:
+      cal-acme-a: {condition: service_healthy}
+      hermes-acme-a: {condition: service_healthy}
+      chatwoot-acme-a: {condition: service_healthy}
+      dify-acme-a: {condition: service_healthy}
+      crewai-acme-a: {condition: service_healthy}
+      twenty-acme-a: {condition: service_healthy}
+    volumes:
+      - fleet_state:/fleet-state:ro
+      - caddy_data:/caddy-data:ro
+      - qualification_evidence:/qualification-evidence
+      - ./run-product-qualification.sh:/qualification/run-product-qualification.sh:ro
+    entrypoint: [/bin/sh, /qualification/run-product-qualification.sh]
+
+  qualification:
+    <<: *one-shot
+    image: getaip/cli:${AIP_IMAGE_TAG:-qualification}
+    user: "10001:10001"
+    depends_on:
+      support-acme-a:
+        condition: service_healthy
+      support-acme-b:
+        condition: service_healthy
+      support-beta-a:
+        condition: service_healthy
+      enterprise-acme-a:
+        condition: service_healthy
+    volumes:
+      - fleet_state:/fleet-state:ro
+      - caddy_data:/caddy-data:ro
+      - qualification_evidence:/qualification-evidence
+      - ./run-qualification.sh:/qualification/run-qualification.sh:ro
+    entrypoint: [/bin/sh, /qualification/run-qualification.sh]
+
+networks:
+  fleet:
+    internal: true
+  wa_archive_egress:
+
+volumes:
+  fleet_state:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+  qualification_evidence:
+  qualification_checkpoints:
+  crewai_sidecar_state:
+  wa_archive_provider_secrets:
+  wa_archive_state:

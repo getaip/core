@@ -1,0 +1,38 @@
+{
+  "name": "@getaip/cli",
+  "version": "2.1.0",
+  "getaipNativeVersion": "2.1.0",
+  "description": "Verified native bootstrap for the GetAIP CLI",
+  "type": "module",
+  "bin": {
+    "getaip": "./bin/getaip.js"
+  },
+  "exports": {
+    ".": "./lib/bootstrap.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "trust/",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "license": "BUSL-1.1",
+  "author": {
+    "name": "WAI LLC",
+    "email": "hi@getaip.org",
+    "url": "https://getaip.org"
+  },
+  "homepage": "https://getaip.org",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/getaip/core.git",
+    "directory": "packages/getaip-cli"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

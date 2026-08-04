@@ -1,0 +1,22 @@
+[package]
+name = "aip-product-upstream-fixture"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+axum.workspace = true
+clap.workspace = true
+constant_time_eq.workspace = true
+hex.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+tokio.workspace = true
+
+[lints]
+workspace = true

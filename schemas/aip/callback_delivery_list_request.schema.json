@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CallbackDeliveryListRequest",
+  "description": "Request for filtered callback delivery records.",
+  "type": "object",
+  "properties": {
+    "action_id": {
+      "description": "Action id filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ActionId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "description": "Delivery status filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CallbackDeliveryStatus"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "profile": {
+      "description": "Callback profile filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ProfileId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "target": {
+      "description": "Callback target filter.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tenant_id": {
+      "description": "Tenant id filter.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cursor": {
+      "description": "Opaque page cursor.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "limit": {
+      "description": "Maximum number of records to return.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint32",
+      "minimum": 0
+    },
+    "include_receipts": {
+      "description": "Include receipt chains when available.",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "$defs": {
+    "ActionId": {
+      "description": "Action identifier.",
+      "type": "string"
+    },
+    "CallbackDeliveryStatus": {
+      "description": "Stable callback delivery lifecycle state.",
+      "oneOf": [
+        {
+          "description": "Delivery is accepted and waiting for an attempt window.",
+          "type": "string",
+          "const": "pending"
+        },
+        {
+          "description": "A delivery attempt is currently in progress.",
+          "type": "string",
+          "const": "running"
+        },
+        {
+          "description": "The callback target acknowledged the envelope.",
+          "type": "string",
+          "const": "delivered"
+        },
+        {
+          "description": "The delivery exhausted its retry budget.",
+          "type": "string",
+          "const": "failed"
+        },
+        {
+          "description": "The delivery is parked in the dead-letter queue after terminal failure.",
+          "type": "string",
+          "const": "dead_lettered"
+        }
+      ]
+    },
+    "ProfileId": {
+      "description": "AIP profile identifier such as `aip.native.http.v1`.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/callback_delivery_list_request.schema.json",
+  "additionalProperties": false
+}

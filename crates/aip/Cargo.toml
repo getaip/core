@@ -1,0 +1,199 @@
+[package]
+name = "aip"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-auth = { workspace = true, optional = true }
+aip-conformance = { workspace = true, optional = true }
+aip-connector = { workspace = true, optional = true }
+aip-connector-host = { workspace = true, optional = true }
+aip-connector-registry = { workspace = true, optional = true }
+aip-connector-registry-postgres = { workspace = true, optional = true }
+aip-connector-remote = { workspace = true, optional = true }
+aip-connector-chatwoot = { workspace = true, optional = true }
+aip-connector-cal-diy = { workspace = true, optional = true }
+aip-connector-crewai = { workspace = true, optional = true }
+aip-connector-dify = { workspace = true, optional = true }
+aip-connector-hermes-agent = { workspace = true, optional = true }
+aip-connector-support-sandbox = { workspace = true, optional = true }
+aip-core.workspace = true
+aip-crypto = { workspace = true, optional = true }
+aip-discovery = { workspace = true, optional = true }
+aip-gateway = { workspace = true, optional = true }
+aip-mcp-client = { workspace = true, optional = true }
+aip-mcp-conformance = { workspace = true, optional = true }
+aip-mcp-server = { workspace = true, optional = true }
+aip-observability = { workspace = true, optional = true }
+aip-profile-a2a = { workspace = true, optional = true }
+aip-profile-mcp = { workspace = true, optional = true }
+aip-profile-webhook = { workspace = true, optional = true }
+aip-runtime = { workspace = true, optional = true }
+aip-schema = { workspace = true, optional = true }
+aip-storage-postgres = { workspace = true, optional = true }
+aip-testkit = { workspace = true, optional = true }
+aip-transport = { workspace = true, optional = true }
+aip-transport-http = { workspace = true, optional = true }
+aip-transport-mcp-stdio = { workspace = true, optional = true }
+aip-transport-mcp-streamable-http = { workspace = true, optional = true }
+aip-transport-nats = { workspace = true, optional = true }
+aip-transport-sse = { workspace = true, optional = true }
+aip-transport-websocket = { workspace = true, optional = true }
+
+[features]
+default = ["std", "json"]
+std = []
+json = []
+auth = ["dep:aip-auth"]
+conformance = ["dep:aip-conformance"]
+connector = ["dep:aip-connector"]
+connector-host = ["connector", "connector-registry", "dep:aip-connector-host"]
+connector-registry = ["connector", "dep:aip-connector-registry"]
+connector-registry-postgres = ["connector-registry", "dep:aip-connector-registry-postgres"]
+connector-remote = ["connector-registry", "dep:aip-connector-remote"]
+connector-chatwoot = ["connector", "dep:aip-connector-chatwoot"]
+connector-cal-diy = ["connector", "dep:aip-connector-cal-diy"]
+connector-crewai = ["connector", "dep:aip-connector-crewai"]
+connector-dify = ["connector", "dep:aip-connector-dify"]
+connector-hermes-agent = ["connector", "dep:aip-connector-hermes-agent"]
+connector-support-sandbox = ["connector", "dep:aip-connector-support-sandbox"]
+crypto = ["dep:aip-crypto"]
+discovery = ["dep:aip-discovery"]
+gateway = ["runtime", "dep:aip-gateway"]
+mcp-client = ["profile-mcp", "dep:aip-mcp-client"]
+mcp-conformance = ["profile-mcp", "dep:aip-mcp-conformance"]
+mcp-server = ["gateway", "profile-mcp", "dep:aip-mcp-server"]
+observability = ["dep:aip-observability"]
+profile-a2a = ["dep:aip-profile-a2a"]
+profile-mcp = ["dep:aip-profile-mcp"]
+profile-webhook = ["dep:aip-profile-webhook"]
+runtime = ["auth", "discovery", "dep:aip-runtime"]
+schema = ["dep:aip-schema"]
+storage-postgres = ["runtime", "dep:aip-storage-postgres"]
+testkit = ["dep:aip-testkit"]
+transport = ["dep:aip-transport"]
+transport-http = ["transport", "dep:aip-transport-http"]
+transport-mcp-stdio = ["transport", "profile-mcp", "dep:aip-transport-mcp-stdio"]
+transport-mcp-streamable-http = ["transport", "profile-mcp", "dep:aip-transport-mcp-streamable-http"]
+transport-nats = ["transport", "dep:aip-transport-nats"]
+transport-sse = ["transport", "dep:aip-transport-sse"]
+transport-websocket = ["transport", "dep:aip-transport-websocket"]
+full-core = [
+  "auth",
+  "conformance",
+  "connector",
+  "connector-host",
+  "connector-registry",
+  "connector-registry-postgres",
+  "connector-remote",
+  "crypto",
+  "discovery",
+  "gateway",
+  "mcp-client",
+  "mcp-conformance",
+  "mcp-server",
+  "observability",
+  "profile-a2a",
+  "profile-mcp",
+  "profile-webhook",
+  "runtime",
+  "schema",
+  "storage-postgres",
+  "testkit",
+  "transport-http",
+  "transport-mcp-stdio",
+  "transport-mcp-streamable-http",
+  "transport-nats",
+  "transport-sse",
+  "transport-websocket",
+]
+# Legacy compatibility aggregate. New core consumers must use `full-core` and
+# select product connectors explicitly until the next major SDK release.
+full = [
+  "full-core",
+  "connector-chatwoot",
+  "connector-cal-diy",
+  "connector-crewai",
+  "connector-dify",
+  "connector-hermes-agent",
+  "connector-support-sandbox",
+]
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+aip-testkit.workspace = true
+serde_json.workspace = true
+time.workspace = true
+tokio.workspace = true
+
+[[test]]
+name = "compatibility_profiles"
+path = "tests/compatibility_profiles.rs"
+required-features = ["full"]
+
+[[test]]
+name = "handshake_action_result"
+path = "tests/handshake_action_result.rs"
+required-features = ["full"]
+
+[[test]]
+name = "gateway_connector_e2e"
+path = "tests/gateway_connector_e2e.rs"
+required-features = ["full"]
+
+[[example]]
+name = "minimal-agent"
+path = "../../examples/minimal-agent/main.rs"
+required-features = ["full"]
+
+[[example]]
+name = "mcp-bridge"
+path = "../../examples/mcp-bridge/main.rs"
+required-features = ["full"]
+
+[[example]]
+name = "mcp-client-bridge"
+path = "../../examples/mcp-client-bridge/main.rs"
+required-features = ["full"]
+
+[[example]]
+name = "getaip-server-mcp"
+path = "../../examples/getaip-server-mcp/main.rs"
+required-features = ["full"]
+
+[[example]]
+name = "mcp-stdio-server"
+path = "../../examples/mcp-stdio-server/main.rs"
+required-features = ["full"]
+
+[[example]]
+name = "mcp-streamable-http"
+path = "../../examples/mcp-streamable-http/main.rs"
+required-features = ["full"]
+
+[[example]]
+name = "mcp-sampling-elicitation"
+path = "../../examples/mcp-sampling-elicitation/main.rs"
+required-features = ["full"]
+
+[[example]]
+name = "chatwoot-dify-crewai"
+path = "../../examples/chatwoot-dify-crewai/main.rs"
+required-features = ["full"]
+
+[[example]]
+name = "nats-native"
+path = "../../examples/nats-native/main.rs"
+required-features = ["full"]
+
+[[example]]
+name = "sse-streaming"
+path = "../../examples/sse-streaming/main.rs"
+required-features = ["full"]

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ApprovalListRequest",
+  "description": "Request for filtered approval records.",
+  "type": "object",
+  "properties": {
+    "status": {
+      "description": "Approval status label such as `pending`, `approved`, or `denied`.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "approver": {
+      "description": "Approver principal filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PrincipalId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "requester": {
+      "description": "Requester principal filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PrincipalId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "tenant_id": {
+      "description": "Tenant id filter.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cursor": {
+      "description": "Opaque page cursor.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "limit": {
+      "description": "Maximum number of records to return.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint32",
+      "minimum": 0
+    },
+    "include_action_status": {
+      "description": "Include linked action status when available.",
+      "type": "boolean",
+      "default": false
+    },
+    "include_receipts": {
+      "description": "Include receipt chains when available.",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "$defs": {
+    "PrincipalId": {
+      "description": "Stable principal identifier.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/approval_list_request.schema.json",
+  "additionalProperties": false
+}

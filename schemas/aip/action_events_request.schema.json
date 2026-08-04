@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ActionEventsRequest",
+  "description": "Request for events and chunks scoped to one action.",
+  "type": "object",
+  "properties": {
+    "action_id": {
+      "description": "Action to inspect.",
+      "$ref": "#/$defs/ActionId"
+    },
+    "tenant_id": {
+      "description": "Optional tenant boundary expected by the caller.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cursor": {
+      "description": "Opaque event cursor.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "limit": {
+      "description": "Maximum number of events to return.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint32",
+      "minimum": 0
+    },
+    "kinds": {
+      "description": "Event kind filter.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "include_chunks": {
+      "description": "Include durable stream chunks.",
+      "type": "boolean",
+      "default": false
+    },
+    "follow": {
+      "description": "Caller preference for streaming/following bindings.",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "action_id"
+  ],
+  "$defs": {
+    "ActionId": {
+      "description": "Action identifier.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/action_events_request.schema.json",
+  "additionalProperties": false
+}

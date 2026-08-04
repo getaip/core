@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CallbackDeliveryQueryRequest",
+  "description": "Request for one callback delivery record.",
+  "type": "object",
+  "properties": {
+    "delivery_id": {
+      "description": "Stable delivery id.",
+      "type": "string"
+    },
+    "tenant_id": {
+      "description": "Optional tenant boundary expected by the caller.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "include_receipts": {
+      "description": "Include receipt chain when available.",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "delivery_id"
+  ],
+  "$id": "https://getaip.org/schemas/aip/callback_delivery_query_request.schema.json",
+  "additionalProperties": false
+}

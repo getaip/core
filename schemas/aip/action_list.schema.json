@@ -1,0 +1,1235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ActionList",
+  "description": "Filtered durable action list.",
+  "type": "object",
+  "properties": {
+    "actions": {
+      "description": "Action views visible to the caller.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ActionStatus"
+      }
+    },
+    "total_size": {
+      "description": "Number of matching actions before pagination.",
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0
+    },
+    "cursor": {
+      "description": "Cursor for the next page.",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "actions",
+    "total_size"
+  ],
+  "$defs": {
+    "ActionStatus": {
+      "description": "Durable native action lifecycle view.",
+      "type": "object",
+      "properties": {
+        "action_id": {
+          "description": "Action id.",
+          "$ref": "#/$defs/ActionId"
+        },
+        "capability_id": {
+          "description": "Capability invoked by the action, when known.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CapabilityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "session_id": {
+          "description": "Session bound to the action, when known.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SessionId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "correlation_id": {
+          "description": "Correlation id bound to the action, when known.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CorrelationId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "state": {
+          "description": "Stable lifecycle state.",
+          "$ref": "#/$defs/ActionLifecycleState"
+        },
+        "queued_state": {
+          "description": "Backend queue state label, when a queue record exists.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "result_status": {
+          "description": "Terminal result status, when a result exists.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ActionResultStatus"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approval_id": {
+          "description": "Approval id blocking the action, when known.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ApprovalId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transaction_id": {
+          "description": "Transaction id associated with the action, when known.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TransactionId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "delegation_id": {
+          "description": "Delegation id associated with the action, when known.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DelegationId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "started_at": {
+          "description": "Time when the action started execution.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "updated_at": {
+          "description": "Last durable state update time.",
+          "type": "string"
+        },
+        "completed_at": {
+          "description": "Terminal completion time, when known.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retry": {
+          "description": "Retry metadata safe for operational readers."
+        },
+        "lease": {
+          "description": "Lease metadata safe for operational readers."
+        },
+        "result": {
+          "description": "Final result when requested and available.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ActionResult"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "receipt_chain": {
+          "description": "Receipt chain when requested and available.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReceiptChain"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "chunks": {
+          "description": "Durable stream chunks when requested.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StreamChunk"
+          }
+        },
+        "links": {
+          "description": "Typed links exposed by HTTP and SDK bindings.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "action_id",
+        "state",
+        "updated_at"
+      ],
+      "additionalProperties": false
+    },
+    "ActionId": {
+      "description": "Action identifier.",
+      "type": "string"
+    },
+    "CapabilityId": {
+      "description": "Stable capability identifier.",
+      "type": "string"
+    },
+    "SessionId": {
+      "description": "Session identifier.",
+      "type": "string"
+    },
+    "CorrelationId": {
+      "description": "Request correlation identifier.",
+      "type": "string"
+    },
+    "ActionLifecycleState": {
+      "description": "Stable native action lifecycle state exposed by AIP query APIs.",
+      "oneOf": [
+        {
+          "description": "The action id is unknown to the current runtime.",
+          "type": "string",
+          "const": "unknown"
+        },
+        {
+          "description": "The action was accepted but has not entered a queue.",
+          "type": "string",
+          "const": "accepted"
+        },
+        {
+          "description": "The action is queued for execution.",
+          "type": "string",
+          "const": "queued"
+        },
+        {
+          "description": "The action is currently running.",
+          "type": "string",
+          "const": "running"
+        },
+        {
+          "description": "The action is emitting a stream.",
+          "type": "string",
+          "const": "streaming"
+        },
+        {
+          "description": "The action is blocked on a human approval.",
+          "type": "string",
+          "const": "pending_approval"
+        },
+        {
+          "description": "The action is being cancelled.",
+          "type": "string",
+          "const": "cancelling"
+        },
+        {
+          "description": "The action was cancelled.",
+          "type": "string",
+          "const": "cancelled"
+        },
+        {
+          "description": "The action completed successfully.",
+          "type": "string",
+          "const": "completed"
+        },
+        {
+          "description": "The action failed.",
+          "type": "string",
+          "const": "failed"
+        },
+        {
+          "description": "The action state expired by retention policy.",
+          "type": "string",
+          "const": "expired"
+        },
+        {
+          "description": "The action is parked in the dead-letter queue.",
+          "type": "string",
+          "const": "dead_lettered"
+        }
+      ]
+    },
+    "ActionResultStatus": {
+      "description": "Final action status.",
+      "oneOf": [
+        {
+          "description": "Action completed.",
+          "type": "string",
+          "const": "completed"
+        },
+        {
+          "description": "Action failed.",
+          "type": "string",
+          "const": "failed"
+        },
+        {
+          "description": "Action was cancelled.",
+          "type": "string",
+          "const": "cancelled"
+        },
+        {
+          "description": "Action is blocked on a durable approval request.",
+          "type": "string",
+          "const": "pending_approval"
+        },
+        {
+          "description": "Action requires human input or approval.",
+          "type": "string",
+          "const": "requires_human"
+        }
+      ]
+    },
+    "ApprovalId": {
+      "description": "Human approval workflow identifier.",
+      "type": "string"
+    },
+    "TransactionId": {
+      "description": "Transactional action or saga identifier.",
+      "type": "string"
+    },
+    "DelegationId": {
+      "description": "Delegation graph edge identifier.",
+      "type": "string"
+    },
+    "ActionResult": {
+      "description": "Final action result.",
+      "type": "object",
+      "properties": {
+        "action_id": {
+          "description": "Source action.",
+          "$ref": "#/$defs/ActionId"
+        },
+        "status": {
+          "description": "Result status.",
+          "$ref": "#/$defs/ActionResultStatus"
+        },
+        "output": {
+          "description": "Structured output."
+        },
+        "message": {
+          "description": "User-facing message parts.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MessagePart"
+          }
+        },
+        "memory_update": {
+          "description": "Memory/state update."
+        },
+        "usage": {
+          "description": "Usage/cost metadata.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Usage"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "receipt": {
+          "description": "Signed receipt reference.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReceiptRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "description": "Error details.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProtocolError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "action_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "MessagePart": {
+      "description": "Rich content part carried by a message, result, or channel event.",
+      "oneOf": [
+        {
+          "description": "Text content.",
+          "type": "object",
+          "properties": {
+            "text": {
+              "description": "Text body.",
+              "type": "string"
+            },
+            "format": {
+              "description": "Optional text format, for example `plain` or `markdown`.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "text"
+            }
+          },
+          "required": [
+            "type",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Image content.",
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "Remote URL.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "data": {
+              "description": "Inline data.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mime_type": {
+              "description": "MIME type.",
+              "type": "string"
+            },
+            "alt": {
+              "description": "Accessibility alt text.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "image"
+            }
+          },
+          "required": [
+            "type",
+            "mime_type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "File content.",
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "Remote URL.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "data": {
+              "description": "Inline data.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mime_type": {
+              "description": "MIME type.",
+              "type": "string"
+            },
+            "filename": {
+              "description": "File name.",
+              "type": "string"
+            },
+            "size_bytes": {
+              "description": "File size in bytes.",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "file"
+            }
+          },
+          "required": [
+            "type",
+            "mime_type",
+            "filename"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Audio content.",
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "Remote URL.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "data": {
+              "description": "Inline data.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mime_type": {
+              "description": "MIME type.",
+              "type": "string"
+            },
+            "transcript": {
+              "description": "Optional transcript.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "audio"
+            }
+          },
+          "required": [
+            "type",
+            "mime_type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Interactive form.",
+          "type": "object",
+          "properties": {
+            "fields": {
+              "description": "Form fields.",
+              "type": "array",
+              "items": true
+            },
+            "actions": {
+              "description": "Form actions.",
+              "type": "array",
+              "items": true
+            },
+            "type": {
+              "type": "string",
+              "const": "form"
+            }
+          },
+          "required": [
+            "type",
+            "fields",
+            "actions"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Rich card.",
+          "type": "object",
+          "properties": {
+            "title": {
+              "description": "Card title.",
+              "type": "string"
+            },
+            "body": {
+              "description": "Card body.",
+              "type": "string"
+            },
+            "actions": {
+              "description": "Card actions.",
+              "type": "array",
+              "items": true
+            },
+            "media": {
+              "description": "Card media."
+            },
+            "type": {
+              "type": "string",
+              "const": "card"
+            }
+          },
+          "required": [
+            "type",
+            "title",
+            "body"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Structured JSON payload.",
+          "type": "object",
+          "properties": {
+            "data": {
+              "description": "JSON data."
+            },
+            "schema": {
+              "description": "Optional JSON Schema."
+            },
+            "type": {
+              "type": "string",
+              "const": "json"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Tool result payload.",
+          "type": "object",
+          "properties": {
+            "tool_call_id": {
+              "description": "Tool call id.",
+              "type": "string"
+            },
+            "data": {
+              "description": "Result data."
+            },
+            "error": {
+              "description": "Error data."
+            },
+            "type": {
+              "type": "string",
+              "const": "tool_result"
+            }
+          },
+          "required": [
+            "type",
+            "tool_call_id"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Usage": {
+      "description": "Usage and cost metadata.",
+      "type": "object",
+      "properties": {
+        "tokens": {
+          "description": "Token usage."
+        },
+        "tools": {
+          "description": "Tool usage."
+        },
+        "latency_ms": {
+          "description": "End-to-end latency.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "cost": {
+          "description": "Cost metadata."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ReceiptRef": {
+      "description": "Reference to a signed receipt.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Receipt id.",
+          "$ref": "#/$defs/ReceiptId"
+        },
+        "hash": {
+          "description": "Receipt hash.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "hash"
+      ],
+      "additionalProperties": false
+    },
+    "ReceiptId": {
+      "description": "Receipt identifier.",
+      "type": "string"
+    },
+    "ProtocolError": {
+      "description": "Machine-readable protocol or action error.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "description": "Stable machine code.",
+          "type": "string"
+        },
+        "message": {
+          "description": "Human-readable message.",
+          "type": "string"
+        },
+        "category": {
+          "description": "Error category.",
+          "$ref": "#/$defs/ErrorCategory"
+        },
+        "retryable": {
+          "description": "Whether retry is safe.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "retry_after_ms": {
+          "description": "Suggested retry delay.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "details": {
+          "description": "Structured details."
+        },
+        "source": {
+          "description": "Connector/profile/source metadata."
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "category"
+      ],
+      "additionalProperties": false
+    },
+    "ErrorCategory": {
+      "description": "Protocol error category.",
+      "oneOf": [
+        {
+          "description": "Temporary failure.",
+          "type": "string",
+          "const": "temporary"
+        },
+        {
+          "description": "Permanent failure.",
+          "type": "string",
+          "const": "permanent"
+        },
+        {
+          "description": "Authentication or authorization failure.",
+          "type": "string",
+          "const": "auth"
+        },
+        {
+          "description": "Policy failure.",
+          "type": "string",
+          "const": "policy"
+        },
+        {
+          "description": "Economic/settlement failure.",
+          "type": "string",
+          "const": "economic"
+        },
+        {
+          "description": "Connector failure.",
+          "type": "string",
+          "const": "connector"
+        },
+        {
+          "description": "Transport failure.",
+          "type": "string",
+          "const": "transport"
+        }
+      ]
+    },
+    "ReceiptChain": {
+      "description": "Hash-linked receipt chain.",
+      "type": "object",
+      "properties": {
+        "chain_id": {
+          "description": "Chain id.",
+          "type": "string"
+        },
+        "receipts": {
+          "description": "Receipts in order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Receipt"
+          }
+        },
+        "root_hash": {
+          "description": "Merkle root or equivalent aggregate hash.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "chain_id",
+        "receipts"
+      ],
+      "additionalProperties": false
+    },
+    "Receipt": {
+      "description": "Receipt event.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Receipt id.",
+          "$ref": "#/$defs/ReceiptId"
+        },
+        "receipt_type": {
+          "description": "Receipt type.",
+          "$ref": "#/$defs/ReceiptType"
+        },
+        "actor": {
+          "description": "Actor.",
+          "$ref": "#/$defs/Principal"
+        },
+        "occurred_at": {
+          "description": "Timestamp.",
+          "type": "string"
+        },
+        "correlation_id": {
+          "description": "Correlation id.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CorrelationId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "data": {
+          "description": "Structured receipt data."
+        },
+        "previous_hash": {
+          "description": "Previous hash in the chain.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hash": {
+          "description": "Receipt hash.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "receipt_type",
+        "actor",
+        "occurred_at"
+      ],
+      "additionalProperties": false
+    },
+    "ReceiptType": {
+      "description": "Receipt type.",
+      "oneOf": [
+        {
+          "description": "Request received.",
+          "type": "string",
+          "const": "request_received"
+        },
+        {
+          "description": "Action accepted.",
+          "type": "string",
+          "const": "action_accepted"
+        },
+        {
+          "description": "Policy engine decision recorded.",
+          "type": "string",
+          "const": "policy_decision"
+        },
+        {
+          "description": "Approval request created.",
+          "type": "string",
+          "const": "approval_requested"
+        },
+        {
+          "description": "Approval was granted.",
+          "type": "string",
+          "const": "approval_granted"
+        },
+        {
+          "description": "Approval was denied.",
+          "type": "string",
+          "const": "approval_denied"
+        },
+        {
+          "description": "Approval expired before a decision.",
+          "type": "string",
+          "const": "approval_expired"
+        },
+        {
+          "description": "Approval was revoked.",
+          "type": "string",
+          "const": "approval_revoked"
+        },
+        {
+          "description": "Tool executed.",
+          "type": "string",
+          "const": "tool_executed"
+        },
+        {
+          "description": "Delegation made.",
+          "type": "string",
+          "const": "delegation_made"
+        },
+        {
+          "description": "Human approved.",
+          "type": "string",
+          "const": "human_approved"
+        },
+        {
+          "description": "Result returned.",
+          "type": "string",
+          "const": "result_returned"
+        },
+        {
+          "description": "Settlement recorded.",
+          "type": "string",
+          "const": "settlement_recorded"
+        },
+        {
+          "description": "Transaction plan created.",
+          "type": "string",
+          "const": "transaction_planned"
+        },
+        {
+          "description": "A commit action atomically acquired the transaction plan.",
+          "type": "string",
+          "const": "transaction_commit_started"
+        },
+        {
+          "description": "Transaction committed.",
+          "type": "string",
+          "const": "transaction_committed"
+        },
+        {
+          "description": "Compensating transaction executed.",
+          "type": "string",
+          "const": "transaction_compensated"
+        },
+        {
+          "description": "Dry-run validation or simulation completed.",
+          "type": "string",
+          "const": "transaction_dry_run_completed"
+        },
+        {
+          "description": "Transaction was blocked because rollback is unsupported.",
+          "type": "string",
+          "const": "transaction_rollback_unsupported"
+        },
+        {
+          "description": "Transaction failed.",
+          "type": "string",
+          "const": "transaction_failed"
+        },
+        {
+          "description": "Callback delivery attempt started.",
+          "type": "string",
+          "const": "callback_delivery_attempted"
+        },
+        {
+          "description": "Callback delivery completed.",
+          "type": "string",
+          "const": "callback_delivered"
+        },
+        {
+          "description": "Callback delivery failed.",
+          "type": "string",
+          "const": "callback_delivery_failed"
+        }
+      ]
+    },
+    "Principal": {
+      "description": "Actor or authorizing entity in AIP.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable AIP principal id.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "kind": {
+          "description": "Principal category.",
+          "$ref": "#/$defs/PrincipalKind"
+        },
+        "display_name": {
+          "description": "Human-readable display name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trust_domain": {
+          "description": "Trust domain that owns this principal.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "did": {
+          "description": "DID identity, if available.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "external_refs": {
+          "description": "Product-specific identities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExternalRef"
+          }
+        },
+        "delegated_authority": {
+          "description": "Scoped delegated authority granted to this principal.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DelegatedAuthorityGrant"
+          }
+        },
+        "auth_context": {
+          "description": "Authentication metadata supplied by a profile or gateway."
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "PrincipalId": {
+      "description": "Stable principal identifier.",
+      "type": "string"
+    },
+    "PrincipalKind": {
+      "description": "Entity category for a protocol principal.",
+      "oneOf": [
+        {
+          "description": "A human user or operator.",
+          "type": "string",
+          "const": "human"
+        },
+        {
+          "description": "An autonomous or semi-autonomous agent.",
+          "type": "string",
+          "const": "agent"
+        },
+        {
+          "description": "A service account or machine identity.",
+          "type": "string",
+          "const": "service"
+        },
+        {
+          "description": "A tenant/account boundary.",
+          "type": "string",
+          "const": "tenant"
+        },
+        {
+          "description": "A customer identity.",
+          "type": "string",
+          "const": "customer"
+        },
+        {
+          "description": "A contact identity in a channel product.",
+          "type": "string",
+          "const": "contact"
+        },
+        {
+          "description": "A system-level actor.",
+          "type": "string",
+          "const": "system"
+        }
+      ]
+    },
+    "ExternalRef": {
+      "description": "Product-specific identity reference preserved by connectors.",
+      "type": "object",
+      "properties": {
+        "system": {
+          "description": "Source system name, for example `chatwoot` or `dify`.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Source-local entity type.",
+          "type": "string"
+        },
+        "id": {
+          "description": "Source-local entity id.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "system",
+        "type",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "DelegatedAuthorityGrant": {
+      "description": "Scoped authority delegated to this principal for another principal's work.\n\nDelegated authority is part of the native AIP identity model. It lets a\nruntime distinguish \"can read or operate on my own work\" from \"can read or\noperate on work owned by a specific principal\" without granting broad\n`*:any` scopes. Compatibility profiles may project this from their own\nauth systems, but the resulting grant is evaluated by AIP core/runtime\nsemantics.",
+      "type": "object",
+      "properties": {
+        "principal_id": {
+          "description": "Principal whose work is covered by the grant.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "scopes": {
+          "description": "Granted scope labels. `*` grants all scopes for this principal.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_at": {
+          "description": "Expiration timestamp. Expired grants MUST be ignored by runtimes.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "description": "Optional reason or authority reference retained for audit/debugging.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "principal_id"
+      ],
+      "additionalProperties": false
+    },
+    "StreamChunk": {
+      "description": "Partial output, progress, tool event, or terminal stream marker.",
+      "type": "object",
+      "properties": {
+        "action_id": {
+          "description": "Source action.",
+          "$ref": "#/$defs/ActionId"
+        },
+        "sequence": {
+          "description": "Monotonic chunk sequence.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        },
+        "kind": {
+          "description": "Chunk kind.",
+          "$ref": "#/$defs/StreamChunkKind"
+        },
+        "data": {
+          "description": "Structured chunk data."
+        },
+        "part": {
+          "description": "Optional rich message part.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MessagePart"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "action_id",
+        "sequence",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "StreamChunkKind": {
+      "description": "Stream chunk kind.",
+      "oneOf": [
+        {
+          "description": "Partial user-visible output.",
+          "type": "string",
+          "const": "data"
+        },
+        {
+          "description": "Progress update.",
+          "type": "string",
+          "const": "progress"
+        },
+        {
+          "description": "Tool call update.",
+          "type": "string",
+          "const": "tool"
+        },
+        {
+          "description": "Optional reasoning/progress event.",
+          "type": "string",
+          "const": "thought"
+        },
+        {
+          "description": "Preview artifact.",
+          "type": "string",
+          "const": "preview"
+        },
+        {
+          "description": "Human approval is pending.",
+          "type": "string",
+          "const": "pending_approval"
+        },
+        {
+          "description": "Stream-level error.",
+          "type": "string",
+          "const": "error"
+        },
+        {
+          "description": "Stream completed.",
+          "type": "string",
+          "const": "done"
+        }
+      ]
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/action_list.schema.json",
+  "additionalProperties": false
+}

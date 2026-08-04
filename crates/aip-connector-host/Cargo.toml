@@ -1,0 +1,43 @@
+[package]
+name = "aip-connector-host"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[features]
+default = []
+# Explicitly opt in only for local connector development. Production host
+# binaries must use durable RuntimeStores and leave this feature disabled.
+development-in-memory = []
+
+[dependencies]
+aip-auth.workspace = true
+aip-connector.workspace = true
+aip-connector-registry.workspace = true
+aip-core.workspace = true
+aip-crypto.workspace = true
+aip-discovery.workspace = true
+aip-gateway.workspace = true
+aip-runtime.workspace = true
+aip-schema.workspace = true
+aip-transport-sse.workspace = true
+async-trait.workspace = true
+axum.workspace = true
+reqwest.workspace = true
+rand_core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+time.workspace = true
+tokio.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+tower.workspace = true
+
+[lints]
+workspace = true

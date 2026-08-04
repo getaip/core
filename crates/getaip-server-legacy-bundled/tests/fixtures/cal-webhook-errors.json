@@ -1,0 +1,18 @@
+{
+  "missing_signature": {
+    "status": 401,
+    "code": "connector.cal_diy.webhook_auth",
+    "message": "Cal.diy webhook authentication failed",
+    "category": "auth",
+    "retryable": false,
+    "component": "aip.server.cal_diy.webhook"
+  },
+  "forged_signature": {
+    "status": 401,
+    "code": "connector.cal_diy.webhook_auth",
+    "message": "Cal.diy webhook authentication failed",
+    "category": "auth",
+    "retryable": false,
+    "component": "aip.server.cal_diy.webhook"
+  }
+}

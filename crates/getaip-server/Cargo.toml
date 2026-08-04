@@ -1,0 +1,62 @@
+[package]
+name = "getaip-server"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-auth.workspace = true
+aip-connector.workspace = true
+aip-connector-registry.workspace = true
+aip-connector-registry-postgres.workspace = true
+aip-connector-remote.workspace = true
+aip-core.workspace = true
+aip-crypto.workspace = true
+aip-discovery.workspace = true
+aip-gateway.workspace = true
+aip-mcp-server.workspace = true
+aip-mcp-session.workspace = true
+aip-profile-a2a.workspace = true
+aip-profile-mcp.workspace = true
+aip-runtime.workspace = true
+aip-schema.workspace = true
+aip-storage-postgres.workspace = true
+aip-transport.workspace = true
+aip-transport-http.workspace = true
+aip-transport-mcp-stdio.workspace = true
+aip-transport-mcp-legacy-http-sse.workspace = true
+aip-transport-mcp-streamable-http.workspace = true
+aip-transport-nats.workspace = true
+aip-transport-sse.workspace = true
+aip-transport-websocket.workspace = true
+async-trait.workspace = true
+axum = { workspace = true, features = ["ws"] }
+clap.workspace = true
+constant_time_eq.workspace = true
+futures-util.workspace = true
+getaip-distribution.workspace = true
+hex.workspace = true
+metrics.workspace = true
+metrics-exporter-prometheus.workspace = true
+rand_core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+time.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+url.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+aip-mcp-client.workspace = true
+aip-mcp-conformance.workspace = true
+tokio-tungstenite.workspace = true
+tower.workspace = true
+
+[lints]
+workspace = true

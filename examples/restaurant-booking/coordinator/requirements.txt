@@ -1,0 +1,4 @@
+httpx==0.28.1
+mcp==1.26.0
+psycopg[binary,pool]==3.2.13
+starlette==1.3.1

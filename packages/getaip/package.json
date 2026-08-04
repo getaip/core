@@ -1,0 +1,35 @@
+{
+  "name": "getaip",
+  "version": "2.1.0",
+  "description": "Short launcher for the verified GetAIP native bootstrap",
+  "type": "module",
+  "bin": {
+    "getaip": "./bin/getaip.js"
+  },
+  "files": [
+    "bin/",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "dependencies": {
+    "@getaip/cli": "2.1.0"
+  },
+  "license": "BUSL-1.1",
+  "author": {
+    "name": "WAI LLC",
+    "email": "hi@getaip.org",
+    "url": "https://getaip.org"
+  },
+  "homepage": "https://getaip.org",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/getaip/core.git",
+    "directory": "packages/getaip"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

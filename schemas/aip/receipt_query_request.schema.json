@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReceiptQueryRequest",
+  "description": "Request for one receipt chain.",
+  "type": "object",
+  "properties": {
+    "chain_id": {
+      "description": "Receipt chain id selector.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "receipt_id": {
+      "description": "Individual receipt id selector.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReceiptId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "ReceiptId": {
+      "description": "Receipt identifier.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/receipt_query_request.schema.json",
+  "additionalProperties": false
+}

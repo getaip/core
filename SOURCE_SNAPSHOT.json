@@ -1,0 +1,45 @@
+{
+  "history": {
+    "expected_initial_commit_count": 1,
+    "imported_commits": 0,
+    "imported_tags": [],
+    "initial_branch": "main",
+    "strategy": "single-root-snapshot"
+  },
+  "licensing": {
+    "licensor": "WAI LLC",
+    "spdx_identifier": "BUSL-1.1"
+  },
+  "mode": "code-only-single-root",
+  "prepared_at": "2026-08-04T18:36:53Z",
+  "publication": {
+    "branch": "main",
+    "repository": "https://github.com/getaip/core",
+    "tag": "v2.1.0",
+    "visibility_at_preparation": "private"
+  },
+  "publication_boundary": {
+    "excluded_changelog": true,
+    "excluded_markdown": true,
+    "excluded_paths": [
+      ".gitea/",
+      "artifacts/"
+    ],
+    "publication_manifest": "PUBLICATION_MANIFEST.json"
+  },
+  "release": {
+    "aip_protocol_version": "1.0",
+    "name": "GetAIP Core",
+    "version": "2.1.0"
+  },
+  "schema_version": 2,
+  "source": {
+    "branch": "develop",
+    "export_method": "reviewed-filtered-index",
+    "exported_source_files": 416,
+    "repository": "http://localhost:3000/admin/core.git",
+    "revision": "b947738d514b11bd9af9636b1756f657b3365e28",
+    "tracked_files": 427,
+    "tree": "114fd879433e00b5c146e2c504ee6e9e6df9c941"
+  }
+}

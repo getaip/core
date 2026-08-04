@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ActionResultRequest",
+  "description": "Request for one final action result.",
+  "type": "object",
+  "properties": {
+    "action_id": {
+      "description": "Action to inspect.",
+      "$ref": "#/$defs/ActionId"
+    },
+    "tenant_id": {
+      "description": "Optional tenant boundary expected by the caller.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "wait_ms": {
+      "description": "Optional bounded wait preference in milliseconds.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint64",
+      "minimum": 0
+    },
+    "include_receipt": {
+      "description": "Include receipt metadata when available.",
+      "type": "boolean",
+      "default": false
+    },
+    "include_terminal_events": {
+      "description": "Include terminal event hints when available.",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "action_id"
+  ],
+  "$defs": {
+    "ActionId": {
+      "description": "Action identifier.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/action_result_request.schema.json",
+  "additionalProperties": false
+}

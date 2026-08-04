@@ -1,0 +1,19 @@
+[package]
+name = "aip-schema"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-core = { workspace = true, features = ["schema"] }
+jsonschema.workspace = true
+schemars.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

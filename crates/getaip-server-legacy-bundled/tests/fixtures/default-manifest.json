@@ -1,0 +1,120 @@
+{
+  "manifest_version": "aip-manifest/v1",
+  "agent": {
+    "id": "agent:aipd:local",
+    "kind": "agent",
+    "display_name": "AIP Daemon"
+  },
+  "capabilities": [
+    {
+      "id": "cap:aipd:health",
+      "name": "AIP daemon health",
+      "kind": "tool",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "output_schema": {
+        "type": "object",
+        "required": ["status", "protocol", "version", "service", "uptime_ms"],
+        "properties": {
+          "status": { "type": "string" },
+          "protocol": { "type": "string" },
+          "version": { "type": "string" },
+          "service": { "type": "string" },
+          "uptime_ms": { "type": "integer" }
+        }
+      },
+      "description": "Reports standalone AIP daemon readiness.",
+      "risk": "low",
+      "stability": "stable",
+      "bindings": [
+        {
+          "profile": "aip.native.http.v1",
+          "method": "POST",
+          "path": "/aip/v1/messages",
+          "message_type": "aip.core.v1.action"
+        },
+        {
+          "profile": "aip.mcp.compat.v1",
+          "name": "aipd_health",
+          "taskSupport": "forbidden"
+        }
+      ],
+      "requires_human_approval": false,
+      "contract": {
+        "side_effects": ["read"],
+        "idempotency": {
+          "requirement": "optional",
+          "collision_behavior": "return_original_result",
+          "key_scope": "capability"
+        },
+        "execution": {
+          "supports_sync": true,
+          "supports_async": false,
+          "supports_streaming": false,
+          "supports_cancel": false,
+          "supports_retry": true,
+          "expected_completion": "sync",
+          "retry_safety": "safe"
+        },
+        "data": {
+          "sensitivity": "internal",
+          "contains_pii": false,
+          "redaction_required": false
+        },
+        "sla": {
+          "expected_latency_ms": 100,
+          "timeout_ms": 1000,
+          "async_expected": false,
+          "max_queue_delay_ms": 100,
+          "availability_target": "99.9%"
+        },
+        "compensation": {
+          "mode": "not_required",
+          "requires_approval": false
+        }
+      }
+    }
+  ],
+  "profiles": ["aip.native.http.v1", "aip.a2a.compat.v1", "aip.mcp.compat.v1"],
+  "security": {
+    "transport": "http",
+    "status": "pre_stable_production_oriented",
+    "envelope_schema_validation": "required",
+    "sender_principal": "required_for_actions",
+    "signed_envelopes": "required",
+    "mcp_http_auth": "none",
+    "runtime_storage": "memory",
+    "idempotency": "required_for_replay_sensitive_actions"
+  },
+  "limits": { "max_request_bytes": 1048576 },
+  "compatibility": {
+    "native_http": {
+      "messages": "/aip/v1/messages",
+      "actions": "/aip/v1/actions",
+      "manifest": "/aip/v1/manifest"
+    },
+    "mcp": {
+      "jsonrpc": "/mcp",
+      "versioned_jsonrpc": "/mcp/v1",
+      "profile": "aip.mcp.compat.v1",
+      "methods": ["initialize", "tools/list", "tools/call", "resources/list"]
+    },
+    "a2a": {
+      "agent_card": "/.well-known/agent.json",
+      "jsonrpc": "/a2a",
+      "versioned_jsonrpc": "/a2a/v1",
+      "profile": "aip.a2a.compat.v1",
+      "methods": [
+        "tasks/send",
+        "tasks/sendSubscribe",
+        "tasks/get",
+        "tasks/cancel",
+        "tasks/pushNotificationConfig/set",
+        "tasks/pushNotificationConfig/get"
+      ]
+    }
+  }
+}

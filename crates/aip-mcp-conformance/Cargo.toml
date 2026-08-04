@@ -1,0 +1,30 @@
+[package]
+name = "aip-mcp-conformance"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-core.workspace = true
+aip-mcp-client.workspace = true
+aip-mcp-server.workspace = true
+aip-mcp-session.workspace = true
+aip-profile-mcp.workspace = true
+aip-transport-mcp-stdio.workspace = true
+aip-transport-mcp-streamable-http.workspace = true
+http.workspace = true
+jsonschema.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+aip-gateway.workspace = true
+tokio.workspace = true
+
+[lints]
+workspace = true

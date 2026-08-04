@@ -1,0 +1,5 @@
+name: aip-governed-tool-policy
+version: 1.0.0
+description: "Fail-closed MCP tool sequencing for the governed restaurant-booking workflow."
+author: AIP Project
+kind: standalone

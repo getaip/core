@@ -1,0 +1,683 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CallbackDeliveryRecord",
+  "description": "Durable native view of callback delivery state.",
+  "type": "object",
+  "properties": {
+    "delivery_id": {
+      "description": "Stable delivery id.",
+      "type": "string"
+    },
+    "policy": {
+      "description": "Delivery policy used by the runtime.",
+      "$ref": "#/$defs/CallbackDeliveryPolicy"
+    },
+    "message_id": {
+      "description": "Envelope message id being delivered.",
+      "$ref": "#/$defs/MessageId"
+    },
+    "message_type": {
+      "description": "Envelope message type being delivered.",
+      "type": "string"
+    },
+    "action_id": {
+      "description": "Action associated with the delivered message, when known.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ActionId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "session_id": {
+      "description": "Session associated with the delivered message, when known.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SessionId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "correlation_id": {
+      "description": "Correlation id associated with the delivered message, when known.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CorrelationId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "tenant_id": {
+      "description": "Tenant associated with the delivery, when known.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status": {
+      "description": "Stable delivery status.",
+      "$ref": "#/$defs/CallbackDeliveryStatus"
+    },
+    "attempts": {
+      "description": "Recorded attempts.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/CallbackDeliveryAttempt"
+      }
+    },
+    "next_attempt_at": {
+      "description": "Earliest retry time after a failed attempt.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "leased_by": {
+      "description": "Worker currently holding the delivery lease, when any.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "lease_expires_at": {
+      "description": "Lease expiration time after which another worker may recover the delivery.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "last_error": {
+      "description": "Last delivery error, if any.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "dead_letter_reason": {
+      "description": "Dead-letter reason when the delivery can no longer be retried.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "receipt_chain": {
+      "description": "Receipt chain, when requested.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReceiptChain"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "description": "Creation timestamp.",
+      "type": "string"
+    },
+    "updated_at": {
+      "description": "Last update timestamp.",
+      "type": "string"
+    },
+    "completed_at": {
+      "description": "Terminal timestamp when delivery completed or failed.",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "delivery_id",
+    "policy",
+    "message_id",
+    "message_type",
+    "status",
+    "created_at",
+    "updated_at"
+  ],
+  "$defs": {
+    "CallbackDeliveryPolicy": {
+      "description": "Transport-independent callback delivery policy.",
+      "type": "object",
+      "properties": {
+        "delivery_id": {
+          "description": "Stable delivery id used for deduplication and audit.",
+          "type": "string"
+        },
+        "target": {
+          "description": "Callback target.",
+          "$ref": "#/$defs/Callback"
+        },
+        "max_attempts": {
+          "description": "Maximum delivery attempts.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "timeout_ms": {
+          "description": "Per-attempt timeout.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        },
+        "retry_backoff_ms": {
+          "description": "Retry backoff schedule.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          }
+        },
+        "idempotency_key": {
+          "description": "Idempotency key propagated to delivery targets.",
+          "type": "string"
+        },
+        "sign_payload": {
+          "description": "Whether the transport should sign payloads when supported.",
+          "type": "boolean"
+        },
+        "terminal_only": {
+          "description": "Whether only terminal lifecycle states should be delivered.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "delivery_id",
+        "target",
+        "max_attempts",
+        "timeout_ms",
+        "idempotency_key",
+        "sign_payload",
+        "terminal_only"
+      ],
+      "additionalProperties": false
+    },
+    "Callback": {
+      "description": "Async callback target.",
+      "type": "object",
+      "properties": {
+        "profile": {
+          "description": "Callback profile id.",
+          "$ref": "#/$defs/ProfileId"
+        },
+        "target": {
+          "description": "Callback target URI or subject.",
+          "type": "string"
+        },
+        "metadata": {
+          "description": "Profile-specific delivery configuration such as authentication or tokens."
+        }
+      },
+      "required": [
+        "profile",
+        "target"
+      ],
+      "additionalProperties": false
+    },
+    "ProfileId": {
+      "description": "AIP profile identifier such as `aip.native.http.v1`.",
+      "type": "string"
+    },
+    "MessageId": {
+      "description": "Unique AIP message identifier.",
+      "type": "string"
+    },
+    "ActionId": {
+      "description": "Action identifier.",
+      "type": "string"
+    },
+    "SessionId": {
+      "description": "Session identifier.",
+      "type": "string"
+    },
+    "CorrelationId": {
+      "description": "Request correlation identifier.",
+      "type": "string"
+    },
+    "CallbackDeliveryStatus": {
+      "description": "Stable callback delivery lifecycle state.",
+      "oneOf": [
+        {
+          "description": "Delivery is accepted and waiting for an attempt window.",
+          "type": "string",
+          "const": "pending"
+        },
+        {
+          "description": "A delivery attempt is currently in progress.",
+          "type": "string",
+          "const": "running"
+        },
+        {
+          "description": "The callback target acknowledged the envelope.",
+          "type": "string",
+          "const": "delivered"
+        },
+        {
+          "description": "The delivery exhausted its retry budget.",
+          "type": "string",
+          "const": "failed"
+        },
+        {
+          "description": "The delivery is parked in the dead-letter queue after terminal failure.",
+          "type": "string",
+          "const": "dead_lettered"
+        }
+      ]
+    },
+    "CallbackDeliveryAttempt": {
+      "description": "Durable view of one callback delivery attempt.",
+      "type": "object",
+      "properties": {
+        "attempt": {
+          "description": "One-based attempt number.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "started_at": {
+          "description": "Attempt start timestamp.",
+          "type": "string"
+        },
+        "finished_at": {
+          "description": "Attempt finish timestamp.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "error": {
+          "description": "Attempt error, when the target rejected the envelope or timed out.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "attempt",
+        "started_at"
+      ],
+      "additionalProperties": false
+    },
+    "ReceiptChain": {
+      "description": "Hash-linked receipt chain.",
+      "type": "object",
+      "properties": {
+        "chain_id": {
+          "description": "Chain id.",
+          "type": "string"
+        },
+        "receipts": {
+          "description": "Receipts in order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Receipt"
+          }
+        },
+        "root_hash": {
+          "description": "Merkle root or equivalent aggregate hash.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "chain_id",
+        "receipts"
+      ],
+      "additionalProperties": false
+    },
+    "Receipt": {
+      "description": "Receipt event.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Receipt id.",
+          "$ref": "#/$defs/ReceiptId"
+        },
+        "receipt_type": {
+          "description": "Receipt type.",
+          "$ref": "#/$defs/ReceiptType"
+        },
+        "actor": {
+          "description": "Actor.",
+          "$ref": "#/$defs/Principal"
+        },
+        "occurred_at": {
+          "description": "Timestamp.",
+          "type": "string"
+        },
+        "correlation_id": {
+          "description": "Correlation id.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CorrelationId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "data": {
+          "description": "Structured receipt data."
+        },
+        "previous_hash": {
+          "description": "Previous hash in the chain.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hash": {
+          "description": "Receipt hash.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "receipt_type",
+        "actor",
+        "occurred_at"
+      ],
+      "additionalProperties": false
+    },
+    "ReceiptId": {
+      "description": "Receipt identifier.",
+      "type": "string"
+    },
+    "ReceiptType": {
+      "description": "Receipt type.",
+      "oneOf": [
+        {
+          "description": "Request received.",
+          "type": "string",
+          "const": "request_received"
+        },
+        {
+          "description": "Action accepted.",
+          "type": "string",
+          "const": "action_accepted"
+        },
+        {
+          "description": "Policy engine decision recorded.",
+          "type": "string",
+          "const": "policy_decision"
+        },
+        {
+          "description": "Approval request created.",
+          "type": "string",
+          "const": "approval_requested"
+        },
+        {
+          "description": "Approval was granted.",
+          "type": "string",
+          "const": "approval_granted"
+        },
+        {
+          "description": "Approval was denied.",
+          "type": "string",
+          "const": "approval_denied"
+        },
+        {
+          "description": "Approval expired before a decision.",
+          "type": "string",
+          "const": "approval_expired"
+        },
+        {
+          "description": "Approval was revoked.",
+          "type": "string",
+          "const": "approval_revoked"
+        },
+        {
+          "description": "Tool executed.",
+          "type": "string",
+          "const": "tool_executed"
+        },
+        {
+          "description": "Delegation made.",
+          "type": "string",
+          "const": "delegation_made"
+        },
+        {
+          "description": "Human approved.",
+          "type": "string",
+          "const": "human_approved"
+        },
+        {
+          "description": "Result returned.",
+          "type": "string",
+          "const": "result_returned"
+        },
+        {
+          "description": "Settlement recorded.",
+          "type": "string",
+          "const": "settlement_recorded"
+        },
+        {
+          "description": "Transaction plan created.",
+          "type": "string",
+          "const": "transaction_planned"
+        },
+        {
+          "description": "A commit action atomically acquired the transaction plan.",
+          "type": "string",
+          "const": "transaction_commit_started"
+        },
+        {
+          "description": "Transaction committed.",
+          "type": "string",
+          "const": "transaction_committed"
+        },
+        {
+          "description": "Compensating transaction executed.",
+          "type": "string",
+          "const": "transaction_compensated"
+        },
+        {
+          "description": "Dry-run validation or simulation completed.",
+          "type": "string",
+          "const": "transaction_dry_run_completed"
+        },
+        {
+          "description": "Transaction was blocked because rollback is unsupported.",
+          "type": "string",
+          "const": "transaction_rollback_unsupported"
+        },
+        {
+          "description": "Transaction failed.",
+          "type": "string",
+          "const": "transaction_failed"
+        },
+        {
+          "description": "Callback delivery attempt started.",
+          "type": "string",
+          "const": "callback_delivery_attempted"
+        },
+        {
+          "description": "Callback delivery completed.",
+          "type": "string",
+          "const": "callback_delivered"
+        },
+        {
+          "description": "Callback delivery failed.",
+          "type": "string",
+          "const": "callback_delivery_failed"
+        }
+      ]
+    },
+    "Principal": {
+      "description": "Actor or authorizing entity in AIP.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable AIP principal id.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "kind": {
+          "description": "Principal category.",
+          "$ref": "#/$defs/PrincipalKind"
+        },
+        "display_name": {
+          "description": "Human-readable display name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trust_domain": {
+          "description": "Trust domain that owns this principal.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "did": {
+          "description": "DID identity, if available.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "external_refs": {
+          "description": "Product-specific identities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExternalRef"
+          }
+        },
+        "delegated_authority": {
+          "description": "Scoped delegated authority granted to this principal.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DelegatedAuthorityGrant"
+          }
+        },
+        "auth_context": {
+          "description": "Authentication metadata supplied by a profile or gateway."
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "PrincipalId": {
+      "description": "Stable principal identifier.",
+      "type": "string"
+    },
+    "PrincipalKind": {
+      "description": "Entity category for a protocol principal.",
+      "oneOf": [
+        {
+          "description": "A human user or operator.",
+          "type": "string",
+          "const": "human"
+        },
+        {
+          "description": "An autonomous or semi-autonomous agent.",
+          "type": "string",
+          "const": "agent"
+        },
+        {
+          "description": "A service account or machine identity.",
+          "type": "string",
+          "const": "service"
+        },
+        {
+          "description": "A tenant/account boundary.",
+          "type": "string",
+          "const": "tenant"
+        },
+        {
+          "description": "A customer identity.",
+          "type": "string",
+          "const": "customer"
+        },
+        {
+          "description": "A contact identity in a channel product.",
+          "type": "string",
+          "const": "contact"
+        },
+        {
+          "description": "A system-level actor.",
+          "type": "string",
+          "const": "system"
+        }
+      ]
+    },
+    "ExternalRef": {
+      "description": "Product-specific identity reference preserved by connectors.",
+      "type": "object",
+      "properties": {
+        "system": {
+          "description": "Source system name, for example `chatwoot` or `dify`.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Source-local entity type.",
+          "type": "string"
+        },
+        "id": {
+          "description": "Source-local entity id.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "system",
+        "type",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "DelegatedAuthorityGrant": {
+      "description": "Scoped authority delegated to this principal for another principal's work.\n\nDelegated authority is part of the native AIP identity model. It lets a\nruntime distinguish \"can read or operate on my own work\" from \"can read or\noperate on work owned by a specific principal\" without granting broad\n`*:any` scopes. Compatibility profiles may project this from their own\nauth systems, but the resulting grant is evaluated by AIP core/runtime\nsemantics.",
+      "type": "object",
+      "properties": {
+        "principal_id": {
+          "description": "Principal whose work is covered by the grant.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "scopes": {
+          "description": "Granted scope labels. `*` grants all scopes for this principal.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_at": {
+          "description": "Expiration timestamp. Expired grants MUST be ignored by runtimes.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "description": "Optional reason or authority reference retained for audit/debugging.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "principal_id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/callback_delivery_record.schema.json",
+  "additionalProperties": false
+}
