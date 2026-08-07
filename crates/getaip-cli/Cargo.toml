@@ -1,0 +1,53 @@
+[package]
+name = "getaip-cli"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "getaip"
+path = "src/main.rs"
+
+[dependencies]
+aip-conformance.workspace = true
+aip-connector-admission.workspace = true
+aip-connector-orchestration.workspace = true
+aip-connector-registry.workspace = true
+aip-connector-registry-postgres.workspace = true
+aip-core.workspace = true
+aip-crypto.workspace = true
+aip-mcp-client.workspace = true
+aip-mcp-conformance.workspace = true
+aip-profile-mcp.workspace = true
+aip-schema.workspace = true
+aip-transport.workspace = true
+aip-transport-mcp-stdio.workspace = true
+aip-transport-mcp-streamable-http.workspace = true
+aip-transport-nats.workspace = true
+axum.workspace = true
+clap.workspace = true
+ed25519-dalek.workspace = true
+futures-util.workspace = true
+getaip-distribution.workspace = true
+hex.workspace = true
+jsonc-parser.workspace = true
+nix.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+semver.workspace = true
+sha2.workspace = true
+tokio.workspace = true
+time.workspace = true
+toml_edit.workspace = true
+zeroize.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

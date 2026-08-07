@@ -1,0 +1,36 @@
+# Rust build output
+/target/
+/fuzz/target/
+
+# Fuzzing runtime artifacts
+/fuzz/artifacts/
+/fuzz/corpus/
+
+# Local repository migration metadata
+/.repo-metadata-archive/
+
+# OS/editor noise
+.DS_Store
+**/.DS_Store
+**/*.rs.bk
+*.swp
+*.swo
+
+# Local environment and generated reports
+.env
+.env.*
+!.env.example
+/coverage/
+/tarpaulin-report.html
+/junit.xml
+/.aipd-*
+/.getaip-*
+**/node_modules/
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+.venv/
+.venv-*/
+**/.venv/
+**/.venv-*/
+*.py[cod]

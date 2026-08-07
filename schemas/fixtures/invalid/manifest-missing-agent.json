@@ -1,0 +1,6 @@
+{
+  "manifest_version": "aip-manifest/v1",
+  "profiles": [
+    "aip.native.http.v1"
+  ]
+}

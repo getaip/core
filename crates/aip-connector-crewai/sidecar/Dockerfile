@@ -1,0 +1,47 @@
+# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+FROM ghcr.io/astral-sh/uv:0.8.17@sha256:e4644cb5bd56fdc2c5ea3ee0525d9d21eed1603bccd6a21f887a938be7e85be1 AS uv
+
+FROM python:3.13-slim@sha256:6771159cd4fa5d9bba1258caf0b82e6b73458c694d178ad97c5e925c2d0e1a91
+
+ARG SOURCE_REVISION=unknown
+ARG IMAGE_VERSION=1.0.0
+LABEL org.opencontainers.image.source="https://github.com/getaip/core" \
+      org.opencontainers.image.revision="${SOURCE_REVISION}" \
+      org.opencontainers.image.version="${IMAGE_VERSION}" \
+      dev.getaip.component="aip-crewai-sidecar" \
+      dev.getaip.crewai.version="1.15.2" \
+      dev.getaip.crewai.distribution="pypi"
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/opt/aip-crewai \
+    PATH=/opt/aip-crewai/bin:$PATH \
+    CREWAI_DISABLE_TELEMETRY=true \
+    CREWAI_TRACING_ENABLED=false \
+    OTEL_SDK_DISABLED=true \
+    CREWAI_STORAGE_DIR=/var/lib/aip-crewai/crewai \
+    AIP_CREWAI_STATE_FILE=/var/lib/aip-crewai/runs.json
+
+RUN useradd --create-home --uid 10001 aip \
+    && mkdir -p /var/lib/aip-crewai \
+    && chown -R 10001:10001 /var/lib/aip-crewai
+WORKDIR /app
+COPY --from=uv /uv /uvx /bin/
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-editable --no-install-project
+COPY aip_crewai_sidecar ./aip_crewai_sidecar
+RUN uv sync --frozen --no-dev --no-editable \
+    && uv cache clean
+
+# CrewAI 1.15.2 keeps its local credential-encryption key below $HOME. Point
+# that path at the same dedicated durable volume as the sidecar journal. This
+# final-stage declaration intentionally follows dependency installation so the
+# image build cannot pre-populate the runtime volume with root-owned cache data.
+ENV HOME=/var/lib/aip-crewai/home
+
+USER 10001:10001
+EXPOSE 8090
+VOLUME ["/var/lib/aip-crewai"]
+ENTRYPOINT ["aip-crewai-sidecar"]

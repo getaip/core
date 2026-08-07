@@ -1,0 +1,640 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ActionEvents",
+  "description": "Events and chunks scoped to one action.",
+  "type": "object",
+  "properties": {
+    "action_id": {
+      "description": "Source action.",
+      "$ref": "#/$defs/ActionId"
+    },
+    "events": {
+      "description": "Ordered action-scoped events.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Event"
+      }
+    },
+    "chunks": {
+      "description": "Ordered action-scoped stream chunks.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/StreamChunk"
+      }
+    },
+    "cursor": {
+      "description": "Cursor for the next event page.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "terminal": {
+      "description": "Whether the action is in a terminal lifecycle state.",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "action_id",
+    "events",
+    "terminal"
+  ],
+  "$defs": {
+    "ActionId": {
+      "description": "Action identifier.",
+      "type": "string"
+    },
+    "Event": {
+      "description": "Lifecycle, channel, tool, audit, or system event.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable event id.",
+          "$ref": "#/$defs/EventId"
+        },
+        "kind": {
+          "description": "Event kind.",
+          "type": "string"
+        },
+        "occurred_at": {
+          "description": "Event timestamp.",
+          "type": "string"
+        },
+        "session_id": {
+          "description": "Associated session.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SessionId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "action_id": {
+          "description": "Associated action.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ActionId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "correlation_id": {
+          "description": "Request correlation id.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CorrelationId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor": {
+          "description": "Actor.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Principal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "data": {
+          "description": "Structured event data."
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "occurred_at"
+      ],
+      "additionalProperties": false
+    },
+    "EventId": {
+      "description": "Event identifier.",
+      "type": "string"
+    },
+    "SessionId": {
+      "description": "Session identifier.",
+      "type": "string"
+    },
+    "CorrelationId": {
+      "description": "Request correlation identifier.",
+      "type": "string"
+    },
+    "Principal": {
+      "description": "Actor or authorizing entity in AIP.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable AIP principal id.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "kind": {
+          "description": "Principal category.",
+          "$ref": "#/$defs/PrincipalKind"
+        },
+        "display_name": {
+          "description": "Human-readable display name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trust_domain": {
+          "description": "Trust domain that owns this principal.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "did": {
+          "description": "DID identity, if available.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "external_refs": {
+          "description": "Product-specific identities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExternalRef"
+          }
+        },
+        "delegated_authority": {
+          "description": "Scoped delegated authority granted to this principal.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DelegatedAuthorityGrant"
+          }
+        },
+        "auth_context": {
+          "description": "Authentication metadata supplied by a profile or gateway."
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "PrincipalId": {
+      "description": "Stable principal identifier.",
+      "type": "string"
+    },
+    "PrincipalKind": {
+      "description": "Entity category for a protocol principal.",
+      "oneOf": [
+        {
+          "description": "A human user or operator.",
+          "type": "string",
+          "const": "human"
+        },
+        {
+          "description": "An autonomous or semi-autonomous agent.",
+          "type": "string",
+          "const": "agent"
+        },
+        {
+          "description": "A service account or machine identity.",
+          "type": "string",
+          "const": "service"
+        },
+        {
+          "description": "A tenant/account boundary.",
+          "type": "string",
+          "const": "tenant"
+        },
+        {
+          "description": "A customer identity.",
+          "type": "string",
+          "const": "customer"
+        },
+        {
+          "description": "A contact identity in a channel product.",
+          "type": "string",
+          "const": "contact"
+        },
+        {
+          "description": "A system-level actor.",
+          "type": "string",
+          "const": "system"
+        }
+      ]
+    },
+    "ExternalRef": {
+      "description": "Product-specific identity reference preserved by connectors.",
+      "type": "object",
+      "properties": {
+        "system": {
+          "description": "Source system name, for example `chatwoot` or `dify`.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Source-local entity type.",
+          "type": "string"
+        },
+        "id": {
+          "description": "Source-local entity id.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "system",
+        "type",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "DelegatedAuthorityGrant": {
+      "description": "Scoped authority delegated to this principal for another principal's work.\n\nDelegated authority is part of the native AIP identity model. It lets a\nruntime distinguish \"can read or operate on my own work\" from \"can read or\noperate on work owned by a specific principal\" without granting broad\n`*:any` scopes. Compatibility profiles may project this from their own\nauth systems, but the resulting grant is evaluated by AIP core/runtime\nsemantics.",
+      "type": "object",
+      "properties": {
+        "principal_id": {
+          "description": "Principal whose work is covered by the grant.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "scopes": {
+          "description": "Granted scope labels. `*` grants all scopes for this principal.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_at": {
+          "description": "Expiration timestamp. Expired grants MUST be ignored by runtimes.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "description": "Optional reason or authority reference retained for audit/debugging.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "principal_id"
+      ],
+      "additionalProperties": false
+    },
+    "StreamChunk": {
+      "description": "Partial output, progress, tool event, or terminal stream marker.",
+      "type": "object",
+      "properties": {
+        "action_id": {
+          "description": "Source action.",
+          "$ref": "#/$defs/ActionId"
+        },
+        "sequence": {
+          "description": "Monotonic chunk sequence.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        },
+        "kind": {
+          "description": "Chunk kind.",
+          "$ref": "#/$defs/StreamChunkKind"
+        },
+        "data": {
+          "description": "Structured chunk data."
+        },
+        "part": {
+          "description": "Optional rich message part.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MessagePart"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "action_id",
+        "sequence",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "StreamChunkKind": {
+      "description": "Stream chunk kind.",
+      "oneOf": [
+        {
+          "description": "Partial user-visible output.",
+          "type": "string",
+          "const": "data"
+        },
+        {
+          "description": "Progress update.",
+          "type": "string",
+          "const": "progress"
+        },
+        {
+          "description": "Tool call update.",
+          "type": "string",
+          "const": "tool"
+        },
+        {
+          "description": "Optional reasoning/progress event.",
+          "type": "string",
+          "const": "thought"
+        },
+        {
+          "description": "Preview artifact.",
+          "type": "string",
+          "const": "preview"
+        },
+        {
+          "description": "Human approval is pending.",
+          "type": "string",
+          "const": "pending_approval"
+        },
+        {
+          "description": "Stream-level error.",
+          "type": "string",
+          "const": "error"
+        },
+        {
+          "description": "Stream completed.",
+          "type": "string",
+          "const": "done"
+        }
+      ]
+    },
+    "MessagePart": {
+      "description": "Rich content part carried by a message, result, or channel event.",
+      "oneOf": [
+        {
+          "description": "Text content.",
+          "type": "object",
+          "properties": {
+            "text": {
+              "description": "Text body.",
+              "type": "string"
+            },
+            "format": {
+              "description": "Optional text format, for example `plain` or `markdown`.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "text"
+            }
+          },
+          "required": [
+            "type",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Image content.",
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "Remote URL.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "data": {
+              "description": "Inline data.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mime_type": {
+              "description": "MIME type.",
+              "type": "string"
+            },
+            "alt": {
+              "description": "Accessibility alt text.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "image"
+            }
+          },
+          "required": [
+            "type",
+            "mime_type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "File content.",
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "Remote URL.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "data": {
+              "description": "Inline data.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mime_type": {
+              "description": "MIME type.",
+              "type": "string"
+            },
+            "filename": {
+              "description": "File name.",
+              "type": "string"
+            },
+            "size_bytes": {
+              "description": "File size in bytes.",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "file"
+            }
+          },
+          "required": [
+            "type",
+            "mime_type",
+            "filename"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Audio content.",
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "Remote URL.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "data": {
+              "description": "Inline data.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mime_type": {
+              "description": "MIME type.",
+              "type": "string"
+            },
+            "transcript": {
+              "description": "Optional transcript.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "audio"
+            }
+          },
+          "required": [
+            "type",
+            "mime_type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Interactive form.",
+          "type": "object",
+          "properties": {
+            "fields": {
+              "description": "Form fields.",
+              "type": "array",
+              "items": true
+            },
+            "actions": {
+              "description": "Form actions.",
+              "type": "array",
+              "items": true
+            },
+            "type": {
+              "type": "string",
+              "const": "form"
+            }
+          },
+          "required": [
+            "type",
+            "fields",
+            "actions"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Rich card.",
+          "type": "object",
+          "properties": {
+            "title": {
+              "description": "Card title.",
+              "type": "string"
+            },
+            "body": {
+              "description": "Card body.",
+              "type": "string"
+            },
+            "actions": {
+              "description": "Card actions.",
+              "type": "array",
+              "items": true
+            },
+            "media": {
+              "description": "Card media."
+            },
+            "type": {
+              "type": "string",
+              "const": "card"
+            }
+          },
+          "required": [
+            "type",
+            "title",
+            "body"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Structured JSON payload.",
+          "type": "object",
+          "properties": {
+            "data": {
+              "description": "JSON data."
+            },
+            "schema": {
+              "description": "Optional JSON Schema."
+            },
+            "type": {
+              "type": "string",
+              "const": "json"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Tool result payload.",
+          "type": "object",
+          "properties": {
+            "tool_call_id": {
+              "description": "Tool call id.",
+              "type": "string"
+            },
+            "data": {
+              "description": "Result data."
+            },
+            "error": {
+              "description": "Error data."
+            },
+            "type": {
+              "type": "string",
+              "const": "tool_result"
+            }
+          },
+          "required": [
+            "type",
+            "tool_call_id"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/action_events.schema.json",
+  "additionalProperties": false
+}

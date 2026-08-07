@@ -1,0 +1,25 @@
+[package]
+name = "aip-conformance"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-core.workspace = true
+aip-discovery.workspace = true
+aip-profile-mcp.workspace = true
+aip-profile-webhook.workspace = true
+aip-schema.workspace = true
+serde_json.workspace = true
+async-trait.workspace = true
+
+[dev-dependencies]
+aip-testkit.workspace = true
+tokio.workspace = true
+
+[lints]
+workspace = true

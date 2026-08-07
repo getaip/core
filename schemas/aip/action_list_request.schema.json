@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ActionListRequest",
+  "description": "Request for a filtered durable action list.",
+  "type": "object",
+  "properties": {
+    "state": {
+      "description": "Lifecycle state filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ActionLifecycleState"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "capability_id": {
+      "description": "Capability filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CapabilityId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "session_id": {
+      "description": "Session filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SessionId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "principal_id": {
+      "description": "Requesting principal filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PrincipalId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "approval_id": {
+      "description": "Approval id filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ApprovalId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "transaction_id": {
+      "description": "Transaction id filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TransactionId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "tenant_id": {
+      "description": "Tenant id filter.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cursor": {
+      "description": "Opaque page cursor.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "limit": {
+      "description": "Maximum number of actions to return.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint32",
+      "minimum": 0
+    },
+    "include_results": {
+      "description": "Include results when available.",
+      "type": "boolean",
+      "default": false
+    },
+    "include_receipts": {
+      "description": "Include receipt chains when available.",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "$defs": {
+    "ActionLifecycleState": {
+      "description": "Stable native action lifecycle state exposed by AIP query APIs.",
+      "oneOf": [
+        {
+          "description": "The action id is unknown to the current runtime.",
+          "type": "string",
+          "const": "unknown"
+        },
+        {
+          "description": "The action was accepted but has not entered a queue.",
+          "type": "string",
+          "const": "accepted"
+        },
+        {
+          "description": "The action is queued for execution.",
+          "type": "string",
+          "const": "queued"
+        },
+        {
+          "description": "The action is currently running.",
+          "type": "string",
+          "const": "running"
+        },
+        {
+          "description": "The action is emitting a stream.",
+          "type": "string",
+          "const": "streaming"
+        },
+        {
+          "description": "The action is blocked on a human approval.",
+          "type": "string",
+          "const": "pending_approval"
+        },
+        {
+          "description": "The action is being cancelled.",
+          "type": "string",
+          "const": "cancelling"
+        },
+        {
+          "description": "The action was cancelled.",
+          "type": "string",
+          "const": "cancelled"
+        },
+        {
+          "description": "The action completed successfully.",
+          "type": "string",
+          "const": "completed"
+        },
+        {
+          "description": "The action failed.",
+          "type": "string",
+          "const": "failed"
+        },
+        {
+          "description": "The action state expired by retention policy.",
+          "type": "string",
+          "const": "expired"
+        },
+        {
+          "description": "The action is parked in the dead-letter queue.",
+          "type": "string",
+          "const": "dead_lettered"
+        }
+      ]
+    },
+    "CapabilityId": {
+      "description": "Stable capability identifier.",
+      "type": "string"
+    },
+    "SessionId": {
+      "description": "Session identifier.",
+      "type": "string"
+    },
+    "PrincipalId": {
+      "description": "Stable principal identifier.",
+      "type": "string"
+    },
+    "ApprovalId": {
+      "description": "Human approval workflow identifier.",
+      "type": "string"
+    },
+    "TransactionId": {
+      "description": "Transactional action or saga identifier.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/action_list_request.schema.json",
+  "additionalProperties": false
+}

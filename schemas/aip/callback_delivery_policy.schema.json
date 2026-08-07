@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CallbackDeliveryPolicy",
+  "description": "Transport-independent callback delivery policy.",
+  "type": "object",
+  "properties": {
+    "delivery_id": {
+      "description": "Stable delivery id used for deduplication and audit.",
+      "type": "string"
+    },
+    "target": {
+      "description": "Callback target.",
+      "$ref": "#/$defs/Callback"
+    },
+    "max_attempts": {
+      "description": "Maximum delivery attempts.",
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    },
+    "timeout_ms": {
+      "description": "Per-attempt timeout.",
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0
+    },
+    "retry_backoff_ms": {
+      "description": "Retry backoff schedule.",
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "format": "uint64",
+        "minimum": 0
+      }
+    },
+    "idempotency_key": {
+      "description": "Idempotency key propagated to delivery targets.",
+      "type": "string"
+    },
+    "sign_payload": {
+      "description": "Whether the transport should sign payloads when supported.",
+      "type": "boolean"
+    },
+    "terminal_only": {
+      "description": "Whether only terminal lifecycle states should be delivered.",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "delivery_id",
+    "target",
+    "max_attempts",
+    "timeout_ms",
+    "idempotency_key",
+    "sign_payload",
+    "terminal_only"
+  ],
+  "$defs": {
+    "Callback": {
+      "description": "Async callback target.",
+      "type": "object",
+      "properties": {
+        "profile": {
+          "description": "Callback profile id.",
+          "$ref": "#/$defs/ProfileId"
+        },
+        "target": {
+          "description": "Callback target URI or subject.",
+          "type": "string"
+        },
+        "metadata": {
+          "description": "Profile-specific delivery configuration such as authentication or tokens."
+        }
+      },
+      "required": [
+        "profile",
+        "target"
+      ],
+      "additionalProperties": false
+    },
+    "ProfileId": {
+      "description": "AIP profile identifier such as `aip.native.http.v1`.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/callback_delivery_policy.schema.json",
+  "additionalProperties": false
+}

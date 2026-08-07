@@ -1,0 +1,17 @@
+{
+  "gateway": {
+    "connectors": {},
+    "ready": true,
+    "storage": {
+      "detail": "storage read/write probe succeeded",
+      "ready": true
+    }
+  },
+  "status": "ready",
+  "supervisor": {
+    "last_worker_error": null,
+    "nats_listener_running": false,
+    "nats_required": false,
+    "runtime_worker_running": true
+  }
+}

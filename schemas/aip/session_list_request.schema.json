@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SessionListRequest",
+  "description": "Request for filtered durable session views.",
+  "type": "object",
+  "properties": {
+    "principal_id": {
+      "description": "Principal filter matching initiator or responder.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PrincipalId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "description": "Session lifecycle state filter.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SessionState"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "cursor": {
+      "description": "Opaque page cursor.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "limit": {
+      "description": "Maximum number of sessions to return.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint32",
+      "minimum": 0
+    }
+  },
+  "$defs": {
+    "PrincipalId": {
+      "description": "Stable principal identifier.",
+      "type": "string"
+    },
+    "SessionState": {
+      "description": "Lifecycle state of an AIP session.",
+      "oneOf": [
+        {
+          "description": "Session is being negotiated.",
+          "type": "string",
+          "const": "new"
+        },
+        {
+          "description": "Session is ready for actions.",
+          "type": "string",
+          "const": "active"
+        },
+        {
+          "description": "Work is accepted but not started.",
+          "type": "string",
+          "const": "queued"
+        },
+        {
+          "description": "Work is running.",
+          "type": "string",
+          "const": "processing"
+        },
+        {
+          "description": "Work is streaming output.",
+          "type": "string",
+          "const": "streaming"
+        },
+        {
+          "description": "Work is blocked on human input or approval.",
+          "type": "string",
+          "const": "waiting_for_human"
+        },
+        {
+          "description": "Work completed successfully.",
+          "type": "string",
+          "const": "completed"
+        },
+        {
+          "description": "Work was cancelled.",
+          "type": "string",
+          "const": "cancelled"
+        },
+        {
+          "description": "Work reached terminal failure.",
+          "type": "string",
+          "const": "failed"
+        },
+        {
+          "description": "Settlement/audit closeout is complete.",
+          "type": "string",
+          "const": "settled"
+        }
+      ]
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/session_list_request.schema.json",
+  "additionalProperties": false
+}

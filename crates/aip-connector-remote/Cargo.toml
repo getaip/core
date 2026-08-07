@@ -1,0 +1,32 @@
+[package]
+name = "aip-connector-remote"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-connector-registry.workspace = true
+aip-core.workspace = true
+aip-discovery.workspace = true
+aip-gateway.workspace = true
+aip-runtime.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+time.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+aip-auth.workspace = true
+aip-crypto.workspace = true
+axum.workspace = true
+
+[lints]
+workspace = true

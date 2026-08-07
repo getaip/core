@@ -1,0 +1,417 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ResourceReadResult",
+  "description": "Native resource read result.",
+  "type": "object",
+  "properties": {
+    "resource": {
+      "description": "Resource metadata.",
+      "$ref": "#/$defs/Resource"
+    },
+    "content": {
+      "description": "Optional resource content.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/MessagePart"
+      }
+    },
+    "etag": {
+      "description": "Optional entity tag for cache validation.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "expires_at": {
+      "description": "Optional expiration timestamp.",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "resource"
+  ],
+  "$defs": {
+    "Resource": {
+      "description": "Readable resource advertised by a manifest.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable resource id.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Resource name.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Native resource kind used by discovery and operational filters.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "capability_id": {
+          "description": "Capability that owns or exposes this resource.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CapabilityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "description": {
+          "description": "Resource description.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mime_type": {
+          "description": "Resource MIME type.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tenant_id": {
+          "description": "Tenant boundary that owns or can read the resource, when known.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "access": {
+          "description": "Native read policy for this resource.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResourceAccessPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_at": {
+          "description": "Resource expiration timestamp, when known.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "CapabilityId": {
+      "description": "Stable capability identifier.",
+      "type": "string"
+    },
+    "ResourceAccessPolicy": {
+      "description": "Native resource read policy used by discovery and operational read APIs.\n\nThe policy is intentionally generic: product-specific ACL objects remain in\nadapters, while AIP resources publish the minimal principal/scope/tenant\nrequirements needed by gateways and runtimes to avoid leaking resource\nmetadata across trust boundaries.",
+      "type": "object",
+      "properties": {
+        "public": {
+          "description": "Whether any authenticated principal can read the resource.",
+          "type": "boolean",
+          "default": false
+        },
+        "allowed_principals": {
+          "description": "Principals explicitly allowed to read the resource.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PrincipalId"
+          }
+        },
+        "required_scopes": {
+          "description": "Any one of these scopes authorizes the read.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tenant_required": {
+          "description": "Whether a matching tenant boundary is required when `tenant_id` exists.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "PrincipalId": {
+      "description": "Stable principal identifier.",
+      "type": "string"
+    },
+    "MessagePart": {
+      "description": "Rich content part carried by a message, result, or channel event.",
+      "oneOf": [
+        {
+          "description": "Text content.",
+          "type": "object",
+          "properties": {
+            "text": {
+              "description": "Text body.",
+              "type": "string"
+            },
+            "format": {
+              "description": "Optional text format, for example `plain` or `markdown`.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "text"
+            }
+          },
+          "required": [
+            "type",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Image content.",
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "Remote URL.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "data": {
+              "description": "Inline data.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mime_type": {
+              "description": "MIME type.",
+              "type": "string"
+            },
+            "alt": {
+              "description": "Accessibility alt text.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "image"
+            }
+          },
+          "required": [
+            "type",
+            "mime_type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "File content.",
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "Remote URL.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "data": {
+              "description": "Inline data.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mime_type": {
+              "description": "MIME type.",
+              "type": "string"
+            },
+            "filename": {
+              "description": "File name.",
+              "type": "string"
+            },
+            "size_bytes": {
+              "description": "File size in bytes.",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "file"
+            }
+          },
+          "required": [
+            "type",
+            "mime_type",
+            "filename"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Audio content.",
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "Remote URL.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "data": {
+              "description": "Inline data.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mime_type": {
+              "description": "MIME type.",
+              "type": "string"
+            },
+            "transcript": {
+              "description": "Optional transcript.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "audio"
+            }
+          },
+          "required": [
+            "type",
+            "mime_type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Interactive form.",
+          "type": "object",
+          "properties": {
+            "fields": {
+              "description": "Form fields.",
+              "type": "array",
+              "items": true
+            },
+            "actions": {
+              "description": "Form actions.",
+              "type": "array",
+              "items": true
+            },
+            "type": {
+              "type": "string",
+              "const": "form"
+            }
+          },
+          "required": [
+            "type",
+            "fields",
+            "actions"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Rich card.",
+          "type": "object",
+          "properties": {
+            "title": {
+              "description": "Card title.",
+              "type": "string"
+            },
+            "body": {
+              "description": "Card body.",
+              "type": "string"
+            },
+            "actions": {
+              "description": "Card actions.",
+              "type": "array",
+              "items": true
+            },
+            "media": {
+              "description": "Card media."
+            },
+            "type": {
+              "type": "string",
+              "const": "card"
+            }
+          },
+          "required": [
+            "type",
+            "title",
+            "body"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Structured JSON payload.",
+          "type": "object",
+          "properties": {
+            "data": {
+              "description": "JSON data."
+            },
+            "schema": {
+              "description": "Optional JSON Schema."
+            },
+            "type": {
+              "type": "string",
+              "const": "json"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Tool result payload.",
+          "type": "object",
+          "properties": {
+            "tool_call_id": {
+              "description": "Tool call id.",
+              "type": "string"
+            },
+            "data": {
+              "description": "Result data."
+            },
+            "error": {
+              "description": "Error data."
+            },
+            "type": {
+              "type": "string",
+              "const": "tool_result"
+            }
+          },
+          "required": [
+            "type",
+            "tool_call_id"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/resource_read_result.schema.json",
+  "additionalProperties": false
+}

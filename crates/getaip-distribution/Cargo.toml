@@ -1,0 +1,35 @@
+[package]
+name = "getaip-distribution"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+base64.workspace = true
+ed25519-dalek.workspace = true
+flate2.workspace = true
+fs2.workspace = true
+futures-util.workspace = true
+hex.workspace = true
+nix.workspace = true
+reqwest.workspace = true
+semver.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+tar.workspace = true
+thiserror.workspace = true
+time.workspace = true
+tokio.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+jsonschema.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

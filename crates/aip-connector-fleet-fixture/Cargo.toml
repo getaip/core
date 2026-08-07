@@ -1,0 +1,40 @@
+[package]
+name = "aip-connector-fleet-fixture"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-connector-admission.workspace = true
+aip-connector.workspace = true
+aip-connector-cal-diy.workspace = true
+aip-connector-chatwoot.workspace = true
+aip-connector-crewai.workspace = true
+aip-connector-dify.workspace = true
+aip-connector-enterprise-sandbox.workspace = true
+aip-connector-hermes-agent.workspace = true
+aip-connector-host.workspace = true
+aip-connector-host-bootstrap.workspace = true
+aip-connector-orchestration.workspace = true
+aip-connector-registry.workspace = true
+aip-connector-support-sandbox.workspace = true
+aip-connector-twenty.workspace = true
+aip-connector-wa-archive.workspace = true
+aip-core.workspace = true
+aip-crypto.workspace = true
+aip-discovery.workspace = true
+clap.workspace = true
+ed25519-dalek.workspace = true
+hex.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+time.workspace = true
+tokio.workspace = true
+zeroize.workspace = true
+
+[lints]
+workspace = true

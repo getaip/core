@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ApprovalQueryRequest",
+  "description": "Request for one approval record.",
+  "type": "object",
+  "properties": {
+    "approval_id": {
+      "description": "Approval id to inspect.",
+      "$ref": "#/$defs/ApprovalId"
+    },
+    "tenant_id": {
+      "description": "Optional tenant boundary expected by the caller.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "include_action_status": {
+      "description": "Include linked action status when available.",
+      "type": "boolean",
+      "default": false
+    },
+    "include_receipts": {
+      "description": "Include receipt chain when available.",
+      "type": "boolean",
+      "default": false
+    },
+    "include_evidence_payload": {
+      "description": "Export the immutable governed action payload used for approval.\n\nThis field contains potentially sensitive action input and is available\nonly to an approval-visible actor authorized for both `approval:export`\nand `approval:sensitive`.",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "approval_id"
+  ],
+  "$defs": {
+    "ApprovalId": {
+      "description": "Human approval workflow identifier.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/approval_query_request.schema.json",
+  "additionalProperties": false
+}

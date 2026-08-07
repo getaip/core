@@ -1,0 +1,2156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TransactionResult",
+  "description": "Result of a first-class transactional AIP action.",
+  "type": "object",
+  "properties": {
+    "transaction_id": {
+      "description": "Stable transaction id from the request or action context.",
+      "$ref": "#/$defs/TransactionId"
+    },
+    "action_id": {
+      "description": "Action associated with this transaction.",
+      "$ref": "#/$defs/ActionId"
+    },
+    "capability_id": {
+      "description": "Capability associated with the transaction.",
+      "$ref": "#/$defs/CapabilityId"
+    },
+    "transaction": {
+      "description": "Transaction context that was evaluated.",
+      "$ref": "#/$defs/ActionTransaction"
+    },
+    "status": {
+      "description": "Wire-visible transaction status.",
+      "$ref": "#/$defs/TransactionProtocolStatus"
+    },
+    "plan": {
+      "description": "Execution plan, when applicable.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TransactionPlan"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "result": {
+      "description": "Final action result when execution reached a handler.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ActionResult"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "error": {
+      "description": "Protocol-level failure when no valid action result exists.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ProtocolError"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "receipt_chain": {
+      "description": "Receipt chain proving the transaction decision or terminal state.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReceiptChain"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "provider_operation": {
+      "description": "Durable provider operation reference used for reconciliation.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ProviderOperationRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reconciliation_cursor": {
+      "description": "Opaque provider cursor used to continue reconciliation.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reconcile_after": {
+      "description": "Earliest time at which reconciliation should be retried.",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "transaction_id",
+    "action_id",
+    "capability_id",
+    "transaction",
+    "status"
+  ],
+  "$defs": {
+    "TransactionId": {
+      "description": "Transactional action or saga identifier.",
+      "type": "string"
+    },
+    "ActionId": {
+      "description": "Action identifier.",
+      "type": "string"
+    },
+    "CapabilityId": {
+      "description": "Stable capability identifier.",
+      "type": "string"
+    },
+    "ActionTransaction": {
+      "description": "Transaction context for an action.",
+      "type": "object",
+      "properties": {
+        "mode": {
+          "description": "Transaction mode.",
+          "$ref": "#/$defs/TransactionMode"
+        },
+        "transaction_id": {
+          "description": "Stable transaction id.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TransactionId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plan_id": {
+          "description": "Plan id produced by a previous planning action.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "compensation_for": {
+          "description": "Action being compensated.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ActionId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "additionalProperties": false
+    },
+    "TransactionMode": {
+      "description": "Transactional action mode.",
+      "oneOf": [
+        {
+          "description": "Execute the action normally.",
+          "type": "string",
+          "const": "execute"
+        },
+        {
+          "description": "Validate without committing side effects.",
+          "type": "string",
+          "const": "dry_run"
+        },
+        {
+          "description": "Produce a durable execution plan.",
+          "type": "string",
+          "const": "plan"
+        },
+        {
+          "description": "Commit a previously planned operation.",
+          "type": "string",
+          "const": "commit"
+        },
+        {
+          "description": "Execute a declared compensating operation.",
+          "type": "string",
+          "const": "compensate"
+        },
+        {
+          "description": "Reconcile a provider operation whose commit outcome is unknown.",
+          "type": "string",
+          "const": "reconcile"
+        },
+        {
+          "description": "Explicit state for operations that cannot roll back.",
+          "type": "string",
+          "const": "rollback_not_supported"
+        }
+      ]
+    },
+    "TransactionProtocolStatus": {
+      "description": "Transaction lifecycle state exposed on the AIP wire.",
+      "oneOf": [
+        {
+          "description": "Dry-run validation or simulation completed.",
+          "type": "string",
+          "const": "dry_run_completed"
+        },
+        {
+          "description": "A durable plan was created.",
+          "type": "string",
+          "const": "planned"
+        },
+        {
+          "description": "A provider accepted and prepared the operation without committing it.",
+          "type": "string",
+          "const": "prepared"
+        },
+        {
+          "description": "One commit action atomically owns execution of the plan.",
+          "type": "string",
+          "const": "committing"
+        },
+        {
+          "description": "A previously planned or direct operation was committed.",
+          "type": "string",
+          "const": "committed"
+        },
+        {
+          "description": "A compensating action is executing.",
+          "type": "string",
+          "const": "compensating"
+        },
+        {
+          "description": "A compensating operation completed.",
+          "type": "string",
+          "const": "compensated"
+        },
+        {
+          "description": "The transaction is waiting for human approval or input.",
+          "type": "string",
+          "const": "requires_human"
+        },
+        {
+          "description": "The transaction was cancelled.",
+          "type": "string",
+          "const": "cancelled"
+        },
+        {
+          "description": "The operation explicitly does not support rollback.",
+          "type": "string",
+          "const": "rollback_not_supported"
+        },
+        {
+          "description": "The transaction failed before reaching a committed terminal state.",
+          "type": "string",
+          "const": "failed"
+        },
+        {
+          "description": "The provider may have committed, but no definitive result is available.",
+          "type": "string",
+          "const": "outcome_unknown"
+        },
+        {
+          "description": "Provider state is being reconciled before retry or compensation.",
+          "type": "string",
+          "const": "reconciling"
+        },
+        {
+          "description": "Reconciliation established the durable provider outcome.",
+          "type": "string",
+          "const": "reconciled"
+        }
+      ]
+    },
+    "TransactionPlan": {
+      "description": "Durable execution plan produced by a transactional `Plan` action.\n\nThe plan is protocol-visible evidence for a later `Commit`. It captures the\nexact action input hash, capability binding, relevant enterprise policy\nmetadata, and identity snapshot so runtimes can reject commits that no\nlonger match the planned operation.",
+      "type": "object",
+      "properties": {
+        "plan_id": {
+          "description": "Stable plan id referenced by commit requests.",
+          "type": "string"
+        },
+        "transaction_id": {
+          "description": "Stable transaction id for the plan.",
+          "$ref": "#/$defs/TransactionId"
+        },
+        "action_id": {
+          "description": "Action that created the plan.",
+          "$ref": "#/$defs/ActionId"
+        },
+        "capability_id": {
+          "description": "Capability the plan was produced for.",
+          "$ref": "#/$defs/CapabilityId"
+        },
+        "transaction": {
+          "description": "Planned transaction context.",
+          "$ref": "#/$defs/ActionTransaction"
+        },
+        "planned_by": {
+          "description": "Principal that requested the plan.",
+          "$ref": "#/$defs/Principal"
+        },
+        "input_hash": {
+          "description": "Canonical SHA-256 hash of the planned action input.",
+          "type": "string"
+        },
+        "input_snapshot": {
+          "description": "Optional redacted or raw input snapshot."
+        },
+        "predicted_side_effects": {
+          "description": "Expected side effects declared by the capability contract.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SideEffect"
+          }
+        },
+        "approval_required": {
+          "description": "Whether committing the plan requires approval.",
+          "type": "boolean"
+        },
+        "approval_policy": {
+          "description": "Approval policy evaluated during planning.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ApprovalPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "compensation": {
+          "description": "Compensation contract available for the planned operation.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CompensationContract"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dry_run_fidelity": {
+          "description": "Dry-run fidelity advertised by the capability.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DryRunFidelity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "identity": {
+          "description": "Identity snapshot captured during planning.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IdentityContext"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "description": "Creation time.",
+          "type": "string"
+        },
+        "expires_at": {
+          "description": "Optional plan expiration.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "metadata": {
+          "description": "Additional runtime metadata."
+        }
+      },
+      "required": [
+        "plan_id",
+        "transaction_id",
+        "action_id",
+        "capability_id",
+        "transaction",
+        "planned_by",
+        "input_hash",
+        "approval_required",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "Principal": {
+      "description": "Actor or authorizing entity in AIP.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable AIP principal id.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "kind": {
+          "description": "Principal category.",
+          "$ref": "#/$defs/PrincipalKind"
+        },
+        "display_name": {
+          "description": "Human-readable display name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trust_domain": {
+          "description": "Trust domain that owns this principal.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "did": {
+          "description": "DID identity, if available.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "external_refs": {
+          "description": "Product-specific identities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExternalRef"
+          }
+        },
+        "delegated_authority": {
+          "description": "Scoped delegated authority granted to this principal.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DelegatedAuthorityGrant"
+          }
+        },
+        "auth_context": {
+          "description": "Authentication metadata supplied by a profile or gateway."
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "PrincipalId": {
+      "description": "Stable principal identifier.",
+      "type": "string"
+    },
+    "PrincipalKind": {
+      "description": "Entity category for a protocol principal.",
+      "oneOf": [
+        {
+          "description": "A human user or operator.",
+          "type": "string",
+          "const": "human"
+        },
+        {
+          "description": "An autonomous or semi-autonomous agent.",
+          "type": "string",
+          "const": "agent"
+        },
+        {
+          "description": "A service account or machine identity.",
+          "type": "string",
+          "const": "service"
+        },
+        {
+          "description": "A tenant/account boundary.",
+          "type": "string",
+          "const": "tenant"
+        },
+        {
+          "description": "A customer identity.",
+          "type": "string",
+          "const": "customer"
+        },
+        {
+          "description": "A contact identity in a channel product.",
+          "type": "string",
+          "const": "contact"
+        },
+        {
+          "description": "A system-level actor.",
+          "type": "string",
+          "const": "system"
+        }
+      ]
+    },
+    "ExternalRef": {
+      "description": "Product-specific identity reference preserved by connectors.",
+      "type": "object",
+      "properties": {
+        "system": {
+          "description": "Source system name, for example `chatwoot` or `dify`.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Source-local entity type.",
+          "type": "string"
+        },
+        "id": {
+          "description": "Source-local entity id.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "system",
+        "type",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "DelegatedAuthorityGrant": {
+      "description": "Scoped authority delegated to this principal for another principal's work.\n\nDelegated authority is part of the native AIP identity model. It lets a\nruntime distinguish \"can read or operate on my own work\" from \"can read or\noperate on work owned by a specific principal\" without granting broad\n`*:any` scopes. Compatibility profiles may project this from their own\nauth systems, but the resulting grant is evaluated by AIP core/runtime\nsemantics.",
+      "type": "object",
+      "properties": {
+        "principal_id": {
+          "description": "Principal whose work is covered by the grant.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "scopes": {
+          "description": "Granted scope labels. `*` grants all scopes for this principal.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_at": {
+          "description": "Expiration timestamp. Expired grants MUST be ignored by runtimes.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "description": "Optional reason or authority reference retained for audit/debugging.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "principal_id"
+      ],
+      "additionalProperties": false
+    },
+    "SideEffect": {
+      "description": "Side effect category for an enterprise capability.",
+      "oneOf": [
+        {
+          "description": "Read data without intended mutation.",
+          "type": "string",
+          "const": "read"
+        },
+        {
+          "description": "Mutate existing state or create new state.",
+          "type": "string",
+          "const": "write"
+        },
+        {
+          "description": "Delete or destroy state.",
+          "type": "string",
+          "const": "delete"
+        },
+        {
+          "description": "Send a user-visible or external message.",
+          "type": "string",
+          "const": "send_message"
+        },
+        {
+          "description": "Move money, create financial obligations, or change billing state.",
+          "type": "string",
+          "const": "financial"
+        },
+        {
+          "description": "Change identity, account, access, or credential state.",
+          "type": "string",
+          "const": "identity"
+        },
+        {
+          "description": "Touch medical or health-related records.",
+          "type": "string",
+          "const": "medical"
+        },
+        {
+          "description": "Touch legal, contractual, or compliance-sensitive records.",
+          "type": "string",
+          "const": "legal"
+        },
+        {
+          "description": "Call an external network service.",
+          "type": "string",
+          "const": "external_network"
+        },
+        {
+          "description": "Execute code or scripts supplied at runtime.",
+          "type": "string",
+          "const": "code_execution"
+        }
+      ]
+    },
+    "ApprovalPolicy": {
+      "description": "Approval policy declared by a capability.",
+      "type": "object",
+      "properties": {
+        "required": {
+          "description": "Whether approval is required before execution.",
+          "type": "boolean"
+        },
+        "reason": {
+          "description": "Reason shown to an approver or audit trail.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "approver_selector": {
+          "description": "Approver selection rule.",
+          "$ref": "#/$defs/ApproverSelector"
+        },
+        "ttl_ms": {
+          "description": "Time-to-live for approval requests.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "evidence_requirements": {
+          "description": "Required evidence.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvidenceRequirement"
+          }
+        },
+        "delegated_authority": {
+          "description": "Delegated approval authority.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DelegatedApprovalAuthority"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rule": {
+          "description": "Composable authority expression. When absent, the legacy\n`approver_selector` is interpreted as one leaf predicate.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ApprovalRule"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "minimum_distinct_principals": {
+          "description": "Minimum number of distinct approving principals for the workflow.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0,
+          "default": 1
+        },
+        "separation_of_duties": {
+          "description": "Separation-of-duties requirements.",
+          "$ref": "#/$defs/SeparationOfDuties",
+          "default": {
+            "requester_must_differ": false,
+            "operator_must_differ": false,
+            "allow_self_approval": false
+          }
+        },
+        "policy_version": {
+          "description": "Stable policy version retained in approval evidence.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "required",
+        "approver_selector"
+      ],
+      "additionalProperties": false
+    },
+    "ApproverSelector": {
+      "description": "Principal, role, group, policy, or external system that can approve work.",
+      "oneOf": [
+        {
+          "description": "Specific approving principal.",
+          "type": "object",
+          "properties": {
+            "id": {
+              "description": "Principal id.",
+              "$ref": "#/$defs/PrincipalId"
+            },
+            "type": {
+              "type": "string",
+              "const": "principal"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Role name.",
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Role identifier.",
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "role"
+            }
+          },
+          "required": [
+            "type",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Group name.",
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Group identifier.",
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "group"
+            }
+          },
+          "required": [
+            "type",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Tenant-owned approval policy.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "tenant_policy"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "External approval system.",
+          "type": "object",
+          "properties": {
+            "system": {
+              "description": "External system identifier.",
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "external_system"
+            }
+          },
+          "required": [
+            "type",
+            "system"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EvidenceRequirement": {
+      "description": "Evidence required before approval can be decided.",
+      "oneOf": [
+        {
+          "description": "Human-readable reason.",
+          "type": "string",
+          "const": "reason"
+        },
+        {
+          "description": "Snapshot of the action input.",
+          "type": "string",
+          "const": "input_snapshot"
+        },
+        {
+          "description": "Policy engine decision.",
+          "type": "string",
+          "const": "policy_decision"
+        },
+        {
+          "description": "External ticket or case.",
+          "type": "string",
+          "const": "external_ticket"
+        },
+        {
+          "description": "Attachment or artifact.",
+          "type": "string",
+          "const": "attachment"
+        }
+      ]
+    },
+    "DelegatedApprovalAuthority": {
+      "description": "Delegated approval authority.",
+      "type": "object",
+      "properties": {
+        "principal": {
+          "description": "Principal receiving delegated approval authority.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "scope": {
+          "description": "Delegated scope labels.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_at": {
+          "description": "Expiration timestamp.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "principal"
+      ],
+      "additionalProperties": false
+    },
+    "ApprovalRule": {
+      "description": "Composable approval authority expression.\n\nLeaf predicates are evaluated only against authority memberships returned\nby a trusted resolver. Values carried in an action or decision payload are\nnever sufficient to satisfy a predicate.",
+      "oneOf": [
+        {
+          "description": "Every child expression must be satisfied.",
+          "type": "object",
+          "properties": {
+            "rules": {
+              "description": "Child expressions.",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ApprovalRule"
+              }
+            },
+            "allow_decision_reuse": {
+              "description": "Explicitly permits one verified decision to satisfy more than one child.",
+              "type": "boolean",
+              "default": false
+            },
+            "operator": {
+              "type": "string",
+              "const": "all"
+            }
+          },
+          "required": [
+            "operator",
+            "rules"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "At least one child expression must be satisfied.",
+          "type": "object",
+          "properties": {
+            "rules": {
+              "description": "Child expressions.",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ApprovalRule"
+              }
+            },
+            "operator": {
+              "type": "string",
+              "const": "any"
+            }
+          },
+          "required": [
+            "operator",
+            "rules"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "At least `required` distinct matching decisions must be present.",
+          "type": "object",
+          "properties": {
+            "required": {
+              "description": "Required number of decisions.",
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            },
+            "rules": {
+              "description": "Expressions that can contribute to the quorum.",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ApprovalRule"
+              }
+            },
+            "distinct_principals": {
+              "description": "Whether one principal may contribute at most one vote.",
+              "type": "boolean",
+              "default": true
+            },
+            "operator": {
+              "type": "string",
+              "const": "quorum"
+            }
+          },
+          "required": [
+            "operator",
+            "required",
+            "rules"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A specific principal must approve.",
+          "type": "object",
+          "properties": {
+            "id": {
+              "description": "Required principal id.",
+              "$ref": "#/$defs/PrincipalId"
+            },
+            "operator": {
+              "type": "string",
+              "const": "principal"
+            }
+          },
+          "required": [
+            "operator",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A member of a trusted role must approve.",
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Required role name.",
+              "type": "string"
+            },
+            "operator": {
+              "type": "string",
+              "const": "role"
+            }
+          },
+          "required": [
+            "operator",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A member of a trusted group must approve.",
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Required group name.",
+              "type": "string"
+            },
+            "operator": {
+              "type": "string",
+              "const": "group"
+            }
+          },
+          "required": [
+            "operator",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A member authorized by a tenant policy must approve.",
+          "type": "object",
+          "properties": {
+            "policy_id": {
+              "description": "Stable tenant policy id.",
+              "type": "string"
+            },
+            "operator": {
+              "type": "string",
+              "const": "tenant_policy"
+            }
+          },
+          "required": [
+            "operator",
+            "policy_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A verified external approval system must approve.",
+          "type": "object",
+          "properties": {
+            "system": {
+              "description": "External system id.",
+              "type": "string"
+            },
+            "operator": {
+              "type": "string",
+              "const": "external_system"
+            }
+          },
+          "required": [
+            "operator",
+            "system"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A non-revoked delegated authority grant must match the operation.",
+          "type": "object",
+          "properties": {
+            "scope": {
+              "description": "Required delegated scope.",
+              "type": "string"
+            },
+            "max_risk": {
+              "description": "Maximum accepted risk for this grant.",
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/RiskLevel"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "max_value": {
+              "description": "Maximum governed numeric value for this grant.",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0
+            },
+            "operator": {
+              "type": "string",
+              "const": "delegated_authority"
+            }
+          },
+          "required": [
+            "operator",
+            "scope"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "RiskLevel": {
+      "description": "Operational risk classification.",
+      "oneOf": [
+        {
+          "description": "Low-risk capability.",
+          "type": "string",
+          "const": "low"
+        },
+        {
+          "description": "Medium-risk capability.",
+          "type": "string",
+          "const": "medium"
+        },
+        {
+          "description": "High-risk capability.",
+          "type": "string",
+          "const": "high"
+        },
+        {
+          "description": "Critical-risk capability.",
+          "type": "string",
+          "const": "critical"
+        }
+      ]
+    },
+    "SeparationOfDuties": {
+      "description": "Separation-of-duties requirements for an approval workflow.",
+      "type": "object",
+      "properties": {
+        "requester_must_differ": {
+          "description": "The requester cannot approve the request.",
+          "type": "boolean",
+          "default": false
+        },
+        "operator_must_differ": {
+          "description": "The action operator cannot approve the request.",
+          "type": "boolean",
+          "default": false
+        },
+        "allow_self_approval": {
+          "description": "Explicitly permits self-approval when no stricter rule prohibits it.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "CompensationContract": {
+      "description": "Compensation behavior declared by a capability.",
+      "type": "object",
+      "properties": {
+        "mode": {
+          "description": "Compensation mode.",
+          "$ref": "#/$defs/CompensationMode"
+        },
+        "compensation_capability_id": {
+          "description": "Capability used to compensate this operation, when available.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CapabilityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "compensation_window_ms": {
+          "description": "Maximum window for compensation.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "requires_approval": {
+          "description": "Whether compensation itself requires approval.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "mode",
+        "requires_approval"
+      ],
+      "additionalProperties": false
+    },
+    "CompensationMode": {
+      "description": "Compensation support declared by a capability.",
+      "oneOf": [
+        {
+          "description": "No compensation is required for successful execution.",
+          "type": "string",
+          "const": "not_required"
+        },
+        {
+          "description": "A compensating capability is supported.",
+          "type": "string",
+          "const": "supported"
+        },
+        {
+          "description": "Compensation is attempted but cannot be guaranteed.",
+          "type": "string",
+          "const": "best_effort"
+        },
+        {
+          "description": "Rollback or compensation is not supported.",
+          "type": "string",
+          "const": "rollback_not_supported"
+        }
+      ]
+    },
+    "DryRunFidelity": {
+      "description": "Dry-run fidelity declared by a capability.",
+      "oneOf": [
+        {
+          "description": "Only schema validation is performed.",
+          "type": "string",
+          "const": "schema_only"
+        },
+        {
+          "description": "Schema and policy validation are performed.",
+          "type": "string",
+          "const": "policy_and_schema"
+        },
+        {
+          "description": "Downstream validation is performed without commit.",
+          "type": "string",
+          "const": "downstream_validation"
+        },
+        {
+          "description": "Provider can simulate the full operation.",
+          "type": "string",
+          "const": "full_simulation"
+        }
+      ]
+    },
+    "IdentityContext": {
+      "description": "Identity, tenant, and credential mapping context for enterprise actions.",
+      "type": "object",
+      "properties": {
+        "tenant": {
+          "description": "Tenant boundary.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TenantRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "external_account": {
+          "description": "External account boundary.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExternalAccountRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "external_user": {
+          "description": "External user associated with the invocation.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExternalUserRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "human_actor": {
+          "description": "Human actor that initiated or owns the work.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Principal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "service_account": {
+          "description": "Service account executing the operation.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Principal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "acted_on_behalf_of": {
+          "description": "Principal on whose behalf the operation is performed.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Principal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "credential_ref": {
+          "description": "Reference to external credential material.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CredentialRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "oauth": {
+          "description": "OAuth lifecycle state without token material.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OAuthCredentialState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "TenantRef": {
+      "description": "Tenant reference used for policy and credential partitioning.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "AIP or external tenant id.",
+          "type": "string"
+        },
+        "system": {
+          "description": "Source system that owns the tenant id.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "ExternalAccountRef": {
+      "description": "External account reference used by product connectors.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Account id in the source system.",
+          "type": "string"
+        },
+        "system": {
+          "description": "Source system name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "system"
+      ],
+      "additionalProperties": false
+    },
+    "ExternalUserRef": {
+      "description": "External user reference used by product connectors.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "User id in the source system.",
+          "type": "string"
+        },
+        "system": {
+          "description": "Source system name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "system"
+      ],
+      "additionalProperties": false
+    },
+    "CredentialRef": {
+      "description": "Reference to credential material stored outside protocol envelopes.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Credential id or vault reference.",
+          "type": "string"
+        },
+        "issuer": {
+          "description": "Credential issuer or storage boundary.",
+          "type": "string"
+        },
+        "scopes": {
+          "description": "Granted scope labels known to the runtime.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "issuer"
+      ],
+      "additionalProperties": false
+    },
+    "OAuthCredentialState": {
+      "description": "OAuth credential lifecycle state without raw token material.",
+      "type": "object",
+      "properties": {
+        "issuer": {
+          "description": "Authorization server or provider id.",
+          "type": "string"
+        },
+        "client_id": {
+          "description": "OAuth client id or service identifier.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scopes": {
+          "description": "Granted scope labels.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_at": {
+          "description": "Token expiration timestamp, when known.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "refresh_available": {
+          "description": "Whether refresh is available without human reauthorization.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "issuer",
+        "refresh_available"
+      ],
+      "additionalProperties": false
+    },
+    "ActionResult": {
+      "description": "Final action result.",
+      "type": "object",
+      "properties": {
+        "action_id": {
+          "description": "Source action.",
+          "$ref": "#/$defs/ActionId"
+        },
+        "status": {
+          "description": "Result status.",
+          "$ref": "#/$defs/ActionResultStatus"
+        },
+        "output": {
+          "description": "Structured output."
+        },
+        "message": {
+          "description": "User-facing message parts.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MessagePart"
+          }
+        },
+        "memory_update": {
+          "description": "Memory/state update."
+        },
+        "usage": {
+          "description": "Usage/cost metadata.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Usage"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "receipt": {
+          "description": "Signed receipt reference.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReceiptRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "description": "Error details.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProtocolError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "action_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "ActionResultStatus": {
+      "description": "Final action status.",
+      "oneOf": [
+        {
+          "description": "Action completed.",
+          "type": "string",
+          "const": "completed"
+        },
+        {
+          "description": "Action failed.",
+          "type": "string",
+          "const": "failed"
+        },
+        {
+          "description": "Action was cancelled.",
+          "type": "string",
+          "const": "cancelled"
+        },
+        {
+          "description": "Action is blocked on a durable approval request.",
+          "type": "string",
+          "const": "pending_approval"
+        },
+        {
+          "description": "Action requires human input or approval.",
+          "type": "string",
+          "const": "requires_human"
+        }
+      ]
+    },
+    "MessagePart": {
+      "description": "Rich content part carried by a message, result, or channel event.",
+      "oneOf": [
+        {
+          "description": "Text content.",
+          "type": "object",
+          "properties": {
+            "text": {
+              "description": "Text body.",
+              "type": "string"
+            },
+            "format": {
+              "description": "Optional text format, for example `plain` or `markdown`.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "text"
+            }
+          },
+          "required": [
+            "type",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Image content.",
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "Remote URL.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "data": {
+              "description": "Inline data.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mime_type": {
+              "description": "MIME type.",
+              "type": "string"
+            },
+            "alt": {
+              "description": "Accessibility alt text.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "image"
+            }
+          },
+          "required": [
+            "type",
+            "mime_type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "File content.",
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "Remote URL.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "data": {
+              "description": "Inline data.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mime_type": {
+              "description": "MIME type.",
+              "type": "string"
+            },
+            "filename": {
+              "description": "File name.",
+              "type": "string"
+            },
+            "size_bytes": {
+              "description": "File size in bytes.",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "file"
+            }
+          },
+          "required": [
+            "type",
+            "mime_type",
+            "filename"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Audio content.",
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "Remote URL.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "data": {
+              "description": "Inline data.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mime_type": {
+              "description": "MIME type.",
+              "type": "string"
+            },
+            "transcript": {
+              "description": "Optional transcript.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "audio"
+            }
+          },
+          "required": [
+            "type",
+            "mime_type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Interactive form.",
+          "type": "object",
+          "properties": {
+            "fields": {
+              "description": "Form fields.",
+              "type": "array",
+              "items": true
+            },
+            "actions": {
+              "description": "Form actions.",
+              "type": "array",
+              "items": true
+            },
+            "type": {
+              "type": "string",
+              "const": "form"
+            }
+          },
+          "required": [
+            "type",
+            "fields",
+            "actions"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Rich card.",
+          "type": "object",
+          "properties": {
+            "title": {
+              "description": "Card title.",
+              "type": "string"
+            },
+            "body": {
+              "description": "Card body.",
+              "type": "string"
+            },
+            "actions": {
+              "description": "Card actions.",
+              "type": "array",
+              "items": true
+            },
+            "media": {
+              "description": "Card media."
+            },
+            "type": {
+              "type": "string",
+              "const": "card"
+            }
+          },
+          "required": [
+            "type",
+            "title",
+            "body"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Structured JSON payload.",
+          "type": "object",
+          "properties": {
+            "data": {
+              "description": "JSON data."
+            },
+            "schema": {
+              "description": "Optional JSON Schema."
+            },
+            "type": {
+              "type": "string",
+              "const": "json"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Tool result payload.",
+          "type": "object",
+          "properties": {
+            "tool_call_id": {
+              "description": "Tool call id.",
+              "type": "string"
+            },
+            "data": {
+              "description": "Result data."
+            },
+            "error": {
+              "description": "Error data."
+            },
+            "type": {
+              "type": "string",
+              "const": "tool_result"
+            }
+          },
+          "required": [
+            "type",
+            "tool_call_id"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Usage": {
+      "description": "Usage and cost metadata.",
+      "type": "object",
+      "properties": {
+        "tokens": {
+          "description": "Token usage."
+        },
+        "tools": {
+          "description": "Tool usage."
+        },
+        "latency_ms": {
+          "description": "End-to-end latency.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "cost": {
+          "description": "Cost metadata."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ReceiptRef": {
+      "description": "Reference to a signed receipt.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Receipt id.",
+          "$ref": "#/$defs/ReceiptId"
+        },
+        "hash": {
+          "description": "Receipt hash.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "hash"
+      ],
+      "additionalProperties": false
+    },
+    "ReceiptId": {
+      "description": "Receipt identifier.",
+      "type": "string"
+    },
+    "ProtocolError": {
+      "description": "Machine-readable protocol or action error.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "description": "Stable machine code.",
+          "type": "string"
+        },
+        "message": {
+          "description": "Human-readable message.",
+          "type": "string"
+        },
+        "category": {
+          "description": "Error category.",
+          "$ref": "#/$defs/ErrorCategory"
+        },
+        "retryable": {
+          "description": "Whether retry is safe.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "retry_after_ms": {
+          "description": "Suggested retry delay.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "details": {
+          "description": "Structured details."
+        },
+        "source": {
+          "description": "Connector/profile/source metadata."
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "category"
+      ],
+      "additionalProperties": false
+    },
+    "ErrorCategory": {
+      "description": "Protocol error category.",
+      "oneOf": [
+        {
+          "description": "Temporary failure.",
+          "type": "string",
+          "const": "temporary"
+        },
+        {
+          "description": "Permanent failure.",
+          "type": "string",
+          "const": "permanent"
+        },
+        {
+          "description": "Authentication or authorization failure.",
+          "type": "string",
+          "const": "auth"
+        },
+        {
+          "description": "Policy failure.",
+          "type": "string",
+          "const": "policy"
+        },
+        {
+          "description": "Economic/settlement failure.",
+          "type": "string",
+          "const": "economic"
+        },
+        {
+          "description": "Connector failure.",
+          "type": "string",
+          "const": "connector"
+        },
+        {
+          "description": "Transport failure.",
+          "type": "string",
+          "const": "transport"
+        }
+      ]
+    },
+    "ReceiptChain": {
+      "description": "Hash-linked receipt chain.",
+      "type": "object",
+      "properties": {
+        "chain_id": {
+          "description": "Chain id.",
+          "type": "string"
+        },
+        "receipts": {
+          "description": "Receipts in order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Receipt"
+          }
+        },
+        "root_hash": {
+          "description": "Merkle root or equivalent aggregate hash.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "chain_id",
+        "receipts"
+      ],
+      "additionalProperties": false
+    },
+    "Receipt": {
+      "description": "Receipt event.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Receipt id.",
+          "$ref": "#/$defs/ReceiptId"
+        },
+        "receipt_type": {
+          "description": "Receipt type.",
+          "$ref": "#/$defs/ReceiptType"
+        },
+        "actor": {
+          "description": "Actor.",
+          "$ref": "#/$defs/Principal"
+        },
+        "occurred_at": {
+          "description": "Timestamp.",
+          "type": "string"
+        },
+        "correlation_id": {
+          "description": "Correlation id.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CorrelationId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "data": {
+          "description": "Structured receipt data."
+        },
+        "previous_hash": {
+          "description": "Previous hash in the chain.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hash": {
+          "description": "Receipt hash.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "receipt_type",
+        "actor",
+        "occurred_at"
+      ],
+      "additionalProperties": false
+    },
+    "ReceiptType": {
+      "description": "Receipt type.",
+      "oneOf": [
+        {
+          "description": "Request received.",
+          "type": "string",
+          "const": "request_received"
+        },
+        {
+          "description": "Action accepted.",
+          "type": "string",
+          "const": "action_accepted"
+        },
+        {
+          "description": "Policy engine decision recorded.",
+          "type": "string",
+          "const": "policy_decision"
+        },
+        {
+          "description": "Approval request created.",
+          "type": "string",
+          "const": "approval_requested"
+        },
+        {
+          "description": "Approval was granted.",
+          "type": "string",
+          "const": "approval_granted"
+        },
+        {
+          "description": "Approval was denied.",
+          "type": "string",
+          "const": "approval_denied"
+        },
+        {
+          "description": "Approval expired before a decision.",
+          "type": "string",
+          "const": "approval_expired"
+        },
+        {
+          "description": "Approval was revoked.",
+          "type": "string",
+          "const": "approval_revoked"
+        },
+        {
+          "description": "Tool executed.",
+          "type": "string",
+          "const": "tool_executed"
+        },
+        {
+          "description": "Delegation made.",
+          "type": "string",
+          "const": "delegation_made"
+        },
+        {
+          "description": "Human approved.",
+          "type": "string",
+          "const": "human_approved"
+        },
+        {
+          "description": "Result returned.",
+          "type": "string",
+          "const": "result_returned"
+        },
+        {
+          "description": "Settlement recorded.",
+          "type": "string",
+          "const": "settlement_recorded"
+        },
+        {
+          "description": "Transaction plan created.",
+          "type": "string",
+          "const": "transaction_planned"
+        },
+        {
+          "description": "A commit action atomically acquired the transaction plan.",
+          "type": "string",
+          "const": "transaction_commit_started"
+        },
+        {
+          "description": "Transaction committed.",
+          "type": "string",
+          "const": "transaction_committed"
+        },
+        {
+          "description": "Compensating transaction executed.",
+          "type": "string",
+          "const": "transaction_compensated"
+        },
+        {
+          "description": "Dry-run validation or simulation completed.",
+          "type": "string",
+          "const": "transaction_dry_run_completed"
+        },
+        {
+          "description": "Transaction was blocked because rollback is unsupported.",
+          "type": "string",
+          "const": "transaction_rollback_unsupported"
+        },
+        {
+          "description": "Transaction failed.",
+          "type": "string",
+          "const": "transaction_failed"
+        },
+        {
+          "description": "Callback delivery attempt started.",
+          "type": "string",
+          "const": "callback_delivery_attempted"
+        },
+        {
+          "description": "Callback delivery completed.",
+          "type": "string",
+          "const": "callback_delivered"
+        },
+        {
+          "description": "Callback delivery failed.",
+          "type": "string",
+          "const": "callback_delivery_failed"
+        }
+      ]
+    },
+    "CorrelationId": {
+      "description": "Request correlation identifier.",
+      "type": "string"
+    },
+    "ProviderOperationRef": {
+      "description": "Durable reference to an operation accepted by an external provider.",
+      "type": "object",
+      "properties": {
+        "provider": {
+          "description": "Provider or connector id.",
+          "type": "string"
+        },
+        "operation_id": {
+          "description": "Provider-local operation id.",
+          "type": "string"
+        },
+        "request_id": {
+          "description": "Optional provider request or trace id.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "provider",
+        "operation_id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/transaction_result.schema.json",
+  "additionalProperties": false
+}

@@ -1,0 +1,21 @@
+FROM caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+
+ARG SOURCE_REVISION=unknown
+ARG IMAGE_VERSION=2.1.0
+LABEL org.opencontainers.image.source="https://github.com/getaip/core" \
+      org.opencontainers.image.revision="${SOURCE_REVISION}" \
+      org.opencontainers.image.version="${IMAGE_VERSION}" \
+      dev.getaip.component="aip-connector-fleet-edge"
+
+# The upstream binary carries cap_net_bind_service for privileged ports. The
+# qualification edge listens on 8443 and must remain executable after Docker
+# drops every process capability and sets no-new-privileges. Installing a new
+# inode intentionally removes the unnecessary file capability.
+RUN install -m 0755 /usr/bin/caddy /usr/local/bin/caddy && \
+    addgroup -S -g 10001 aip-edge && \
+    adduser -S -D -H -u 10001 -G aip-edge aip-edge && \
+    chown -R 10001:10001 /config /data
+USER 10001:10001
+EXPOSE 8443
+ENTRYPOINT ["/usr/local/bin/caddy"]
+CMD ["run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]

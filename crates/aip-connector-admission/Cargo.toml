@@ -1,0 +1,27 @@
+[package]
+name = "aip-connector-admission"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-connector-registry.workspace = true
+aip-core.workspace = true
+aip-crypto.workspace = true
+aip-discovery.workspace = true
+async-trait.workspace = true
+ed25519-dalek.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+time.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,29 @@
+[package]
+name = "aip-connector-registry-postgres"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-connector-admission.workspace = true
+aip-connector-registry.workspace = true
+aip-core.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+sqlx-core.workspace = true
+sqlx-postgres.workspace = true
+time.workspace = true
+tokio.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+aip-discovery.workspace = true
+
+[lints]
+workspace = true

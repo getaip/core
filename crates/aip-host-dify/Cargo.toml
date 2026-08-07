@@ -1,0 +1,20 @@
+[package]
+name = "aip-host-dify"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-connector.workspace = true
+aip-connector-dify.workspace = true
+aip-connector-host-bootstrap.workspace = true
+clap.workspace = true
+serde.workspace = true
+tokio.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://getaip.org/schemas/getaip/distribution-manifest-v1.schema.json",
+  "title": "GetAIP Distribution Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "release", "signing_key_id", "network_policy", "previous_version", "targets"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "release": { "$ref": "#/$defs/release" },
+    "signing_key_id": { "$ref": "#/$defs/identifier" },
+    "network_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "maximum_redirects", "redirect_hosts"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "maximum_redirects": { "const": 1 },
+        "redirect_hosts": {
+          "type": "array",
+          "prefixItems": [{ "const": "release-assets.githubusercontent.com" }],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      }
+    },
+    "previous_version": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$" }
+      ]
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/target" }
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitObject": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "aip_protocol_version",
+        "channel",
+        "published_at",
+        "minimum_cli_version",
+        "source"
+      ],
+      "properties": {
+        "version": { "type": "string" },
+        "aip_protocol_version": { "const": "1.0" },
+        "channel": { "enum": ["stable", "release-candidate", "development"] },
+        "published_at": { "type": "string", "format": "date-time" },
+        "minimum_cli_version": { "type": "string" },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["gitea_commit", "gitea_tree", "github_commit", "github_tree"],
+          "properties": {
+            "gitea_commit": { "$ref": "#/$defs/gitObject" },
+            "gitea_tree": { "$ref": "#/$defs/gitObject" },
+            "github_commit": { "$ref": "#/$defs/gitObject" },
+            "github_tree": { "$ref": "#/$defs/gitObject" }
+          }
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "platform",
+        "rust_target",
+        "minimum_platform_version",
+        "cli_version",
+        "server_version",
+        "bootstrap",
+        "cli_archive",
+        "server_archive",
+        "distribution_archive"
+      ],
+      "properties": {
+        "platform": { "enum": ["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64"] },
+        "rust_target": { "type": "string" },
+        "minimum_platform_version": { "type": "string", "minLength": 1 },
+        "cli_version": { "type": "string" },
+        "server_version": { "type": "string" },
+        "bootstrap": { "$ref": "#/$defs/artifact" },
+        "cli_archive": { "$ref": "#/$defs/artifact" },
+        "server_archive": { "$ref": "#/$defs/artifact" },
+        "distribution_archive": { "$ref": "#/$defs/artifact" }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "kind", "url", "size", "sha256", "archive_root", "files"],
+      "properties": {
+        "name": { "$ref": "#/$defs/identifier" },
+        "kind": { "enum": ["raw-executable", "tar-gz"] },
+        "url": { "type": "string", "format": "uri", "pattern": "^https://github\\.com/getaip/core/releases/download/v" },
+        "size": { "type": "integer", "minimum": 1, "maximum": 1073741824 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "archive_root": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/identifier" }
+          ]
+        },
+        "files": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifactFile" }
+        }
+      }
+    },
+    "artifactFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "executable"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "executable": { "type": "boolean" }
+      }
+    }
+  }
+}

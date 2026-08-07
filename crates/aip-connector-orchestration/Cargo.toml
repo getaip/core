@@ -1,0 +1,24 @@
+[package]
+name = "aip-connector-orchestration"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-connector-admission.workspace = true
+aip-connector-registry.workspace = true
+aip-core.workspace = true
+aip-crypto.workspace = true
+ed25519-dalek.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+time.workspace = true
+url.workspace = true
+
+[lints]
+workspace = true

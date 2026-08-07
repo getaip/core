@@ -1,0 +1,7 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Documented non-secret loopback development bearer token"
+regexTarget = "secret"
+regexes = ['''^local-development-token$''']

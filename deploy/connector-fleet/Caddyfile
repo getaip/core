@@ -1,0 +1,120 @@
+{
+	admin off
+	auto_https disable_redirects
+	skip_install_trust
+}
+
+https://control.fleet.test:8443 {
+	tls internal
+	reverse_proxy control-plane:8090
+}
+
+https://getaip-server.fleet.test:8443 {
+	tls internal
+	reverse_proxy getaip-server:8080
+}
+
+https://getaip-server-b.fleet.test:8443 {
+	tls internal
+	reverse_proxy getaip-server-b:8080
+}
+
+https://support-acme-a.fleet.test:8443 {
+	tls internal
+	reverse_proxy support-acme-a:8081
+}
+
+https://support-acme-b.fleet.test:8443 {
+	tls internal
+	reverse_proxy support-acme-b:8081
+}
+
+https://support-beta-a.fleet.test:8443 {
+	tls internal
+	reverse_proxy support-beta-a:8081
+}
+
+https://enterprise-acme-a.fleet.test:8443 {
+	tls internal
+	reverse_proxy enterprise-acme-a:8081
+}
+
+https://cal-acme-a.fleet.test:8443 {
+	tls internal
+	reverse_proxy cal-acme-a:8081
+}
+
+https://hermes-acme-a.fleet.test:8443 {
+	tls internal
+	reverse_proxy hermes-acme-a:8081
+}
+
+https://chatwoot-acme-a.fleet.test:8443 {
+	tls internal
+	reverse_proxy chatwoot-acme-a:8081
+}
+
+https://dify-acme-a.fleet.test:8443 {
+	tls internal
+	reverse_proxy dify-acme-a:8081
+}
+
+https://crewai-acme-a.fleet.test:8443 {
+	tls internal
+	reverse_proxy crewai-acme-a:8081
+}
+
+https://twenty-acme-a.fleet.test:8443 {
+	tls internal
+	reverse_proxy twenty-acme-a:8081
+}
+
+https://wa-archive-acme-a.fleet.test:8443 {
+	tls internal
+	reverse_proxy wa-archive-acme-a:8081
+}
+
+https://cal-provider.fleet.test:8443 {
+	tls internal
+	reverse_proxy product-upstream:8095 {
+		header_up X-AIP-Fixture-Product cal-diy
+	}
+}
+
+https://hermes-provider.fleet.test:8443 {
+	tls internal
+	reverse_proxy product-upstream:8095 {
+		header_up X-AIP-Fixture-Product hermes
+	}
+}
+
+https://chatwoot-provider.fleet.test:8443 {
+	tls internal
+	reverse_proxy product-upstream:8095 {
+		header_up X-AIP-Fixture-Product chatwoot
+	}
+}
+
+https://dify-provider.fleet.test:8443 {
+	tls internal
+	reverse_proxy product-upstream:8095 {
+		header_up X-AIP-Fixture-Product dify
+	}
+}
+
+https://twenty-provider.fleet.test:8443 {
+	tls internal
+	reverse_proxy product-upstream:8095 {
+		header_up X-AIP-Fixture-Product twenty
+	}
+}
+
+https://crewai-sidecar.fleet.test:8443 {
+	tls internal
+	reverse_proxy crewai-sidecar:8090
+}
+
+https://wa-archive-provider.fleet.test:8443 {
+	tls internal
+	reverse_proxy wa-archive-provider:3210
+}

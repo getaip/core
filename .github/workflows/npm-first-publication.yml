@@ -1,0 +1,249 @@
+name: npm-first-publication
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Exact published GetAIP release tag
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-first-publication-${{ inputs.tag }}
+  cancel-in-progress: false
+
+env:
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  publish:
+    name: bootstrap-both-package-identities-once
+    if: ${{ vars.NPM_FIRST_PUBLICATION_COMPLETE != 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: npm-first-publication
+    permissions:
+      attestations: read
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout the exact public release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+
+      - name: Install Rust for native release verification
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          key: npm-first-publication-verification
+
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+          registry-url: https://registry.npmjs.org
+
+      - name: Install the exact provenance-capable npm client
+        run: |
+          npm install --global --ignore-scripts npm@11.5.1
+          test "$(npm --version)" = "11.5.1"
+
+      - name: Verify the public source and release boundary
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=${TAG#v}
+          test "$TAG" = "v${version}"
+          test "$version" = "$(node -p 'require("./package.json").version')"
+          test "$(gh api "repos/$GITHUB_REPOSITORY" --jq .visibility)" = public
+          test "$(git cat-file -t "refs/tags/$TAG")" = tag
+          test "$(git rev-parse "refs/tags/$TAG^{}")" = "$(git rev-parse HEAD)"
+          test "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = false
+          test "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq .isPrerelease)" = false
+          mkdir native-release
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir native-release
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Re-verify every public native asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=${{ steps.release.outputs.version }}
+          for asset in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
+            chmod 0755 "native-release/getaip-${version}-${asset}"
+          done
+          cargo run --locked -p xtask -- verify-native-release \
+            --directory native-release \
+            --manifest native-release/getaip-distribution-manifest.v1.json \
+            --signature native-release/getaip-distribution-manifest.v1.json.sig
+          while read -r _digest name; do
+            gh attestation verify "native-release/$name" --repo "$GITHUB_REPOSITORY"
+          done < native-release/SHA256SUMS
+
+      - name: Verify source, tests, and exact package contents
+        run: |
+          npm ci --ignore-scripts
+          npm test
+          npm run check
+          git diff --exit-code
+
+      - name: Create and pack both immutable bootstrap prerelease candidates
+        id: packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/npm/create-first-publication-candidates.mjs \
+            --output first-publication-candidate > candidate-metadata.json
+          native_version=$(jq -er .native_version candidate-metadata.json)
+          bootstrap_version=$(jq -er .bootstrap_version candidate-metadata.json)
+          test "$native_version" = "${{ steps.release.outputs.version }}"
+          test "$bootstrap_version" = "${native_version}-bootstrap.0"
+          mkdir npm-candidate
+          npm pack ./first-publication-candidate/getaip-cli --json --ignore-scripts \
+            --pack-destination npm-candidate > scoped-pack.json
+          npm pack ./first-publication-candidate/getaip --json --ignore-scripts \
+            --pack-destination npm-candidate > short-pack.json
+          test "$(jq -er '.[0].version' scoped-pack.json)" = "$bootstrap_version"
+          test "$(jq -er '.[0].version' short-pack.json)" = "$bootstrap_version"
+          echo "bootstrap_version=$bootstrap_version" >> "$GITHUB_OUTPUT"
+          echo "native_version=$native_version" >> "$GITHUB_OUTPUT"
+          echo "scoped_integrity=$(jq -er '.[0].integrity' scoped-pack.json)" >> "$GITHUB_OUTPUT"
+          echo "scoped_tarball=$(jq -er '.[0].filename' scoped-pack.json)" >> "$GITHUB_OUTPUT"
+          echo "short_integrity=$(jq -er '.[0].integrity' short-pack.json)" >> "$GITHUB_OUTPUT"
+          echo "short_tarball=$(jq -er '.[0].filename' short-pack.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish or prove the exact scoped bootstrap prerelease first
+        env:
+          BOOTSTRAP_VERSION: ${{ steps.packages.outputs.bootstrap_version }}
+          EXPECTED_INTEGRITY: ${{ steps.packages.outputs.scoped_integrity }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_FIRST_PUBLICATION_TOKEN }}
+          TARBALL: ${{ steps.packages.outputs.scoped_tarball }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          published=$(npm view "@getaip/cli@${BOOTSTRAP_VERSION}" dist.integrity --json 2>/dev/null | tr -d '"' || true)
+          if test -z "$published" || test "$published" = null; then
+            test -n "$NODE_AUTH_TOKEN"
+            npm publish "npm-candidate/$TARBALL" \
+              --access public --tag bootstrap --provenance
+          fi
+          for attempt in 1 2 3 4 5 6; do
+            published=$(npm view "@getaip/cli@${BOOTSTRAP_VERSION}" dist.integrity --json 2>/dev/null | tr -d '"' || true)
+            test "$published" = "$EXPECTED_INTEGRITY" && break
+            test "$attempt" -lt 6
+            sleep 10
+          done
+          test "$published" = "$EXPECTED_INTEGRITY"
+          test "$(npm view @getaip/cli dist-tags.bootstrap)" = "$BOOTSTRAP_VERSION"
+          test "$(npm view @getaip/cli dist-tags.latest 2>/dev/null || true)" != "$BOOTSTRAP_VERSION"
+
+      - name: Install the scoped prerelease from the public registry
+        env:
+          BOOTSTRAP_VERSION: ${{ steps.packages.outputs.bootstrap_version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          boundary=$(mktemp -d)
+          npm install --prefix "$boundary" --ignore-scripts \
+            "@getaip/cli@${BOOTSTRAP_VERSION}"
+          test "$(node -p "require('$boundary/node_modules/@getaip/cli/package.json').version")" = "$BOOTSTRAP_VERSION"
+          test ! -e "$boundary/node_modules/@getaip/cli/node_modules"
+          npm audit signatures --prefix "$boundary"
+
+      - name: Publish or prove the exact short bootstrap prerelease second
+        env:
+          BOOTSTRAP_VERSION: ${{ steps.packages.outputs.bootstrap_version }}
+          EXPECTED_INTEGRITY: ${{ steps.packages.outputs.short_integrity }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_FIRST_PUBLICATION_TOKEN }}
+          TARBALL: ${{ steps.packages.outputs.short_tarball }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          published=$(npm view "getaip@${BOOTSTRAP_VERSION}" dist.integrity --json 2>/dev/null | tr -d '"' || true)
+          if test -z "$published" || test "$published" = null; then
+            test -n "$NODE_AUTH_TOKEN"
+            npm publish "npm-candidate/$TARBALL" \
+              --access public --tag bootstrap --provenance
+          fi
+          for attempt in 1 2 3 4 5 6; do
+            published=$(npm view "getaip@${BOOTSTRAP_VERSION}" dist.integrity --json 2>/dev/null | tr -d '"' || true)
+            test "$published" = "$EXPECTED_INTEGRITY" && break
+            test "$attempt" -lt 6
+            sleep 10
+          done
+          test "$published" = "$EXPECTED_INTEGRITY"
+          test "$(npm view getaip dist-tags.bootstrap)" = "$BOOTSTRAP_VERSION"
+          test "$(npm view getaip dist-tags.latest 2>/dev/null || true)" != "$BOOTSTRAP_VERSION"
+
+      - name: Install and execute the short bootstrap prerelease
+        env:
+          BOOTSTRAP_VERSION: ${{ steps.packages.outputs.bootstrap_version }}
+          NATIVE_VERSION: ${{ steps.packages.outputs.native_version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          boundary=$(mktemp -d)
+          npm install --prefix "$boundary" --ignore-scripts \
+            "getaip@${BOOTSTRAP_VERSION}"
+          test "$(node -p "require('$boundary/node_modules/getaip/package.json').version")" = "$BOOTSTRAP_VERSION"
+          test "$(node -p "require('$boundary/node_modules/@getaip/cli/package.json').version")" = "$BOOTSTRAP_VERSION"
+          npm audit signatures --prefix "$boundary"
+          install_root=$(mktemp -d)
+          npm_cache=$(mktemp -d)
+          npm_config_cache=$npm_cache npx --yes \
+            "getaip@${BOOTSTRAP_VERSION}" setup --dry-run --output json \
+            --test-root "$install_root" > bootstrap-setup-dry-run.json
+          test "$(jq -er .schema bootstrap-setup-dry-run.json)" = \
+            org.getaip.cli.setup-plan.v1
+          test "$(jq -er .installation.target_version bootstrap-setup-dry-run.json)" = \
+            "$NATIVE_VERSION"
+
+      - name: Retain prerelease registry integrity and provenance evidence
+        env:
+          BOOTSTRAP_VERSION: ${{ steps.packages.outputs.bootstrap_version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm view "@getaip/cli@${BOOTSTRAP_VERSION}" \
+            name version dist.integrity dist.tarball dist.attestations engines repository --json \
+            > scoped-registry-evidence.json
+          npm view "getaip@${BOOTSTRAP_VERSION}" \
+            name version dependencies dist.integrity dist.tarball dist.attestations engines repository --json \
+            > short-registry-evidence.json
+          for evidence in scoped-registry-evidence.json short-registry-evidence.json; do
+            test "$(jq -er '.dist.attestations.provenance.predicateType' "$evidence")" = \
+              https://slsa.dev/provenance/v1
+            jq -er '.dist.attestations.url | startswith("https://registry.npmjs.org/-/npm/v1/attestations/")' \
+              "$evidence" > /dev/null
+          done
+
+      - name: Upload one-time publication evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: npm-first-publication-${{ inputs.tag }}-${{ github.sha }}
+          path: |
+            candidate-metadata.json
+            bootstrap-setup-dry-run.json
+            scoped-pack.json
+            short-pack.json
+            scoped-registry-evidence.json
+            short-registry-evidence.json
+            npm-candidate/*.tgz
+          if-no-files-found: error
+          retention-days: 90

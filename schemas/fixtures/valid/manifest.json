@@ -1,0 +1,12 @@
+{
+  "manifest_version": "aip-manifest/v1",
+  "agent": {
+    "id": "agent:fixture",
+    "kind": "agent"
+  },
+  "profiles": [
+    "aip.native.http.v1"
+  ],
+  "capabilities": []
+}
+

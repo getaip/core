@@ -1,0 +1,385 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IdentityContext",
+  "description": "Identity, tenant, and credential mapping context for enterprise actions.",
+  "type": "object",
+  "properties": {
+    "tenant": {
+      "description": "Tenant boundary.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TenantRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "external_account": {
+      "description": "External account boundary.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ExternalAccountRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "external_user": {
+      "description": "External user associated with the invocation.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ExternalUserRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "human_actor": {
+      "description": "Human actor that initiated or owns the work.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Principal"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "service_account": {
+      "description": "Service account executing the operation.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Principal"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "acted_on_behalf_of": {
+      "description": "Principal on whose behalf the operation is performed.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Principal"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "credential_ref": {
+      "description": "Reference to external credential material.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CredentialRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "oauth": {
+      "description": "OAuth lifecycle state without token material.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/OAuthCredentialState"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "TenantRef": {
+      "description": "Tenant reference used for policy and credential partitioning.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "AIP or external tenant id.",
+          "type": "string"
+        },
+        "system": {
+          "description": "Source system that owns the tenant id.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "ExternalAccountRef": {
+      "description": "External account reference used by product connectors.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Account id in the source system.",
+          "type": "string"
+        },
+        "system": {
+          "description": "Source system name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "system"
+      ],
+      "additionalProperties": false
+    },
+    "ExternalUserRef": {
+      "description": "External user reference used by product connectors.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "User id in the source system.",
+          "type": "string"
+        },
+        "system": {
+          "description": "Source system name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "system"
+      ],
+      "additionalProperties": false
+    },
+    "Principal": {
+      "description": "Actor or authorizing entity in AIP.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable AIP principal id.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "kind": {
+          "description": "Principal category.",
+          "$ref": "#/$defs/PrincipalKind"
+        },
+        "display_name": {
+          "description": "Human-readable display name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trust_domain": {
+          "description": "Trust domain that owns this principal.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "did": {
+          "description": "DID identity, if available.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "external_refs": {
+          "description": "Product-specific identities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExternalRef"
+          }
+        },
+        "delegated_authority": {
+          "description": "Scoped delegated authority granted to this principal.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DelegatedAuthorityGrant"
+          }
+        },
+        "auth_context": {
+          "description": "Authentication metadata supplied by a profile or gateway."
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "PrincipalId": {
+      "description": "Stable principal identifier.",
+      "type": "string"
+    },
+    "PrincipalKind": {
+      "description": "Entity category for a protocol principal.",
+      "oneOf": [
+        {
+          "description": "A human user or operator.",
+          "type": "string",
+          "const": "human"
+        },
+        {
+          "description": "An autonomous or semi-autonomous agent.",
+          "type": "string",
+          "const": "agent"
+        },
+        {
+          "description": "A service account or machine identity.",
+          "type": "string",
+          "const": "service"
+        },
+        {
+          "description": "A tenant/account boundary.",
+          "type": "string",
+          "const": "tenant"
+        },
+        {
+          "description": "A customer identity.",
+          "type": "string",
+          "const": "customer"
+        },
+        {
+          "description": "A contact identity in a channel product.",
+          "type": "string",
+          "const": "contact"
+        },
+        {
+          "description": "A system-level actor.",
+          "type": "string",
+          "const": "system"
+        }
+      ]
+    },
+    "ExternalRef": {
+      "description": "Product-specific identity reference preserved by connectors.",
+      "type": "object",
+      "properties": {
+        "system": {
+          "description": "Source system name, for example `chatwoot` or `dify`.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Source-local entity type.",
+          "type": "string"
+        },
+        "id": {
+          "description": "Source-local entity id.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "system",
+        "type",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "DelegatedAuthorityGrant": {
+      "description": "Scoped authority delegated to this principal for another principal's work.\n\nDelegated authority is part of the native AIP identity model. It lets a\nruntime distinguish \"can read or operate on my own work\" from \"can read or\noperate on work owned by a specific principal\" without granting broad\n`*:any` scopes. Compatibility profiles may project this from their own\nauth systems, but the resulting grant is evaluated by AIP core/runtime\nsemantics.",
+      "type": "object",
+      "properties": {
+        "principal_id": {
+          "description": "Principal whose work is covered by the grant.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "scopes": {
+          "description": "Granted scope labels. `*` grants all scopes for this principal.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_at": {
+          "description": "Expiration timestamp. Expired grants MUST be ignored by runtimes.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "description": "Optional reason or authority reference retained for audit/debugging.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "principal_id"
+      ],
+      "additionalProperties": false
+    },
+    "CredentialRef": {
+      "description": "Reference to credential material stored outside protocol envelopes.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Credential id or vault reference.",
+          "type": "string"
+        },
+        "issuer": {
+          "description": "Credential issuer or storage boundary.",
+          "type": "string"
+        },
+        "scopes": {
+          "description": "Granted scope labels known to the runtime.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "issuer"
+      ],
+      "additionalProperties": false
+    },
+    "OAuthCredentialState": {
+      "description": "OAuth credential lifecycle state without raw token material.",
+      "type": "object",
+      "properties": {
+        "issuer": {
+          "description": "Authorization server or provider id.",
+          "type": "string"
+        },
+        "client_id": {
+          "description": "OAuth client id or service identifier.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scopes": {
+          "description": "Granted scope labels.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_at": {
+          "description": "Token expiration timestamp, when known.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "refresh_available": {
+          "description": "Whether refresh is available without human reauthorization.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "issuer",
+        "refresh_available"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/identity_context.schema.json",
+  "additionalProperties": false
+}

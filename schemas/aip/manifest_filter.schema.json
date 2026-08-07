@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ManifestFilter",
+  "description": "Filter for native manifest and capability discovery requests.",
+  "type": "object",
+  "properties": {
+    "capability_ids": {
+      "description": "Capability ids to include.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/CapabilityId"
+      }
+    },
+    "resource_kinds": {
+      "description": "Resource kind labels to include.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "profiles": {
+      "description": "Profile ids to include.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ProfileId"
+      }
+    },
+    "risk": {
+      "description": "Risk levels to include.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RiskLevel"
+      }
+    },
+    "side_effects": {
+      "description": "Required side-effect categories.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/SideEffect"
+      }
+    },
+    "requires_approval": {
+      "description": "Filter by approval requirement.",
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "supports_streaming": {
+      "description": "Filter capabilities that support streaming.",
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "supports_transactions": {
+      "description": "Filter capabilities that support transaction semantics.",
+      "type": [
+        "boolean",
+        "null"
+      ]
+    }
+  },
+  "$defs": {
+    "CapabilityId": {
+      "description": "Stable capability identifier.",
+      "type": "string"
+    },
+    "ProfileId": {
+      "description": "AIP profile identifier such as `aip.native.http.v1`.",
+      "type": "string"
+    },
+    "RiskLevel": {
+      "description": "Operational risk classification.",
+      "oneOf": [
+        {
+          "description": "Low-risk capability.",
+          "type": "string",
+          "const": "low"
+        },
+        {
+          "description": "Medium-risk capability.",
+          "type": "string",
+          "const": "medium"
+        },
+        {
+          "description": "High-risk capability.",
+          "type": "string",
+          "const": "high"
+        },
+        {
+          "description": "Critical-risk capability.",
+          "type": "string",
+          "const": "critical"
+        }
+      ]
+    },
+    "SideEffect": {
+      "description": "Side effect category for an enterprise capability.",
+      "oneOf": [
+        {
+          "description": "Read data without intended mutation.",
+          "type": "string",
+          "const": "read"
+        },
+        {
+          "description": "Mutate existing state or create new state.",
+          "type": "string",
+          "const": "write"
+        },
+        {
+          "description": "Delete or destroy state.",
+          "type": "string",
+          "const": "delete"
+        },
+        {
+          "description": "Send a user-visible or external message.",
+          "type": "string",
+          "const": "send_message"
+        },
+        {
+          "description": "Move money, create financial obligations, or change billing state.",
+          "type": "string",
+          "const": "financial"
+        },
+        {
+          "description": "Change identity, account, access, or credential state.",
+          "type": "string",
+          "const": "identity"
+        },
+        {
+          "description": "Touch medical or health-related records.",
+          "type": "string",
+          "const": "medical"
+        },
+        {
+          "description": "Touch legal, contractual, or compliance-sensitive records.",
+          "type": "string",
+          "const": "legal"
+        },
+        {
+          "description": "Call an external network service.",
+          "type": "string",
+          "const": "external_network"
+        },
+        {
+          "description": "Execute code or scripts supplied at runtime.",
+          "type": "string",
+          "const": "code_execution"
+        }
+      ]
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/manifest_filter.schema.json",
+  "additionalProperties": false
+}

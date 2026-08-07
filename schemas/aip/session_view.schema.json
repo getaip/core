@@ -1,0 +1,284 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SessionView",
+  "description": "Durable session read-model view.",
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "description": "Stable session id.",
+      "$ref": "#/$defs/SessionId"
+    },
+    "status": {
+      "description": "Current lifecycle state.",
+      "$ref": "#/$defs/SessionState"
+    },
+    "principal": {
+      "description": "Session initiator.",
+      "$ref": "#/$defs/Principal"
+    },
+    "peer": {
+      "description": "Session responder.",
+      "$ref": "#/$defs/Principal"
+    },
+    "created_at": {
+      "description": "Creation timestamp.",
+      "type": "string"
+    },
+    "updated_at": {
+      "description": "Last known state update timestamp.",
+      "type": "string"
+    },
+    "expires_at": {
+      "description": "Optional expiration timestamp.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "active_action_count": {
+      "description": "Number of non-terminal actions bound to this session.",
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0
+    },
+    "links": {
+      "description": "Operational links for HTTP and SDK bindings.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "session_id",
+    "status",
+    "principal",
+    "peer",
+    "created_at",
+    "updated_at",
+    "active_action_count"
+  ],
+  "$defs": {
+    "SessionId": {
+      "description": "Session identifier.",
+      "type": "string"
+    },
+    "SessionState": {
+      "description": "Lifecycle state of an AIP session.",
+      "oneOf": [
+        {
+          "description": "Session is being negotiated.",
+          "type": "string",
+          "const": "new"
+        },
+        {
+          "description": "Session is ready for actions.",
+          "type": "string",
+          "const": "active"
+        },
+        {
+          "description": "Work is accepted but not started.",
+          "type": "string",
+          "const": "queued"
+        },
+        {
+          "description": "Work is running.",
+          "type": "string",
+          "const": "processing"
+        },
+        {
+          "description": "Work is streaming output.",
+          "type": "string",
+          "const": "streaming"
+        },
+        {
+          "description": "Work is blocked on human input or approval.",
+          "type": "string",
+          "const": "waiting_for_human"
+        },
+        {
+          "description": "Work completed successfully.",
+          "type": "string",
+          "const": "completed"
+        },
+        {
+          "description": "Work was cancelled.",
+          "type": "string",
+          "const": "cancelled"
+        },
+        {
+          "description": "Work reached terminal failure.",
+          "type": "string",
+          "const": "failed"
+        },
+        {
+          "description": "Settlement/audit closeout is complete.",
+          "type": "string",
+          "const": "settled"
+        }
+      ]
+    },
+    "Principal": {
+      "description": "Actor or authorizing entity in AIP.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable AIP principal id.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "kind": {
+          "description": "Principal category.",
+          "$ref": "#/$defs/PrincipalKind"
+        },
+        "display_name": {
+          "description": "Human-readable display name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trust_domain": {
+          "description": "Trust domain that owns this principal.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "did": {
+          "description": "DID identity, if available.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "external_refs": {
+          "description": "Product-specific identities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExternalRef"
+          }
+        },
+        "delegated_authority": {
+          "description": "Scoped delegated authority granted to this principal.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DelegatedAuthorityGrant"
+          }
+        },
+        "auth_context": {
+          "description": "Authentication metadata supplied by a profile or gateway."
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "PrincipalId": {
+      "description": "Stable principal identifier.",
+      "type": "string"
+    },
+    "PrincipalKind": {
+      "description": "Entity category for a protocol principal.",
+      "oneOf": [
+        {
+          "description": "A human user or operator.",
+          "type": "string",
+          "const": "human"
+        },
+        {
+          "description": "An autonomous or semi-autonomous agent.",
+          "type": "string",
+          "const": "agent"
+        },
+        {
+          "description": "A service account or machine identity.",
+          "type": "string",
+          "const": "service"
+        },
+        {
+          "description": "A tenant/account boundary.",
+          "type": "string",
+          "const": "tenant"
+        },
+        {
+          "description": "A customer identity.",
+          "type": "string",
+          "const": "customer"
+        },
+        {
+          "description": "A contact identity in a channel product.",
+          "type": "string",
+          "const": "contact"
+        },
+        {
+          "description": "A system-level actor.",
+          "type": "string",
+          "const": "system"
+        }
+      ]
+    },
+    "ExternalRef": {
+      "description": "Product-specific identity reference preserved by connectors.",
+      "type": "object",
+      "properties": {
+        "system": {
+          "description": "Source system name, for example `chatwoot` or `dify`.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Source-local entity type.",
+          "type": "string"
+        },
+        "id": {
+          "description": "Source-local entity id.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "system",
+        "type",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "DelegatedAuthorityGrant": {
+      "description": "Scoped authority delegated to this principal for another principal's work.\n\nDelegated authority is part of the native AIP identity model. It lets a\nruntime distinguish \"can read or operate on my own work\" from \"can read or\noperate on work owned by a specific principal\" without granting broad\n`*:any` scopes. Compatibility profiles may project this from their own\nauth systems, but the resulting grant is evaluated by AIP core/runtime\nsemantics.",
+      "type": "object",
+      "properties": {
+        "principal_id": {
+          "description": "Principal whose work is covered by the grant.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "scopes": {
+          "description": "Granted scope labels. `*` grants all scopes for this principal.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_at": {
+          "description": "Expiration timestamp. Expired grants MUST be ignored by runtimes.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "description": "Optional reason or authority reference retained for audit/debugging.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "principal_id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/session_view.schema.json",
+  "additionalProperties": false
+}

@@ -1,0 +1,272 @@
+name: aip-cal-diy-qualification
+
+services:
+  runtime-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: aip_runtime
+      POSTGRES_USER: aip_runtime
+      POSTGRES_PASSWORD: ${AIP_POSTGRES_PASSWORD:?prepare the runtime first}
+    volumes:
+      - runtime-postgres-data:/var/lib/postgresql/data
+    networks: [control]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aip_runtime -d aip_runtime -h 127.0.0.1"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  cal-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: cal
+      POSTGRES_USER: cal
+      POSTGRES_PASSWORD: ${CAL_POSTGRES_PASSWORD:?prepare the runtime first}
+    volumes:
+      - cal-postgres-data:/var/lib/postgresql/data
+    networks: [cal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cal -d cal -h 127.0.0.1"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  cal-redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "yes"]
+    volumes:
+      - cal-redis-data:/data
+    networks: [cal]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  getaip-server:
+    build:
+      context: ../..
+      dockerfile: crates/getaip-server-legacy-bundled/Dockerfile
+    image: getaip/server:cal-diy-qualification
+    command:
+      - --bind
+      - 0.0.0.0:8080
+      - --service-id
+      - agent:getaip:server:cal-diy-qualification
+      - --trust-domain
+      - qualification.aip.local
+    environment:
+      GETAIP_SERVER_POSTGRES_URL: postgresql://aip_runtime:${AIP_POSTGRES_PASSWORD}@runtime-postgres:5432/aip_runtime
+      GETAIP_SERVER_STORAGE_DIR: /var/lib/aip
+      GETAIP_SERVER_APPROVAL_AUTHORITY_FILE: /run/secrets/approval-authorities.json
+      GETAIP_SERVER_TRUSTED_IDENTITY_FILE: /run/secrets/trusted-identities.json
+      AIP_CAL_DIY_BASE_URL: http://127.0.0.1:18282
+      AIP_CAL_DIY_ACCOUNT_ID: aip-bistro
+      AIP_CAL_DIY_BEARER_TOKEN_FILE: /run/secrets/cal-api-key
+      AIP_CAL_DIY_TENANT_ACCOUNTS: tenant-cal-qualified=aip-bistro
+      AIP_CAL_DIY_CREDENTIAL_FILES: credential:cal-qualified=/run/secrets/cal-api-key
+      AIP_CAL_DIY_MAX_RESPONSE_BYTES: "4194304"
+      AIP_CAL_DIY_WEBHOOK_SECRET_FILES: cal-live=/run/secrets/cal-webhook-secret
+      AIP_CAL_DIY_WEBHOOK_REPLAY_FILE: /var/lib/aip/cal-diy-webhook-replay.json
+      GETAIP_SERVER_NATIVE_BEARER_TOKEN_FILE: /run/secrets/native-token
+      GETAIP_SERVER_NATIVE_PRINCIPAL: service:cal-qualified-client
+      GETAIP_SERVER_NATIVE_PRINCIPAL_SCOPES: action:write,action:read,action:read:any,approval:read,transaction:read,receipt:read,audit:read
+      GETAIP_SERVER_MCP_RESOURCE: http://getaip-server:8080/mcp
+      GETAIP_SERVER_MCP_AUTHORIZATION_SERVERS: https://qualification-idp.aip.local
+      GETAIP_SERVER_MCP_SCOPES: mcp:connect,action:write,action:read,action:read:any,approval:read,approval:read:any,approval:decide,approval:export,approval:sensitive,transaction:read,transaction:read:any,receipt:read,receipt:read:any,audit:read,audit:read:any,audit:export,events:read:any
+      GETAIP_SERVER_MCP_REQUIRED_SCOPES: mcp:connect
+      GETAIP_SERVER_MCP_INTROSPECTION_URL: http://127.0.0.1:19090/introspect
+      GETAIP_SERVER_MCP_INTROSPECTION_ISSUER: https://qualification-idp.aip.local
+      GETAIP_SERVER_MCP_INTROSPECTION_CLIENT_ID: getaip-server-cal-diy-qualification
+      GETAIP_SERVER_MCP_INTROSPECTION_CLIENT_SECRET_FILE: /run/secrets/introspection-client-secret
+      GETAIP_SERVER_MCP_INTROSPECTION_ALLOW_LOOPBACK_HTTP: "true"
+    volumes:
+      - getaip-server-state:/var/lib/aip
+      - ./.runtime/secrets/approval-authorities.json:/run/secrets/approval-authorities.json:ro
+      - ./.runtime/secrets/trusted-identities.json:/run/secrets/trusted-identities.json:ro
+      - ./.runtime/secrets/cal-api-key:/run/secrets/cal-api-key:ro
+      - ./.runtime/secrets/cal-webhook-secret:/run/secrets/cal-webhook-secret:ro
+      - ./.runtime/secrets/native-token:/run/secrets/native-token:ro
+      - ./.runtime/secrets/introspection-client-secret:/run/secrets/introspection-client-secret:ro
+    networks: [control, cal]
+    depends_on:
+      runtime-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      start_period: 10s
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  oauth:
+    image: python:3.13-alpine
+    network_mode: service:getaip-server
+    command: ["python", "-u", "/fixture/oauth-introspection.py"]
+    environment:
+      INTROSPECTION_CLIENT_ID: getaip-server-cal-diy-qualification
+      INTROSPECTION_CLIENT_SECRET_FILE: /run/secrets/introspection-client-secret
+      INTROSPECTION_IDENTITIES_FILE: /run/secrets/identities.json
+      INTROSPECTION_ISSUER: https://qualification-idp.aip.local
+      INTROSPECTION_AUDIENCE: http://getaip-server:8080/mcp
+    volumes:
+      - ../getaip-server-docker/oauth-introspection.py:/fixture/oauth-introspection.py:ro
+      - ./.runtime/secrets/introspection-client-secret:/run/secrets/introspection-client-secret:ro
+      - ./.runtime/secrets/mcp-identities.json:/run/secrets/identities.json:ro
+    depends_on:
+      getaip-server:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:19090/health', timeout=2).read()"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  cal-migrate:
+    image: cal-diy-api:aip-f004349-runtime
+    network_mode: service:getaip-server
+    command: ["yarn", "workspace", "@calcom/prisma", "db-deploy"]
+    environment:
+      DATABASE_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      DATABASE_DIRECT_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      USE_POOL: "true"
+    depends_on:
+      getaip-server:
+        condition: service_started
+      cal-postgres:
+        condition: service_healthy
+    restart: "no"
+
+  cal-seed:
+    image: cal-diy-api:aip-f004349-runtime
+    network_mode: service:getaip-server
+    command: ["/calcom/node_modules/.bin/ts-node", "--transpile-only", "./scripts/aip-cal-qualification-seed.ts"]
+    environment:
+      DATABASE_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      DATABASE_DIRECT_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      USE_POOL: "true"
+      CAL_API_KEY_FILE: /run/secrets/cal-api-key
+    volumes:
+      - ../restaurant-booking/cal-seed.ts:/calcom/scripts/aip-cal-qualification-seed.ts:ro
+      - ./.runtime/secrets/cal-api-key:/run/secrets/cal-api-key:ro
+    depends_on:
+      cal-migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  cal-api:
+    image: cal-diy-api:aip-f004349-runtime
+    network_mode: service:getaip-server
+    environment:
+      NODE_ENV: production
+      API_PORT: "18282"
+      API_URL: http://127.0.0.1:18282
+      DATABASE_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      DATABASE_READ_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      DATABASE_WRITE_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      DATABASE_DIRECT_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      REDIS_URL: redis://cal-redis:6379
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?prepare the runtime first}
+      JWT_SECRET: ${JWT_SECRET:?prepare the runtime first}
+      CALENDSO_ENCRYPTION_KEY: ${CALENDSO_ENCRYPTION_KEY:?prepare the runtime first}
+      STRIPE_API_KEY: ${STRIPE_API_KEY:?prepare the runtime first}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:?prepare the runtime first}
+      IS_TEAM_BILLING_ENABLED: "false"
+      API_KEY_PREFIX: cal_
+      WEB_APP_URL: http://127.0.0.1:3000
+      REWRITE_API_V2_PREFIX: "1"
+      ENABLE_SLOTS_WORKERS: "false"
+      ENABLE_ASYNC_TASKER: "false"
+      CALCOM_TELEMETRY_DISABLED: "1"
+      LOG_LEVEL: info
+    depends_on:
+      cal-seed:
+        condition: service_completed_successfully
+      cal-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:18282/health').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      start_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  qualification:
+    profiles: [test]
+    image: aip-restaurant-coordinator:local
+    user: "0:0"
+    command: ["python", "/test/run-qualification.py"]
+    environment:
+      QUALIFICATION_MODE: ${QUALIFICATION_MODE:-run}
+      AIP_MCP_URL: http://getaip-server:8080/mcp
+      AIP_NATIVE_URL: http://getaip-server:8080/aip/v1/messages
+      CAL_DATABASE_URL: postgresql://cal:${CAL_POSTGRES_PASSWORD}@cal-postgres:5432/cal
+      REQUESTER_TOKEN_FILE: /run/secrets/requester-token
+      APPROVER_TOKEN_FILE: /run/secrets/approver-token
+      NATIVE_TOKEN_FILE: /run/secrets/native-token
+      WEBHOOK_SECRET_FILE: /run/secrets/cal-webhook-secret
+      EVIDENCE_FILE: /evidence/cal-diy-qualification.json
+      AIP_BASE_COMMIT: ${AIP_BASE_COMMIT:-unknown}
+      AIP_SOURCE_DIGEST: ${AIP_SOURCE_DIGEST:-unknown}
+      AIP_HARNESS_DIGEST: ${AIP_HARNESS_DIGEST:-unknown}
+      AIP_IMAGE_ID: ${AIP_IMAGE_ID:-unknown}
+      AIP_BUILDER_IMAGE_ID: ${AIP_BUILDER_IMAGE_ID:-unknown}
+      AIP_RUNTIME_BASE_IMAGE_ID: ${AIP_RUNTIME_BASE_IMAGE_ID:-unknown}
+      CAL_COMMIT: ${CAL_COMMIT:-unknown}
+      CAL_IMAGE_ID: ${CAL_IMAGE_ID:-unknown}
+      CAL_SOURCE_DIGEST: ${CAL_SOURCE_DIGEST:-unknown}
+      QUALIFICATION_RUNNER_IMAGE_ID: ${QUALIFICATION_RUNNER_IMAGE_ID:-unknown}
+    volumes:
+      - ./run-qualification.py:/test/run-qualification.py:ro
+      - ./.runtime/secrets/requester-token:/run/secrets/requester-token:ro
+      - ./.runtime/secrets/approver-token:/run/secrets/approver-token:ro
+      - ./.runtime/secrets/native-token:/run/secrets/native-token:ro
+      - ./.runtime/secrets/cal-webhook-secret:/run/secrets/cal-webhook-secret:ro
+      - ./.runtime/evidence:/evidence
+    networks: [control, cal]
+    depends_on:
+      getaip-server:
+        condition: service_healthy
+      oauth:
+        condition: service_healthy
+      cal-api:
+        condition: service_healthy
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: "no"
+
+networks:
+  control:
+    internal: true
+  cal:
+    internal: true
+
+volumes:
+  runtime-postgres-data:
+  cal-postgres-data:
+  cal-redis-data:
+  getaip-server-state:

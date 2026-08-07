@@ -1,0 +1,442 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Escalation",
+  "description": "Human-in-the-loop escalation request.",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "description": "Escalation category.",
+      "$ref": "#/$defs/EscalationKind"
+    },
+    "reason": {
+      "description": "Human-readable reason.",
+      "type": "string"
+    },
+    "requested_by": {
+      "description": "Requesting actor.",
+      "$ref": "#/$defs/Principal"
+    },
+    "form": {
+      "description": "Human input form."
+    },
+    "risk": {
+      "description": "Risk level.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RiskLevel"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "timeout_ms": {
+      "description": "Escalation timeout.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint64",
+      "minimum": 0
+    },
+    "allowed_decisions": {
+      "description": "Allowed decisions.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/EscalationDecision"
+      }
+    },
+    "conversation": {
+      "description": "Channel context.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Conversation"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "kind",
+    "reason",
+    "requested_by"
+  ],
+  "$defs": {
+    "EscalationKind": {
+      "description": "Human escalation category.",
+      "oneOf": [
+        {
+          "description": "Human approval request.",
+          "type": "string",
+          "const": "approval"
+        },
+        {
+          "description": "Human input request.",
+          "type": "string",
+          "const": "input"
+        },
+        {
+          "description": "Human handoff request.",
+          "type": "string",
+          "const": "handoff"
+        },
+        {
+          "description": "Policy exception review.",
+          "type": "string",
+          "const": "policy_exception"
+        }
+      ]
+    },
+    "Principal": {
+      "description": "Actor or authorizing entity in AIP.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable AIP principal id.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "kind": {
+          "description": "Principal category.",
+          "$ref": "#/$defs/PrincipalKind"
+        },
+        "display_name": {
+          "description": "Human-readable display name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trust_domain": {
+          "description": "Trust domain that owns this principal.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "did": {
+          "description": "DID identity, if available.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "external_refs": {
+          "description": "Product-specific identities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExternalRef"
+          }
+        },
+        "delegated_authority": {
+          "description": "Scoped delegated authority granted to this principal.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DelegatedAuthorityGrant"
+          }
+        },
+        "auth_context": {
+          "description": "Authentication metadata supplied by a profile or gateway."
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "PrincipalId": {
+      "description": "Stable principal identifier.",
+      "type": "string"
+    },
+    "PrincipalKind": {
+      "description": "Entity category for a protocol principal.",
+      "oneOf": [
+        {
+          "description": "A human user or operator.",
+          "type": "string",
+          "const": "human"
+        },
+        {
+          "description": "An autonomous or semi-autonomous agent.",
+          "type": "string",
+          "const": "agent"
+        },
+        {
+          "description": "A service account or machine identity.",
+          "type": "string",
+          "const": "service"
+        },
+        {
+          "description": "A tenant/account boundary.",
+          "type": "string",
+          "const": "tenant"
+        },
+        {
+          "description": "A customer identity.",
+          "type": "string",
+          "const": "customer"
+        },
+        {
+          "description": "A contact identity in a channel product.",
+          "type": "string",
+          "const": "contact"
+        },
+        {
+          "description": "A system-level actor.",
+          "type": "string",
+          "const": "system"
+        }
+      ]
+    },
+    "ExternalRef": {
+      "description": "Product-specific identity reference preserved by connectors.",
+      "type": "object",
+      "properties": {
+        "system": {
+          "description": "Source system name, for example `chatwoot` or `dify`.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Source-local entity type.",
+          "type": "string"
+        },
+        "id": {
+          "description": "Source-local entity id.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "system",
+        "type",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "DelegatedAuthorityGrant": {
+      "description": "Scoped authority delegated to this principal for another principal's work.\n\nDelegated authority is part of the native AIP identity model. It lets a\nruntime distinguish \"can read or operate on my own work\" from \"can read or\noperate on work owned by a specific principal\" without granting broad\n`*:any` scopes. Compatibility profiles may project this from their own\nauth systems, but the resulting grant is evaluated by AIP core/runtime\nsemantics.",
+      "type": "object",
+      "properties": {
+        "principal_id": {
+          "description": "Principal whose work is covered by the grant.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "scopes": {
+          "description": "Granted scope labels. `*` grants all scopes for this principal.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_at": {
+          "description": "Expiration timestamp. Expired grants MUST be ignored by runtimes.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "description": "Optional reason or authority reference retained for audit/debugging.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "principal_id"
+      ],
+      "additionalProperties": false
+    },
+    "RiskLevel": {
+      "description": "Operational risk classification.",
+      "oneOf": [
+        {
+          "description": "Low-risk capability.",
+          "type": "string",
+          "const": "low"
+        },
+        {
+          "description": "Medium-risk capability.",
+          "type": "string",
+          "const": "medium"
+        },
+        {
+          "description": "High-risk capability.",
+          "type": "string",
+          "const": "high"
+        },
+        {
+          "description": "Critical-risk capability.",
+          "type": "string",
+          "const": "critical"
+        }
+      ]
+    },
+    "EscalationDecision": {
+      "description": "Human decision options.",
+      "oneOf": [
+        {
+          "description": "Approve work.",
+          "type": "string",
+          "const": "approve"
+        },
+        {
+          "description": "Reject work.",
+          "type": "string",
+          "const": "reject"
+        },
+        {
+          "description": "Modify work.",
+          "type": "string",
+          "const": "modify"
+        },
+        {
+          "description": "Hand off work.",
+          "type": "string",
+          "const": "handoff"
+        },
+        {
+          "description": "Cancel work.",
+          "type": "string",
+          "const": "cancel"
+        }
+      ]
+    },
+    "Conversation": {
+      "description": "Customer or user-facing conversation thread.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable AIP conversation id.",
+          "$ref": "#/$defs/ConversationId"
+        },
+        "channel": {
+          "description": "Channel metadata."
+        },
+        "status": {
+          "description": "Conversation status.",
+          "$ref": "#/$defs/ConversationStatus"
+        },
+        "external_refs": {
+          "description": "Product-specific ids.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExternalRef"
+          }
+        },
+        "contact": {
+          "description": "Customer/contact principal.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Principal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assignee": {
+          "description": "Human or bot assignee.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Principal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "priority": {
+          "description": "Priority.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Priority"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "labels": {
+          "description": "Labels/tags.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "metadata": {
+          "description": "Extension metadata."
+        }
+      },
+      "required": [
+        "id",
+        "channel",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "ConversationId": {
+      "description": "Conversation identifier.",
+      "type": "string"
+    },
+    "ConversationStatus": {
+      "description": "Conversation state in a user-facing channel.",
+      "oneOf": [
+        {
+          "description": "Conversation is open.",
+          "type": "string",
+          "const": "open"
+        },
+        {
+          "description": "Conversation is pending.",
+          "type": "string",
+          "const": "pending"
+        },
+        {
+          "description": "Conversation is resolved.",
+          "type": "string",
+          "const": "resolved"
+        },
+        {
+          "description": "Conversation is snoozed.",
+          "type": "string",
+          "const": "snoozed"
+        },
+        {
+          "description": "Conversation is archived.",
+          "type": "string",
+          "const": "archived"
+        }
+      ]
+    },
+    "Priority": {
+      "description": "Conversation priority.",
+      "oneOf": [
+        {
+          "description": "Low priority.",
+          "type": "string",
+          "const": "low"
+        },
+        {
+          "description": "Medium priority.",
+          "type": "string",
+          "const": "medium"
+        },
+        {
+          "description": "High priority.",
+          "type": "string",
+          "const": "high"
+        },
+        {
+          "description": "Urgent priority.",
+          "type": "string",
+          "const": "urgent"
+        }
+      ]
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/escalation.schema.json",
+  "additionalProperties": false
+}

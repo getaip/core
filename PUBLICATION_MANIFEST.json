@@ -1,0 +1,2525 @@
+{
+  "excluded_counts": {
+    ".gitea/": 1,
+    "CHANGELOG": 1,
+    "SOURCE_SNAPSHOT.json": 1,
+    "artifacts/": 7,
+    "markdown": 1
+  },
+  "file_count": 417,
+  "files": [
+    {
+      "mode": "0644",
+      "path": ".dockerignore",
+      "sha256": "410d73a276bcf1c22c4ff335df09deaa148392a93f3020d82742dee93a9c0853",
+      "size": 502
+    },
+    {
+      "mode": "0644",
+      "path": ".editorconfig",
+      "sha256": "156c59d04e5268f776186932f14a17bb0bf130d1e0887d360b12d778aa0d0347",
+      "size": 140
+    },
+    {
+      "mode": "0644",
+      "path": ".github/CODEOWNERS",
+      "sha256": "89840db612ecdda897bfd5c964f1aa015efd18e72f5e60410588bfe91e05f7d4",
+      "size": 15
+    },
+    {
+      "mode": "0644",
+      "path": ".github/dependabot.yml",
+      "sha256": "5701432cc705d1fd00ccbfaf939ff0a3433a5f217fca2ebb5e294517747d3b24",
+      "size": 409
+    },
+    {
+      "mode": "0644",
+      "path": ".github/workflows/ci.yml",
+      "sha256": "caa7a17a565baede07517a31ca0f7d90ae965e5a232ed449a21b88a075454bfb",
+      "size": 20033
+    },
+    {
+      "mode": "0644",
+      "path": ".github/workflows/npm-first-publication.yml",
+      "sha256": "559fe980cafd521a7e3521cfde73e156d310f9fbfaf953bb21be92106cbf2982",
+      "size": 11252
+    },
+    {
+      "mode": "0644",
+      "path": ".github/workflows/npm-publish.yml",
+      "sha256": "40b9fb817d88359feb66d26193d1c4993245c280fadf7b72301b86f0a6601043",
+      "size": 20740
+    },
+    {
+      "mode": "0644",
+      "path": ".github/workflows/promote-public-release.yml",
+      "sha256": "572bcbc4fe597a63f586fc59eed611612f99ddfa00b71ef6191fcb22538c5bd4",
+      "size": 11946
+    },
+    {
+      "mode": "0644",
+      "path": ".github/workflows/release-check.yml",
+      "sha256": "ecdd52ae7d0f8da4b11b99c5cd7becaf0c8fac740a26e01c496525f8174fad55",
+      "size": 2219
+    },
+    {
+      "mode": "0644",
+      "path": ".github/workflows/release.yml",
+      "sha256": "3ac0e432790d1222cf876f07e6005e45bef5cced791c0c0ec9f318c3e3d0ecbb",
+      "size": 25642
+    },
+    {
+      "mode": "0644",
+      "path": ".gitignore",
+      "sha256": "043c479f5bacb3e8f3a0bf5bba24270459e5444a85fa8dea044f25d8723e18d5",
+      "size": 481
+    },
+    {
+      "mode": "0644",
+      "path": ".gitleaks.toml",
+      "sha256": "0fb5ceb4f7523e8bb8ecc17075f190bd223c91e6f9181f9143d16f62f5623d92",
+      "size": 182
+    },
+    {
+      "mode": "0644",
+      "path": ".mailmap",
+      "sha256": "2a2f9be960c2f02046cfe42bfda3c2b21359f9c01350dafdb1426467a8c02fe0",
+      "size": 52
+    },
+    {
+      "mode": "0644",
+      "path": "Cargo.lock",
+      "sha256": "3877d42e89e67ebe0039a9f1173332d701bcda6204416736503ec592d267798b",
+      "size": 111377
+    },
+    {
+      "mode": "0644",
+      "path": "Cargo.toml",
+      "sha256": "584f44bdafabe3672bd274149fdec4c0ef813f40aba069659d3e42921f182bdd",
+      "size": 8690
+    },
+    {
+      "mode": "0644",
+      "path": "LICENSE",
+      "sha256": "bcd69f392245a1d9034dfab46820305bbd4879ad847cbc0a57a2c10b6cbc7f8e",
+      "size": 5663
+    },
+    {
+      "mode": "0644",
+      "path": "NOTICE",
+      "sha256": "80a65f6645ca65fe2dd90db75cb9e7faac6a710586b10d7d27d3035675ecf7c6",
+      "size": 390
+    },
+    {
+      "mode": "0644",
+      "path": "SOURCE_SNAPSHOT.json",
+      "sha256": "b724e4e98ef2591f345b93f972e3ab503133a7e0c9a43e7b3a9cfeb89cc7e7df",
+      "size": 1176
+    },
+    {
+      "mode": "0644",
+      "path": "THIRD_PARTY_NOTICES",
+      "sha256": "f392a969141fbad414b8e6c663c676b557e38972cff5371295ade6c77fc27782",
+      "size": 835
+    },
+    {
+      "mode": "0644",
+      "path": "clippy.toml",
+      "sha256": "69344d92267b467cbccfa6dd8a4b24352ebc0c2b3d4f3c16d3fda804e9ea6a9e",
+      "size": 50
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-auth/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-auth/Cargo.toml",
+      "sha256": "70c885bbebf93660969cdee07e1defe821494c70f13384b3a9ee19e61c5327b9",
+      "size": 542
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-auth/src/lib.rs",
+      "sha256": "f8fe197aacf0ef12e45d61fda90583e29fa72d830c090882652f2789fdbe1796",
+      "size": 16021
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-auth/src/query.rs",
+      "sha256": "e2dbc3141d65e99cfdf0e3cae11dd98d922acfd88ebf3c9ba0166adb4baa1ab1",
+      "size": 9575
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-auth/src/trusted.rs",
+      "sha256": "ce5a94607041c0318c9fdd9b4570444f611486b1ee20d38b375e23281b542efa",
+      "size": 74469
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-conformance/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-conformance/Cargo.toml",
+      "sha256": "1fa86dde261ce78ac09ea01c1bc17a24ce319eb80406ba24f7c3709ba865a56a",
+      "size": 536
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-conformance/src/lib.rs",
+      "sha256": "eca0a304a0c680d1c1f0a253615c24a078f72544784f30f82cc7d5dc8c679715",
+      "size": 47409
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-admission/Cargo.toml",
+      "sha256": "2d2464c67ada282e5a965ed3a6d5a1816e3ec3b283fb50f3b9715b8fbe698cbb",
+      "size": 588
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-admission/src/lib.rs",
+      "sha256": "d359ea0ff729bedfc2d246d289fbb107cfe5d2364a778b9efd167741cfa2070b",
+      "size": 72250
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-cal-diy/Cargo.toml",
+      "sha256": "765fd9b7e47a1d3dc1571482e809cce0585d49abfce6e7693a8e92fb51817f4f",
+      "size": 920
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-cal-diy/src/client.rs",
+      "sha256": "6d39a66b2380885832cf78be9d908f7e2f766b07903169277f1ceb0f337f6cb7",
+      "size": 27563
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-cal-diy/src/lib.rs",
+      "sha256": "8a86d75454791f337fa5f8f20ef3dfab2ea7c012bf39013f9fecdc35d5c1ad3e",
+      "size": 117609
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-cal-diy/src/operations.rs",
+      "sha256": "7c165b113d4756693df3145717204824d3a198ce8e40d6f6028cdd468b1d71d1",
+      "size": 103863
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-cal-diy/src/state.rs",
+      "sha256": "9e2c60490940ce3597769501a38a730c5069ee970c25cb718a4f59bd617c36f9",
+      "size": 27284
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-cal-diy/src/webhook.rs",
+      "sha256": "8e759f0184ec9e836509d41691b8a20e13f2cf886dae7d501eb288bcc93e1a0a",
+      "size": 28730
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-cal-diy/tests/connector_contract.rs",
+      "sha256": "1cba876ead0a7fcade5e45b5ce80bf6852e30541c6d413469b079d6639e49fcb",
+      "size": 18011
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-cal-diy/tests/frozen_conformance.rs",
+      "sha256": "190ae011f458446872863177477e4ccc8d94c81dba7f8a63aba8a079461f00bf",
+      "size": 59355
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-cal-diy/tests/live_cal_diy.rs",
+      "sha256": "16861dde4cb7b51a1fa9a0c6d89330fe9f9a438abe6ee55ade48c8ba395d4974",
+      "size": 2780
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-chatwoot/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-chatwoot/Cargo.toml",
+      "sha256": "3bc789029014366bf53ece11edcbd2010677b6aa2ce52373efec4f8ed7786877",
+      "size": 807
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-chatwoot/src/lib.rs",
+      "sha256": "4e8b43d77cceb12f021889d5d6d6c42cd0b00658a267667bbbe256eeaf94e671",
+      "size": 117028
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-chatwoot/src/operations.rs",
+      "sha256": "8c861fda49b59529acc1827d696b9678aceac874b5720f58128194596c71dfbd",
+      "size": 87593
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-control-plane/Cargo.toml",
+      "sha256": "6d0289c0bbc9c0e2c8ec3c83f2c11a9e22b1080eb29f141eb3a47f5e93b9c738",
+      "size": 882
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-control-plane/Dockerfile",
+      "sha256": "ce5f431dea10f29e34e4b39d099fc85fe73a8b15567aa95fd2643b7db4303311",
+      "size": 1673
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-control-plane/src/lib.rs",
+      "sha256": "0a8323f7804441e4ae13feac52fac9e69580868a7f2d9424d3fc7b3b519e3ea5",
+      "size": 18062
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-control-plane/src/main.rs",
+      "sha256": "46b8eed2add93e8bb84f76f935e490cb82a5782d184f046ff06686e9a96c0998",
+      "size": 430
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-control-plane/tests/postgres_control_plane.rs",
+      "sha256": "53fd64e42ef8bb29ed156275751b26523ded2a6cdbf042d486278a082207c349",
+      "size": 18569
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-crewai/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-crewai/Cargo.toml",
+      "sha256": "56f1cec0b3538c1967f78665e2b67b28974577ecd5356634fb052eaa69d4803d",
+      "size": 591
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-crewai/sidecar/.dockerignore",
+      "sha256": "d37e968ee60d1470b87e2211646229a2820668e9158d863af9bcc3b87d1ef457",
+      "size": 61
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-crewai/sidecar/.gitignore",
+      "sha256": "f2accc1f93e0de1b3cd2685b4f40f3f9c46b2d2761ff4da6212491aa5b6d2618",
+      "size": 95
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-crewai/sidecar/Dockerfile",
+      "sha256": "75412c572293b46032714abbea1178d990f888ba2188e9db28a9c87674b254f7",
+      "size": 1923
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-crewai/sidecar/Dockerfile.upstream",
+      "sha256": "ad834c20eae493f0c09bf8730b6dd340e06e3dbce4aa870f28ad4ab00fb9ccd6",
+      "size": 2442
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-crewai/sidecar/aip_crewai_sidecar/__init__.py",
+      "sha256": "df63955a0e0af2f9585901061c2efdb554f45f37a0abbffb3873b11cda8fe4cd",
+      "size": 89
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-crewai/sidecar/aip_crewai_sidecar/__main__.py",
+      "sha256": "938ac3ee114eb3a6ee218f64b555450001e7d8ea9de3192d42acd8b8e6a40588",
+      "size": 518
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-crewai/sidecar/aip_crewai_sidecar/app.py",
+      "sha256": "87de2d8c44633329846f37b508e978f8499ae596acc94833736ab31fd8747d0a",
+      "size": 53043
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-crewai/sidecar/aip_crewai_sidecar/registry.py",
+      "sha256": "a6d9444e9a89812beeb1c3f1af206d470ae056d67d2d34485df1e7413c8917fb",
+      "size": 2308
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-crewai/sidecar/pyproject.toml",
+      "sha256": "ead98db5088e74e8794baf9b2fb1d314d77611a3608b77d8c6690dfb542b2df0",
+      "size": 731
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-crewai/sidecar/qualification/registry.py",
+      "sha256": "15c2770f6d40a546c20281183771a0271c5188db42230fa10bb3281a2c4a9d13",
+      "size": 2085
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-crewai/sidecar/tests/test_runtime.py",
+      "sha256": "97564bab2ffd491dd8a09ee0183d612c82df417a9587d36b3bbdb738a1315ab8",
+      "size": 22056
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-crewai/sidecar/uv.lock",
+      "sha256": "4fc1335de58c8bd5ecf6c44741aa2a83100dc1ea1248ab874d5751d108a3e65f",
+      "size": 742785
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-crewai/src/lib.rs",
+      "sha256": "34d2f59b05738bd650db963b5edd74e65403a0ab774252fb0c801de0b9d7a211",
+      "size": 82211
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-crewai/src/operations.rs",
+      "sha256": "1c976ee184654608c951bcc3770faedd1314f68f3afa993ae5a0c7ee744ae4e4",
+      "size": 5924
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-dify/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-dify/Cargo.toml",
+      "sha256": "f76f8fb5bf0c661627fcf3306e28c5c9edb1340021830dbc79d8d76c00881927",
+      "size": 749
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-dify/src/lib.rs",
+      "sha256": "ded098d9f51af4fa511655b3dbce378e1015ab07afc926402750b47b627f4042",
+      "size": 136115
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-dify/src/operations.rs",
+      "sha256": "cfd90c33593f81590cf2ec242031f253e04874d3caee9c975c240d38f986b263",
+      "size": 28625
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-enterprise-sandbox/Cargo.toml",
+      "sha256": "d63ae5994de8f7a5b06f5cdcf93c1c59944b92e1e5b2d67401559968c7ecf1b9",
+      "size": 618
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-enterprise-sandbox/src/bin/aip-enterprise-e2e.rs",
+      "sha256": "3c82fcb8e9019495b1ce68e584199e923a5a36b274563549cfa8b570dec32c1d",
+      "size": 30104
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-enterprise-sandbox/src/lib.rs",
+      "sha256": "6cc47abf97d4d96e85c3fc2169a55cd8d52534a2f1443072a7f777518bdb6255",
+      "size": 58713
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-fleet-fixture/Cargo.toml",
+      "sha256": "e157bba35d3a0cb637fd615200639b363be2c8213e40f55adc535ce20d28b13f",
+      "size": 1157
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-fleet-fixture/src/main.rs",
+      "sha256": "efcffd87acf0d8fdee5eb046deff2a2c3fc4e536300bb91d2f2d325d4691c7f7",
+      "size": 62318
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-hermes-agent/Cargo.toml",
+      "sha256": "0a0b2892a5360a8a1fb44c0264571d93e7632e9aa0ffbc06be72f54334c06f15",
+      "size": 983
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-hermes-agent/src/bin/aip-hermes-chat-smoke.rs",
+      "sha256": "44888a278c4c2f378a0a6434bca37a43737cb54a59a02eab00454cdf880cb9d4",
+      "size": 9116
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-hermes-agent/src/bin/aip-hermes-smoke.rs",
+      "sha256": "45400b4a8fce4bcc69260d3d78a0523d0be76f420ac786cc6a6fc5e0ad1ad396",
+      "size": 8187
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-hermes-agent/src/bin/getaip-server-hermes-chat-smoke.rs",
+      "sha256": "7431ac14b37f7fb6d3a5aae0189659347569836965fc0cc3d1c04719009bbf7b",
+      "size": 13068
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-hermes-agent/src/bin/getaip-server-hermes-mcp-smoke.rs",
+      "sha256": "b1a0da1be1af5615bba2063bb16bd48d2f8e7d0c5d46631479f3b814fc268061",
+      "size": 10755
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-hermes-agent/src/bin/getaip-server-hermes-operator-smoke.rs",
+      "sha256": "5157137b861a3c42d4c5450dd2129eb7efac35274cce7a262c10ffad1b0c82ad",
+      "size": 26196
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-hermes-agent/src/lib.rs",
+      "sha256": "26c9ff2d692c9167cd7c899815f92e7f82e39ed8bf6a1646d707179f6799a36b",
+      "size": 189949
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-hermes-agent/src/operator.rs",
+      "sha256": "b9c6e98c8e4d0f0e991db03d964458f9b7600a6f9c5b8fb152ffab5155729aa9",
+      "size": 135528
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-hermes-agent/tests/frozen_conformance.rs",
+      "sha256": "2dc2f7556138b481499de100ae786e01bcd21e8c73303a9ea31b094a219c438a",
+      "size": 59972
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-host-bootstrap/Cargo.toml",
+      "sha256": "06b19def2228eb44762973f8db5a520e04780dab8c500a0e87424e479ce13df1",
+      "size": 811
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-host-bootstrap/src/lib.rs",
+      "sha256": "cee3915b4055f8210274e5c0fb76bc2f6557dc54e08ad61652a5e9ecbd0454c5",
+      "size": 41442
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-host/Cargo.toml",
+      "sha256": "6bd714153040fe0e9bc0f2eaeaba9159d45297d661acb605a37dd26feda9830f",
+      "size": 1049
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-host/src/lib.rs",
+      "sha256": "979b6e0768e0f485b85e6e3e1485b5e1604f38b6fcee8d14967557de725e446f",
+      "size": 221088
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-orchestration/Cargo.toml",
+      "sha256": "93909830cfbdd75521f386e636bdbf8575d09bcb0b1162f90a80883ec4d096e2",
+      "size": 551
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-orchestration/src/lib.rs",
+      "sha256": "7bee3b340f228928c2fab79a182c69364c5cc7199350bbb6d6782da257d9972f",
+      "size": 46900
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-registry-postgres/Cargo.toml",
+      "sha256": "d2f8002eac9f914bb80edffd20cdf400f9a4d224bed35c12d2772a23ea6c59b4",
+      "size": 653
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-registry-postgres/src/lib.rs",
+      "sha256": "bfadeb909ba88c1e0aeecc49353490b227cae82f2062698deb6af6a463468e8a",
+      "size": 131891
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-registry-postgres/tests/registry.rs",
+      "sha256": "a21ff5159cf5757df40761f825252831590a1836ecadeecc5b95e6b743ad8e97",
+      "size": 26587
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-registry-postgres/tests/scale.rs",
+      "sha256": "0425d7d8d8e72262e736b4e61cc97c29b1a67f6a1c05e65f674906221b951b96",
+      "size": 63182
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-registry/Cargo.toml",
+      "sha256": "116e06e58669bb07303e16b802ae10554e1459eea1c0250b5f0373be9549eb2d",
+      "size": 606
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-registry/src/lib.rs",
+      "sha256": "997c7b8219be8d85100deb470ca99b7ad60711514ca883c5edeab3e68d42e986",
+      "size": 127823
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-remote/Cargo.toml",
+      "sha256": "196e7f4dd6db5c875aff00c613fbeec301c122da57f16f8fca8382fa57188eb9",
+      "size": 706
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-remote/src/lib.rs",
+      "sha256": "6c62f34aa130903a3378e1519aebd1cb8a34e772dafdf08901a94ac4923ccd32",
+      "size": 107531
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-support-sandbox/Cargo.toml",
+      "sha256": "b8dc48acb76ffdee36953f2ecc121b39589f93afb14853f406d86aa0b5345fc5",
+      "size": 609
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-support-sandbox/src/bin/getaip-server-support-sandbox-smoke.rs",
+      "sha256": "17cc0bca4b13172c79883648765d2885abdf7bf30f6f159bd8a23fce1c9d7efc",
+      "size": 14545
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-support-sandbox/src/lib.rs",
+      "sha256": "413903f0db35bf410bf39888b30490acc838c47bf72c26d676bf29f62082d283",
+      "size": 69914
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-twenty/Cargo.toml",
+      "sha256": "e607edf7b67d304557a7f4d4dc880fa5c74677b565bb0d88d8aad864463143b7",
+      "size": 821
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-twenty/src/lib.rs",
+      "sha256": "e6ff859a62fbedf798efcd0dc1734e9b766ab060a7b406bbc63b2f47bc8981ff",
+      "size": 126421
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-wa-archive/Cargo.toml",
+      "sha256": "173fe1e58fadb99d24583629080faa71d1f4f24a9609dc4d4fcf88b38ffc7306",
+      "size": 855
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-wa-archive/contracts/provider-operation-schemas.json",
+      "sha256": "6642939bd352332b849a80a2716aa44cd341c223e92ec1339e8f90a7106bbb54",
+      "size": 207507
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-wa-archive/src/lib.rs",
+      "sha256": "044360278cfb01382cc309186e97af085f767fda3581eedc8a26403522ce0cc6",
+      "size": 220204
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector-wa-archive/src/operations.rs",
+      "sha256": "84482f97bb4bfee9aa6eca8c3d8b5fb306d0edf4cab8cf31f3930bcf8d769f16",
+      "size": 19372
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector/Cargo.toml",
+      "sha256": "83beb872e24fb77721a0030fd229901a0b2a62f9c26bc56c61e8c7430e8b9f2f",
+      "size": 525
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-connector/src/lib.rs",
+      "sha256": "7f4ca34025d92ef786276c577fd50430398f00370920cea6ceb330eaeec05b8c",
+      "size": 27698
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-core/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-core/Cargo.toml",
+      "sha256": "732909e0c6761fc892ec11e488aa30ce8a050b5c91be84582ad40b435aa50449",
+      "size": 513
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-core/src/envelope.rs",
+      "sha256": "b09e859c50e78cc4279f1f4e694aaa833c84ef06563cf4578c56988dad9ea15a",
+      "size": 24390
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-core/src/error.rs",
+      "sha256": "d3ab15aea5d9f6f1adcce02ac68ec743c704ead4ef345938bda6207323e2d6d6",
+      "size": 1356
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-core/src/ids.rs",
+      "sha256": "040dd0e665be795da1597ddb1773d604ca4b4e4d200f74a1f79c6ade63f4749f",
+      "size": 7439
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-core/src/lib.rs",
+      "sha256": "62f6bfcfcef088c252514334528fe0aba144ade596e31e072774ba23c98243a3",
+      "size": 953
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-core/src/messages.rs",
+      "sha256": "a289d2fb0ee5149b7426d6f329707fffa661906d6f7e43fc6daa0470714a6f86",
+      "size": 72155
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-core/src/model.rs",
+      "sha256": "ec379644d73c71691d0bfd580fbc1c4bf5c652dd07438875d0042c415e742ab6",
+      "size": 56708
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-core/src/validation.rs",
+      "sha256": "7e9f10fc6eb050f2d341200b79839cd0982f396aabdd891308e79857ba6932a3",
+      "size": 32539
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-core/tests/property_validation.rs",
+      "sha256": "83436900ab3cbe7d6d16f4accf4a541f12db86fb0d6182b7cc24fac293c96647",
+      "size": 1585
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-crypto/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-crypto/Cargo.toml",
+      "sha256": "ca4e15ab71b65d75f6e351ea325e6226a70bd97cf3711a76dfafe5dd54aa3841",
+      "size": 598
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-crypto/src/lib.rs",
+      "sha256": "fc771b38be25ec12fa2c67438ab5f93971986d553e9398b587251d8990610205",
+      "size": 12193
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-crypto/tests/signature_properties.rs",
+      "sha256": "6ee9da1dc8c96f268cf9f9d177e4cfa9543171afc2cedcce6935801030ecd1fb",
+      "size": 1497
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-discovery/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-discovery/Cargo.toml",
+      "sha256": "f7b58b513f81c4fb5a990690b43248234242f325e2da7aa9f55611e27066b61f",
+      "size": 472
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-discovery/src/lib.rs",
+      "sha256": "128a5d691c9b9336e4af4a07a35c51eda82d75af23f58c8c880f31a91f61366b",
+      "size": 56249
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-gateway/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-gateway/Cargo.toml",
+      "sha256": "4caa3f9e6e0ec5706109a81778da62a262967c0813cf41d795ec76f5074ccd57",
+      "size": 1003
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-gateway/src/lib.rs",
+      "sha256": "fcbe45b2df72871a1288aa6271c214a4db35da5813bce0eb128c5ece85002b96",
+      "size": 200044
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-cal-diy/Cargo.toml",
+      "sha256": "36b6fb991a3a831dfc21dc479a1eb8c9e116b0997746e861ca4ee9381ea04cd7",
+      "size": 577
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-cal-diy/src/main.rs",
+      "sha256": "c6cdf41f36e68ae89393b3b044c2d8f1e922200cb41ef4b8ccb1f2fb5aca1bbc",
+      "size": 11784
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-chatwoot/Cargo.toml",
+      "sha256": "28177464cd35274ec994545b793e82837bc9f3048b9d3691ceaf09898112613d",
+      "size": 557
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-chatwoot/src/main.rs",
+      "sha256": "0cd98def8bad6ba91f507c85c1a82f87d925460b13f345b1b28d9bc39241b41c",
+      "size": 9801
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-crewai/Cargo.toml",
+      "sha256": "2d8da785cbd1bdec2b7214e3ca736ad0097daff1f1c396e595380345d15dabd3",
+      "size": 412
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-crewai/src/main.rs",
+      "sha256": "be4f64c4631ba48570e5cf9f7888c1b6a9f6fd198c848ebe9001e7cb89b895b0",
+      "size": 2969
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-dify/Cargo.toml",
+      "sha256": "02b4093f7c927df5b5791dc3e628ecc981c1b6e77b1107c7846e175db4d388b5",
+      "size": 431
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-dify/src/main.rs",
+      "sha256": "81830afa980cf35d966434cf1fd2e70e6fc7994b0b5fd1ad8b4cac50362c1e00",
+      "size": 6574
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-enterprise-sandbox/Cargo.toml",
+      "sha256": "8588dd53142dda299156c16cd2cfd44d9f32d5a4f4685f7841ce804dbeaa8f79",
+      "size": 405
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-enterprise-sandbox/src/main.rs",
+      "sha256": "8f233a2b6c65a986bbcac48190543c90ebdcad138144d753c9f39a284dfa8cde",
+      "size": 1563
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-hermes-agent/Cargo.toml",
+      "sha256": "a93185aba64355a71fce898a9dba5124d346cf16434e1b5c1ba38f4b648d5beb",
+      "size": 447
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-hermes-agent/src/main.rs",
+      "sha256": "1d9c860a85e8e3d832f7794936c7fc9abca1202a5ec575ab9be470a5683ddc43",
+      "size": 5382
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-support-sandbox/Cargo.toml",
+      "sha256": "22831733139ae0c6435f9bf9bde07d4261c45ad734f20ae0bad45ac8240810ff",
+      "size": 508
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-support-sandbox/src/main.rs",
+      "sha256": "995f5e50ed9cf22c4453196f54701d6bea9af9c8afef9ec55ef64a3d94ff4f6e",
+      "size": 8246
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-twenty/Cargo.toml",
+      "sha256": "116a456d086bab24ad26d479e01c02f5321b023c7a700f4302b4a722a71dbf44",
+      "size": 527
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-twenty/src/main.rs",
+      "sha256": "3e5f5564a6e8f91af4e4859997d668536231e1c8fc2a09c280b324083cac6b71",
+      "size": 9491
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-wa-archive/Cargo.toml",
+      "sha256": "04cc96da7c52d4d41858f907497bd5025675fcbd887f8b34259b3854583319dd",
+      "size": 442
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-host-wa-archive/src/main.rs",
+      "sha256": "21ae240d9081b4aafe472692a6ab6dba8d60db9447a2bcbe174c6ad23823247c",
+      "size": 7799
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-mcp-client/Cargo.toml",
+      "sha256": "f7357aba3dfd2869240da0a86b0d04e3ca7916332729c12d70cf5f67508719a1",
+      "size": 1040
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-mcp-client/src/lib.rs",
+      "sha256": "a9646305604970426ce66819a4b9795b00ba9873100d3373e49c471b7595630c",
+      "size": 166830
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-mcp-client/src/oauth.rs",
+      "sha256": "c19dc5b8861da2c2517b456fe0f4d3ed0bde73c4ca4e56918d3c58f0ce652ae6",
+      "size": 26460
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-mcp-conformance/Cargo.toml",
+      "sha256": "51536d69f9536399ebd76d60e35eed730da257fe801a08218a3aeeae5d20063b",
+      "size": 704
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-mcp-conformance/src/lib.rs",
+      "sha256": "fb6869fe1fac61b65dc49e7481661950b21d5be485dda05f8466b9cc46867a4a",
+      "size": 50911
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-mcp-server/Cargo.toml",
+      "sha256": "a7086004856e4e5ae6b175d2a6d5942ece8697b4ce5e000f15c470ad021226c3",
+      "size": 698
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-mcp-server/src/lib.rs",
+      "sha256": "53fd9eb4376f86fa626c0f305f66201c2ead44a61e2de1c2427e166afa9a5518",
+      "size": 203428
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-mcp-session/Cargo.toml",
+      "sha256": "528407a847eaa2fd7d80f39a38a9828dce9f79cde925553abe9f9c13cd3d5649",
+      "size": 437
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-mcp-session/src/lib.rs",
+      "sha256": "8546bd3cd4fcde57d5cccd7f528c3ca79b05d98f22f71bc25be7bbe81c0006f6",
+      "size": 44943
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-observability/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-observability/Cargo.toml",
+      "sha256": "90a418252a49211d997e9bcdd71ac9d469c0c33be46d1a95d3548a78741d22ff",
+      "size": 356
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-observability/src/lib.rs",
+      "sha256": "f6685d8a77c68ca8a04bc00af20049d7db7b25df762167624ce94ad8d05d9465",
+      "size": 8833
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-product-upstream-fixture/Cargo.toml",
+      "sha256": "6b15ad03a0284d77d7fce912c72ca0123c5146ef1d732a93cc59d2e3a4511292",
+      "size": 460
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-product-upstream-fixture/src/main.rs",
+      "sha256": "3d2489a545fc2bfc216e8aef2a3f3bbfaddbf9eed6fcc379ef1c36ce007ede69",
+      "size": 17498
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-profile-a2a/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-profile-a2a/Cargo.toml",
+      "sha256": "a7e0bf07fd7794bd3f66fbc852b01f77b84fb24131cdd324abcd0ab7ae924807",
+      "size": 419
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-profile-a2a/src/lib.rs",
+      "sha256": "1f2aed07c393c2433defdfce10683b764bdc24c36d4f4f079f752354ff9be2f8",
+      "size": 71378
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-profile-mcp/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-profile-mcp/Cargo.toml",
+      "sha256": "9d89eedbda737e49a596404ffe39c318be8fbaf707883c8daf160b2cbf095bf3",
+      "size": 356
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-profile-mcp/src/lib.rs",
+      "sha256": "87eb26ff75b6cc01bdf3e7bb52dfcac95839e921c4e5288aa33ed11c8114bfab",
+      "size": 66405
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-profile-webhook/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-profile-webhook/Cargo.toml",
+      "sha256": "590cc58c61d0d188c1bcbcd27d050e62e5a3790cafb5a1e981420d0416b257af",
+      "size": 430
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-profile-webhook/src/lib.rs",
+      "sha256": "d4267d336fb039cc57020dbe96fe6ecbb6888c371b6118c30246050a6dfd8bf3",
+      "size": 3705
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-runtime/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-runtime/Cargo.toml",
+      "sha256": "013dc9f828e55abf114310e321427df5a289f97757ca36477bc0f1becd17830a",
+      "size": 754
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-runtime/src/execution.rs",
+      "sha256": "151cc39b0b274a5e1b4fa542b2aef5ab7efcf181fad28e7fd4e7e9fa047dd4e2",
+      "size": 5485
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-runtime/src/lib.rs",
+      "sha256": "3f7b812af34db81e38b0f1caeb5a755535f2fa1fa8984105a7ce9943f923b825",
+      "size": 1064251
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-schema/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-schema/Cargo.toml",
+      "sha256": "5318bead3fbed59d5615f7e106a8f545acf7e8e93bc95f81b53ffe03dce27f71",
+      "size": 411
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-schema/src/lib.rs",
+      "sha256": "3f092e73f210959c5e8f7986590d4f52ba8044d299474f94f94ad72a404999d6",
+      "size": 47951
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-storage-postgres/Cargo.toml",
+      "sha256": "6ac88715e071ecf9c0cf66ad24da6a3ce6d11495e79af85046258c942a65c305",
+      "size": 707
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-storage-postgres/src/lib.rs",
+      "sha256": "cf618b0cbf14138e53b57e83d44f4245e2e07515073b353b122b4d030b1a4ded",
+      "size": 142879
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-storage-postgres/tests/runtime_recovery.rs",
+      "sha256": "167c9a0fd40520dbd364222234edd664d93ebb67bb06cb5189aaa3ef8d94a33e",
+      "size": 36901
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-testkit/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-testkit/Cargo.toml",
+      "sha256": "66a5b9aa217e4ac8cd8f3e3f1f8df167a47be7060eb7599c1ca08072087818fa",
+      "size": 467
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-testkit/src/lib.rs",
+      "sha256": "383f3b8a3d45b950a6ac841c10d9d94554af35b51d8707816d106ce1f1fbbf1b",
+      "size": 15476
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-http/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-http/Cargo.toml",
+      "sha256": "94b21a0187376f2b5e2cf98758bb7409d83e6c2a23f9054799f22542e414d3a1",
+      "size": 385
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-http/src/lib.rs",
+      "sha256": "6a603409707ae51f18559dd3dff635fb4c1083b5695bef8d3154350e9c7d1fb5",
+      "size": 3556
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-mcp-legacy-http-sse/Cargo.toml",
+      "sha256": "fb35ac6640bc7396edd6c2f55602327dddb783fb503e9c6453d753fdb0727868",
+      "size": 531
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-mcp-legacy-http-sse/src/lib.rs",
+      "sha256": "3ab67715dfbbce56762e3e6dd1cebb5bee4a0068e6c2b71f7161893c6e42a216",
+      "size": 14892
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-mcp-stdio/Cargo.toml",
+      "sha256": "fb975cf5c8089f300d4e304f4f11806756034af604ad61f7c01f2505e5daee13",
+      "size": 348
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-mcp-stdio/src/lib.rs",
+      "sha256": "25ae899e2a0967bb1f075b5b21af1acc7920efffc0d0eba44bb702839a938c8a",
+      "size": 5567
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-mcp-streamable-http/Cargo.toml",
+      "sha256": "64cbbf3d2d389d5e8a0d9473fbe78bfcc007b443977ff5f3468918ab4dd48703",
+      "size": 403
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-mcp-streamable-http/src/lib.rs",
+      "sha256": "572ad73af75c9bef17ea0d8376f1ed752acb777506b4d688d669faadbfb04d78",
+      "size": 26101
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-nats/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-nats/Cargo.toml",
+      "sha256": "8b323e94d0d8d6593a87a2bacde70c5ba6a71d29b1f747f678103b147275d519",
+      "size": 520
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-nats/src/lib.rs",
+      "sha256": "e9fec5a94959319c0f36ba9fcff1f828d97d11a102fa2c84fb2a77e2ce95bd47",
+      "size": 18555
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-sse/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-sse/Cargo.toml",
+      "sha256": "6be8a3ac39b4c7abe0dced7d50e19b1c533c71b0118a97331f1f2831bd7c29b3",
+      "size": 391
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-sse/src/lib.rs",
+      "sha256": "4aef8fce340176c5a2f10aecd7eaf8c4a9208a7edbd726cc36dbbd3ee89d28a6",
+      "size": 9985
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-websocket/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-websocket/Cargo.toml",
+      "sha256": "da507fde527fd0ae160b7ff4f15dcbf7a0413a94d905ccd12e5514434b69f4fc",
+      "size": 397
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport-websocket/src/lib.rs",
+      "sha256": "398047c246d150e8325ac55795150c0d5f54928958df3b71b19b0b017d24ec5a",
+      "size": 7794
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport/Cargo.toml",
+      "sha256": "5abee0f765da831866db0cb6bd1873742d639b894aeeed69d922d7579c23511b",
+      "size": 406
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip-transport/src/lib.rs",
+      "sha256": "abdaadb216cc2fa9143434c15d98a9d0f6aad197524dbbb197ec83caadaf8ab8",
+      "size": 3022
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip/Cargo.toml",
+      "sha256": "b5a3950d235d476a6046ec8081e830ba1ebc268ec1e69811e2f24f8213b84f44",
+      "size": 6668
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip/src/lib.rs",
+      "sha256": "f32f149246079e37768020294ef47c38f2dbe68096a5dcf3ec3abcdf75c9fcc5",
+      "size": 5196
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip/tests/compatibility_profiles.rs",
+      "sha256": "7f3962f245ad6ddc8954bc023ad9dc2add5b4106da5d3dd77748f7b50529cb5f",
+      "size": 1711
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip/tests/gateway_connector_e2e.rs",
+      "sha256": "62418e30b93ea32f50a536e0eebb49f503521cf57419f75ace57e57187077402",
+      "size": 1551
+    },
+    {
+      "mode": "0644",
+      "path": "crates/aip/tests/handshake_action_result.rs",
+      "sha256": "3bc5c00bd0f8b62b28432c1ca37fdcbca633eeaffcb5950da346f4289f5b686b",
+      "size": 3176
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-cli/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-cli/Cargo.toml",
+      "sha256": "b2054fa204e928cedff1a6eed2de6c6e2be1ce69ed1e61000b3d24f0de035f5d",
+      "size": 1323
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-cli/Dockerfile",
+      "sha256": "4e43605ce74599f1558933d3e8e5891dee835659fdbc0fd5e2914bbc06a88870",
+      "size": 1418
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-cli/src/adapters.rs",
+      "sha256": "0ebb23a83a37ee01db20d512e30445374381fccae48884a5f46ba063771e87e0",
+      "size": 47780
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-cli/src/main.rs",
+      "sha256": "d9812f01b2db51758d17e013775fc5a381cab62c671e6d8a6977411bc96d8022",
+      "size": 145910
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-cli/src/product.rs",
+      "sha256": "4b934050923d8c46aee8070fd099b9e87d0b8e3b84a83ddfd8263e1fada01f6a",
+      "size": 79294
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-cli/src/service.rs",
+      "sha256": "7ede499ecf7a8a6b847fb712c7f479ccfea948a959762fd42a54b29fff33b3d8",
+      "size": 36451
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-distribution/Cargo.toml",
+      "sha256": "947400dd57286d2c08d827406e65c075dfac4287de4829a89682bafd1c97d5a4",
+      "size": 738
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-distribution/src/archive.rs",
+      "sha256": "764fd30bc8d81309f4f969b6e81abb48b5a98baf65cfc626a6e289f2cffb2f89",
+      "size": 20437
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-distribution/src/download.rs",
+      "sha256": "1b29596b26eb2724849677e2ae2937844210df2b128a7bd886e56c07de66c158",
+      "size": 19596
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-distribution/src/installer.rs",
+      "sha256": "b1413c7a17145af86b00ac99c10496d428d90d632358cda98dda22abbaa8b754",
+      "size": 51764
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-distribution/src/layout.rs",
+      "sha256": "fca2c23da5f5813be37e67bc2cba06276247f3c6c1bd70cc3f552b66411b183a",
+      "size": 8301
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-distribution/src/lib.rs",
+      "sha256": "8120bd368ff8f8f9188a6398422804c9c7433e6f3eb63c22ae1208999464384c",
+      "size": 2148
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-distribution/src/manifest.rs",
+      "sha256": "ac0863f02bc155fe8050662080c5c8c347a7e1b0ccfc0136528418ad86b8d342",
+      "size": 35454
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-distribution/src/platform.rs",
+      "sha256": "6bf31522663f81c0e37fb1b33b0f8c340bafe4cd677471597a3348b5ffbe8cc7",
+      "size": 3210
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-distribution/src/state.rs",
+      "sha256": "f2a6d486893f35061cd49647fff768904dfc00cedd8281933a58c04084f64e42",
+      "size": 13037
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-distribution/src/version.rs",
+      "sha256": "d55a83de234f2315539bac83814da95074bec08c68d2355fb192db876a04915c",
+      "size": 2503
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server-legacy-bundled/Cargo.toml",
+      "sha256": "3379ef3d051404c1252635076e6ddb2c34a3df634eb844b4506e0971b48a1033",
+      "size": 1386
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server-legacy-bundled/Dockerfile",
+      "sha256": "8f640ae8dd5ff6fb0482bd53afc94f7b5af542ccb8dcf8b12afbe2f0b6fa5de4",
+      "size": 1622
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server-legacy-bundled/src/main.rs",
+      "sha256": "045761245729134411f8e3054bda90af0fffeeabe70ac4fb33b09fa35b4a440e",
+      "size": 105947
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server-legacy-bundled/src/modules.rs",
+      "sha256": "9b85496b85df16634f6000b72ff8f730618fe8aafd8cc1c715d9c3e63a7c9fad",
+      "size": 20992
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server-legacy-bundled/tests/baseline_compat.rs",
+      "sha256": "3a70acdb72f16f6a2bdd52d4af48fc0321b5afbaeb7153217df3167267bb34ca",
+      "size": 8645
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server-legacy-bundled/tests/fixtures/baseline.json",
+      "sha256": "af30af844f9cf28e3cccecfff3414a8464dcc3ff864afd59ce4ebf11e5f53cc8",
+      "size": 3258
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server-legacy-bundled/tests/fixtures/cal-webhook-errors.json",
+      "sha256": "dd176e3a52d2c608c5751cd50022af1da4d82e70acc60a079cb07e5f029e180f",
+      "size": 492
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server-legacy-bundled/tests/fixtures/default-manifest.json",
+      "sha256": "a9feac2adfe7ba717b7dadde969876ea48455bbe685bb598c04d860667d7f0c7",
+      "size": 3458
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server-legacy-bundled/tests/fixtures/default-ready.json",
+      "sha256": "ff71eb8ef78bc6b0d6681b65f189eda5d2f8306eb67d1b8c09f9c9ddebb711e5",
+      "size": 335
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server-legacy-bundled/tests/mcp_process_boundary.rs",
+      "sha256": "aafa56bc5e489be7ee045500da6545a5915c3319dee5b587562c4208cf292d5c",
+      "size": 2098
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server/Cargo.toml",
+      "sha256": "2f8cba697d3e7e77ff519ebf552f7dab5d6be1502e08ed2a29446e3ddfe9bea9",
+      "size": 1709
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server/Dockerfile",
+      "sha256": "8e49186cb035ddcd40f020280cf914161876d6f21dd6f37015a9d5c8a63b1dc1",
+      "size": 1580
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server/src/cli.rs",
+      "sha256": "db7eb6527dc3ead51de9c99ec0c99878c20e4067333e0c6b5ded0537caabae08",
+      "size": 76222
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server/src/lib.rs",
+      "sha256": "73c683ef4353f15a0986cc61ee18ea6864f8be052ba2af16bc8d4ca9a09a549a",
+      "size": 422428
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server/src/main.rs",
+      "sha256": "c8f88d838eb4a1791cf22b81afdd1965995540318921e2b90820a1da65df9510",
+      "size": 470
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server/src/module.rs",
+      "sha256": "f068823ce360f20302c97d2e315b32b23402858f976dd95ee0fe0d7bc0d59e69",
+      "size": 21422
+    },
+    {
+      "mode": "0644",
+      "path": "crates/getaip-server/tests/mcp_process_boundary.rs",
+      "sha256": "aa8607178983ee0fe9ac73ae51f91b7b19d0e78ac17ee91119f7dc4c5cff70e0",
+      "size": 3203
+    },
+    {
+      "mode": "0644",
+      "path": "crates/xtask/.gitignore",
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "size": 8
+    },
+    {
+      "mode": "0644",
+      "path": "crates/xtask/Cargo.toml",
+      "sha256": "49a9a5418b3b197a6a862c470177ad45fbd76b9b085645eb8b6cd17ba0b8ea35",
+      "size": 545
+    },
+    {
+      "mode": "0644",
+      "path": "crates/xtask/src/main.rs",
+      "sha256": "73c1476cb4a240a23f9a9ae1fe5f28582b240fe7758b8e3f39d256fa92988c40",
+      "size": 62895
+    },
+    {
+      "mode": "0644",
+      "path": "crates/xtask/src/native_release.rs",
+      "sha256": "9e44721bf2c58fe086fee2ee690f6bb9762e6689b7ebce245b74780fd0905a80",
+      "size": 48345
+    },
+    {
+      "mode": "0644",
+      "path": "deny.toml",
+      "sha256": "29b627f465a6eae5a25a9449bb1bf426473b82cdacc0c482287fd647b7f0f6a2",
+      "size": 245
+    },
+    {
+      "mode": "0644",
+      "path": "deploy/connector-fleet/Caddyfile",
+      "sha256": "9ca2db47cd4752292e34fe654ba02e78931bb7e9b31d1fc31ccd07d945d40f8b",
+      "size": 2257
+    },
+    {
+      "mode": "0644",
+      "path": "deploy/connector-fleet/Dockerfile.edge",
+      "sha256": "19add0cb417edf664d2e5a9a468608c25985dd88e3d3a2c750a113cc7a9be8d7",
+      "size": 1030
+    },
+    {
+      "mode": "0644",
+      "path": "deploy/connector-fleet/Dockerfile.fixture",
+      "sha256": "648e6f7a93899f802ed080ef68200ab1cb9b3185ae0d8092c2c6da9aa8187901",
+      "size": 1595
+    },
+    {
+      "mode": "0644",
+      "path": "deploy/connector-fleet/Dockerfile.host",
+      "sha256": "f713182db9ea1e8e412e646f8a961f2fd6a846c6a5156ab68aeaa546067d24ac",
+      "size": 2202
+    },
+    {
+      "mode": "0644",
+      "path": "deploy/connector-fleet/Dockerfile.product-fixture",
+      "sha256": "946db547e5c9d6d4e2a9017d4ad0bef1cb4f6ded92f3357142eff25539057a74",
+      "size": 1580
+    },
+    {
+      "mode": "0755",
+      "path": "deploy/connector-fleet/apply-registry-grants.sh",
+      "sha256": "0f0726a53cb4c8259e68845974970fafde0a5d7a1ae7798918465c6ac47489e1",
+      "size": 1582
+    },
+    {
+      "mode": "0644",
+      "path": "deploy/connector-fleet/compose.yml",
+      "sha256": "6d0f87e38f39a649478f7208fb79771cd1d52dbb9b2a101b63d0c4e2dc4e9bd1",
+      "size": 53063
+    },
+    {
+      "mode": "0644",
+      "path": "deploy/connector-fleet/ensure-wa-archive-database.sh",
+      "sha256": "933b276f07fc1ec39fd1119e512fd6daa901683704dd9b9622df36a2d96f4fcf",
+      "size": 1485
+    },
+    {
+      "mode": "0644",
+      "path": "deploy/connector-fleet/grant-registry.sql",
+      "sha256": "7964b9b8d41e43130d97bd7590b13eac5cfa69c72ed3eba09c45ffc5f430917d",
+      "size": 1823
+    },
+    {
+      "mode": "0755",
+      "path": "deploy/connector-fleet/init-databases.sh",
+      "sha256": "968689b2b98ac0e78540e9eea3b999bdbbb061d16dd332a9f8c1a6955690b5ca",
+      "size": 4669
+    },
+    {
+      "mode": "0755",
+      "path": "deploy/connector-fleet/init-secrets.sh",
+      "sha256": "c0e5f65c31d2ec28a9b1193b1776ec53f502154949759fa9aa45df39206f6dd7",
+      "size": 9770
+    },
+    {
+      "mode": "0644",
+      "path": "deploy/connector-fleet/policies/wa-archive-control-operations.json",
+      "sha256": "93a644943558be7d835440702fa454dfaf7387e7b3d9e03c927405efa8c11b74",
+      "size": 34
+    },
+    {
+      "mode": "0644",
+      "path": "deploy/connector-fleet/policies/wa-archive-operations.json",
+      "sha256": "9fc374c2709294cea99a94cd835d473d6ec8647105d5479afd53e7351c2d9fc2",
+      "size": 21
+    },
+    {
+      "mode": "0644",
+      "path": "deploy/connector-fleet/policies/wa-archive-query-operations.json",
+      "sha256": "50f21a3e3e760bd70e7afe1de7ddb84dced5ecf20f94e5c9c302ad38e6d67262",
+      "size": 79
+    },
+    {
+      "mode": "0755",
+      "path": "deploy/connector-fleet/prepare.sh",
+      "sha256": "1d864262edb194e8b505188f249d7b1ac85470e85b8d84b63f696a3b2d0d078e",
+      "size": 9557
+    },
+    {
+      "mode": "0755",
+      "path": "deploy/connector-fleet/run-product-qualification.sh",
+      "sha256": "1a2412ac0f3f458e0c870a064682ed4857054d59b2b142a2d2a6475cec55d628",
+      "size": 12655
+    },
+    {
+      "mode": "0755",
+      "path": "deploy/connector-fleet/run-qualification.sh",
+      "sha256": "13b2f15b48275b444265294411e157e3651b2d1172db9d65915cccc523553d06",
+      "size": 7488
+    },
+    {
+      "mode": "0644",
+      "path": "deploy/connector-fleet/run-wa-archive-qualification.sh",
+      "sha256": "e5984c8538e4315afa450a10b338df6cbf34ce58b9db0bc9b389e325136d3fcc",
+      "size": 5677
+    },
+    {
+      "mode": "0755",
+      "path": "deploy/connector-fleet/verify-failure-matrix.sh",
+      "sha256": "461181b5d7b5b8eee4e762ecd573d0bff66fb50b2c7294e53ca21f1bcd07374e",
+      "size": 32965
+    },
+    {
+      "mode": "0755",
+      "path": "deploy/connector-fleet/verify-migration-images.sh",
+      "sha256": "e72e234f07623cd94a41e85b6403960324181607e213313bc96a5f5f9913619d",
+      "size": 5388
+    },
+    {
+      "mode": "0755",
+      "path": "deploy/connector-fleet/verify-product-fleet.sh",
+      "sha256": "749f4817865b2b5b0d2dc4efd302417ab3928c3bc08eb8f1dce29a96423c68bf",
+      "size": 25778
+    },
+    {
+      "mode": "0755",
+      "path": "deploy/connector-fleet/verify-product-images.sh",
+      "sha256": "0b63875892f56839914e2ca69c7b7d23d89a7fbbad87830dc5565e803e98f429",
+      "size": 5590
+    },
+    {
+      "mode": "0644",
+      "path": "examples/cal-diy-qualification/.gitignore",
+      "sha256": "c740db8c5771bc53deca3faf16465ffd78a57c5bc6df70143f0a8f422fb469ab",
+      "size": 10
+    },
+    {
+      "mode": "0755",
+      "path": "examples/cal-diy-qualification/build-getaip-server-offline.sh",
+      "sha256": "f458ed217875e459e55027196dd080b128ef9b9cf0ed02ed1bb36ddb87a5eb99",
+      "size": 2393
+    },
+    {
+      "mode": "0644",
+      "path": "examples/cal-diy-qualification/docker-compose.yml",
+      "sha256": "2874139d56467e9e4ad64f0145c9083e69c61ed41aca15b3d4eb108c759ae9bc",
+      "size": 11123
+    },
+    {
+      "mode": "0755",
+      "path": "examples/cal-diy-qualification/prepare-runtime.py",
+      "sha256": "74767f4687c1550acc07e38c01b176adf896e4e1aefc880a7ab33096ecc76d71",
+      "size": 5386
+    },
+    {
+      "mode": "0755",
+      "path": "examples/cal-diy-qualification/qualify.sh",
+      "sha256": "4d44e9ce651f6c98622141acfc48f49e9e5df783ec0c40d611ea5f2db5b61d6b",
+      "size": 4580
+    },
+    {
+      "mode": "0755",
+      "path": "examples/cal-diy-qualification/run-qualification.py",
+      "sha256": "42e6de50785d8a58f6e07649a02fb3633a874680a43f7431098429a4c101a575",
+      "size": 29989
+    },
+    {
+      "mode": "0644",
+      "path": "examples/chatwoot-dify-crewai/main.rs",
+      "sha256": "24049744d8a8884063e8ede9d259fcb2fbc681524b929575e8d0f29d70713479",
+      "size": 1762
+    },
+    {
+      "mode": "0644",
+      "path": "examples/getaip-server-docker/.env.example",
+      "sha256": "72e4243bbbbfef88a3af95bd42eaae0bd1f45b6672221fe745f92b4bd3c363ce",
+      "size": 392
+    },
+    {
+      "mode": "0644",
+      "path": "examples/getaip-server-docker/approval-authorities.json",
+      "sha256": "4bd5174ab306942022334940c9b0ab937ad53e145296fa3713a051cb2abb7fbe",
+      "size": 323
+    },
+    {
+      "mode": "0644",
+      "path": "examples/getaip-server-docker/docker-compose.yml",
+      "sha256": "2a36e1b69aa09f4e72be09d998f88c4e0cbc7245f056ae0347b6fcf90625b1b5",
+      "size": 7349
+    },
+    {
+      "mode": "0644",
+      "path": "examples/getaip-server-docker/oauth-introspection.py",
+      "sha256": "b1e5713accb7e4ab29483a96d39223bd2f5ca6fccbd7c77a22ce400dd5ac11c5",
+      "size": 6818
+    },
+    {
+      "mode": "0644",
+      "path": "examples/getaip-server-docker/secrets/.gitignore",
+      "sha256": "240a3e0d37d2e86b614063f5347eb02d4f99ca6c254de6b82871ff8d95532a7d",
+      "size": 14
+    },
+    {
+      "mode": "0644",
+      "path": "examples/getaip-server-mcp/main.rs",
+      "sha256": "f2ecd65cdee8ec675a86391bc6d691563b9ea8131152f062fed19126448080c3",
+      "size": 1536
+    },
+    {
+      "mode": "0644",
+      "path": "examples/hermes-agent-aip/Dockerfile.aip-check",
+      "sha256": "48a05598e6567363ca031d16d3bcc6371f0e5eb4287f8148d5d48e3565e7e06a",
+      "size": 427
+    },
+    {
+      "mode": "0644",
+      "path": "examples/hermes-agent-aip/Dockerfile.hermes-lite",
+      "sha256": "34c0039ab7e73a5b6728358fb21fde9a7f3d4c9653c46123d2480b8e4577ec84",
+      "size": 1174
+    },
+    {
+      "mode": "0644",
+      "path": "examples/hermes-agent-aip/config.operator.example.yaml",
+      "sha256": "0760a3bf6f88911f2d45ee08e6176193ae66fe012ccc433eb6b43ee4f6aae022",
+      "size": 805
+    },
+    {
+      "mode": "0644",
+      "path": "examples/hermes-agent-aip/docker-compose.yml",
+      "sha256": "970055a2c708015667f5f3f3f9f13db45b30652586dab7d407f42c8b00e54db4",
+      "size": 1768
+    },
+    {
+      "mode": "0644",
+      "path": "examples/mcp-bridge/main.rs",
+      "sha256": "dd39dcb400f2eedce8e6693fd96fa69a508c9794eb88e172d7ea653d1d522095",
+      "size": 654
+    },
+    {
+      "mode": "0644",
+      "path": "examples/mcp-client-bridge/main.rs",
+      "sha256": "4c673104dc0fdf9758280ae8f5be581ac088640ad45c12d77ae2f5eb0008236c",
+      "size": 1747
+    },
+    {
+      "mode": "0644",
+      "path": "examples/mcp-sampling-elicitation/main.rs",
+      "sha256": "cc1fde487ed623a04dc123b924c86b76eea119c9959b95256f0fd152b351f084",
+      "size": 1785
+    },
+    {
+      "mode": "0644",
+      "path": "examples/mcp-stdio-server/main.rs",
+      "sha256": "1b068eba002cde4caca0ac31c2cce7d20f4da4478de41168739f8f294df6f644",
+      "size": 1059
+    },
+    {
+      "mode": "0644",
+      "path": "examples/mcp-streamable-http/main.rs",
+      "sha256": "f693f2bc1322bff2ffa319984cd04aa9dc34104abebfb7d7ed12b6f57b090dda",
+      "size": 882
+    },
+    {
+      "mode": "0644",
+      "path": "examples/minimal-agent/main.rs",
+      "sha256": "9193861521953a377ccb4e0f9a9ae1826e41a2109bc4fd94d00d37734d7ece7d",
+      "size": 1039
+    },
+    {
+      "mode": "0644",
+      "path": "examples/nats-native/main.rs",
+      "sha256": "41e3693474da05b90053be7b46420ee8b313bd05f015692c3a159642f0cb1276",
+      "size": 740
+    },
+    {
+      "mode": "0644",
+      "path": "examples/restaurant-booking/.gitignore",
+      "sha256": "3e782aec83661b3537393e8f42b401b72f1265d22f51d8c46d5a6b84e1022e13",
+      "size": 29
+    },
+    {
+      "mode": "0644",
+      "path": "examples/restaurant-booking/cal-api-runtime.Dockerfile",
+      "sha256": "38c8631703ec4f92410b81c62e17a3584029d8520a36e53cd93da3756ac02480",
+      "size": 316
+    },
+    {
+      "mode": "0644",
+      "path": "examples/restaurant-booking/cal-api.Dockerfile",
+      "sha256": "6b940ef2ab22613b716a4a81b3297ea5c3ed59e8fb311932331f485ec0f955c9",
+      "size": 591
+    },
+    {
+      "mode": "0644",
+      "path": "examples/restaurant-booking/cal-seed.ts",
+      "sha256": "3d9a287dc1c61f04c73872ff401d0297730a2c4a6a19fef2bd21782877c02360",
+      "size": 3584
+    },
+    {
+      "mode": "0644",
+      "path": "examples/restaurant-booking/coordinator/Dockerfile",
+      "sha256": "99bf1cf3e82baebc167f4cc3857f4f9f465dd7321c019c3667be938fc470c726",
+      "size": 497
+    },
+    {
+      "mode": "0644",
+      "path": "examples/restaurant-booking/coordinator/app.py",
+      "sha256": "6f368e07ab80d2f8900a7a2e53350bb7782772bf91459d2abd6a36d4d0047faf",
+      "size": 63738
+    },
+    {
+      "mode": "0644",
+      "path": "examples/restaurant-booking/coordinator/requirements.txt",
+      "sha256": "1d47c8a96952528da1c987bb81c6998143d005235da2801093c4f01990533a06",
+      "size": 72
+    },
+    {
+      "mode": "0644",
+      "path": "examples/restaurant-booking/coordinator/schema.sql",
+      "sha256": "796d5627341807e6748c10654e22afeb7f5d636ff1914b68587045e697ffb946",
+      "size": 1613
+    },
+    {
+      "mode": "0644",
+      "path": "examples/restaurant-booking/coordinator/test_dialogue.py",
+      "sha256": "f4b751b6dd835e15cfa884a7dc253c7bc597fda0cecbe9cb23bcf3cea79c4453",
+      "size": 8034
+    },
+    {
+      "mode": "0644",
+      "path": "examples/restaurant-booking/docker-compose.yml",
+      "sha256": "02ac457ce91c971a89712593d59676cd0bcc6c510fb85f7a157aa1cbf9584174",
+      "size": 17502
+    },
+    {
+      "mode": "0644",
+      "path": "examples/restaurant-booking/hermes-plugins/aip-governed-tool-policy/__init__.py",
+      "sha256": "04df6984a0f364305e0dc79746fc04e851ba44507b590e503204027ca1523c0b",
+      "size": 9999
+    },
+    {
+      "mode": "0644",
+      "path": "examples/restaurant-booking/hermes-plugins/aip-governed-tool-policy/plugin.yaml",
+      "sha256": "f0257a6749d8b9f7837e24e5cc92eadc83c318270e666441e6b9d662afef5cc2",
+      "size": 176
+    },
+    {
+      "mode": "0644",
+      "path": "examples/restaurant-booking/hermes-plugins/aip-governed-tool-policy/test_plugin.py",
+      "sha256": "5c8be70873a8b1f3620d8cb53407a6e4ede401eb26f64890a392b877a6675ace",
+      "size": 7592
+    },
+    {
+      "mode": "0644",
+      "path": "examples/restaurant-booking/prepare-runtime.py",
+      "sha256": "0b9c70257b9e55000cacacf4bdfe1fe7431b1decfc1c10d34361c490c44e0bc5",
+      "size": 14792
+    },
+    {
+      "mode": "0644",
+      "path": "examples/restaurant-booking/run-e2e.py",
+      "sha256": "2bb782d974b39fa71b0f089f5f89f90329d9af74dfa450bc10f59cf0d5217409",
+      "size": 35216
+    },
+    {
+      "mode": "0644",
+      "path": "examples/sse-streaming/main.rs",
+      "sha256": "7f7780506c6fe49f70ca2e1a89d60210cb4f8bdd889d592127e0ac0dce06be39",
+      "size": 933
+    },
+    {
+      "mode": "0644",
+      "path": "examples/support-sandbox/postgres/init/001_schema.sql",
+      "sha256": "4b8eae29e7d891a37070d6f5bd2c532c4fb4b2f8addb4a9debbde63e7d1cd120",
+      "size": 11981
+    },
+    {
+      "mode": "0644",
+      "path": "examples/support-sandbox/postgres/init/002_enterprise_scenarios.sql",
+      "sha256": "07b0cf98354615ec3afea730b9489ba43db0810e28ef56b90307b3fe84f0536c",
+      "size": 3628
+    },
+    {
+      "mode": "0644",
+      "path": "examples/support-sandbox/queries/reset_duplicate_refund_case.sql",
+      "sha256": "de3de5db9669cbee08d07790a24112d2241b4b9a2375d6d20d853089915e2698",
+      "size": 888
+    },
+    {
+      "mode": "0644",
+      "path": "examples/support-sandbox/queries/reset_enterprise_scenarios.sql",
+      "sha256": "7e46f0e4ad29869df4fc967da9680fbeea88d55e4592b52e8ddf2ee2a3ea1daf",
+      "size": 866
+    },
+    {
+      "mode": "0644",
+      "path": "examples/support-sandbox/queries/verify.sql",
+      "sha256": "cb41799ca3bb83157a3ec8977369192a5089bc3a995678cd245886bdc9ce1370",
+      "size": 475
+    },
+    {
+      "mode": "0644",
+      "path": "fuzz/Cargo.lock",
+      "sha256": "1f23abab3f6699c9fa9b13fde581076b8d2b037e0a7671947b4778ba084780a4",
+      "size": 47909
+    },
+    {
+      "mode": "0644",
+      "path": "fuzz/Cargo.toml",
+      "sha256": "80ccadbbad05054bed4f513809eb71ad16e93f21a10f1d67d1a53576d8ba1d8c",
+      "size": 953
+    },
+    {
+      "mode": "0644",
+      "path": "fuzz/fuzz_targets/canonical_json.rs",
+      "sha256": "e7813d43c6a2977ff3577a7e284bca2f56568bfd8eb1992ee93c8f5230e0987d",
+      "size": 218
+    },
+    {
+      "mode": "0644",
+      "path": "fuzz/fuzz_targets/envelope_parse.rs",
+      "sha256": "a1a9e4953473258fdd8e9f7ff6d0f6aa199dc7106d899ed436723d7284a3064e",
+      "size": 202
+    },
+    {
+      "mode": "0644",
+      "path": "fuzz/fuzz_targets/mcp_mapping.rs",
+      "sha256": "ce868f77fd8eb3bd0a6a19d317bb9fd8318ed4e6a2f46256b52689b91d37bfac",
+      "size": 449
+    },
+    {
+      "mode": "0644",
+      "path": "fuzz/fuzz_targets/schema_validation.rs",
+      "sha256": "c87d382b78822e7f277d04455157ae37e64fd25da6715780880bc9519e2dc2e3",
+      "size": 382
+    },
+    {
+      "mode": "0644",
+      "path": "fuzz/fuzz_targets/webhook_signature.rs",
+      "sha256": "c2381cad1dbcf8c8d28da5b2d2016a0f64d6a25fb2dffe4ecb0356311a43e9ba",
+      "size": 579
+    },
+    {
+      "mode": "0644",
+      "path": "nextest.toml",
+      "sha256": "6cadeb1bae3f3884fe9c9ef3832b7fd2a180b8ab87d71514675892be4fbf317c",
+      "size": 76
+    },
+    {
+      "mode": "0644",
+      "path": "package-lock.json",
+      "sha256": "e0449c8272d12b5b41a8a23a5473c38753d795a63b793aa95e220754c883942d",
+      "size": 1047
+    },
+    {
+      "mode": "0644",
+      "path": "package.json",
+      "sha256": "894bbd12c70c86456cc32e480177aba4950a2d88405d0873002401bd1d6acbbc",
+      "size": 384
+    },
+    {
+      "mode": "0644",
+      "path": "packages/getaip-cli/LICENSE",
+      "sha256": "bcd69f392245a1d9034dfab46820305bbd4879ad847cbc0a57a2c10b6cbc7f8e",
+      "size": 5663
+    },
+    {
+      "mode": "0755",
+      "path": "packages/getaip-cli/bin/getaip.js",
+      "sha256": "8544ec3f0f493b712889e90cde2ece0130ff8f9f30d0000e01486331250e7cd5",
+      "size": 125
+    },
+    {
+      "mode": "0644",
+      "path": "packages/getaip-cli/lib/bootstrap.js",
+      "sha256": "4ebdf16e91a71e4fee3a0c6c3c8d94e04362193583165692403d63f0dd926f38",
+      "size": 22239
+    },
+    {
+      "mode": "0644",
+      "path": "packages/getaip-cli/package.json",
+      "sha256": "15276dd94004a788ef66bc394da89ca47e1e305cc8d0eafac591467200a870cb",
+      "size": 753
+    },
+    {
+      "mode": "0644",
+      "path": "packages/getaip-cli/test/bootstrap.test.js",
+      "sha256": "f6aa465d642e530b16ffcb7766a5df1153325d69bba2f71123ddac75e50c3c9f",
+      "size": 9332
+    },
+    {
+      "mode": "0644",
+      "path": "packages/getaip-cli/trust/getaip-distribution-trusted-keys.json",
+      "sha256": "fb539bb7ba3c9ad3616b46e63a3f3987164805c7387db7cf641ecf18f50306c9",
+      "size": 242
+    },
+    {
+      "mode": "0644",
+      "path": "packages/getaip/LICENSE",
+      "sha256": "bcd69f392245a1d9034dfab46820305bbd4879ad847cbc0a57a2c10b6cbc7f8e",
+      "size": 5663
+    },
+    {
+      "mode": "0755",
+      "path": "packages/getaip/bin/getaip.js",
+      "sha256": "3340a6b0c0705c431a9d3f1c9cb8b9cd8a2ca7ef8bb290e2e065c95fe8995f4b",
+      "size": 117
+    },
+    {
+      "mode": "0644",
+      "path": "packages/getaip/package.json",
+      "sha256": "c1c826a15c05f3e2999e46cf53986f55f4a0af7e57fa1d4e8fb933712ab45d6b",
+      "size": 697
+    },
+    {
+      "mode": "0644",
+      "path": "private-sdk-release.json",
+      "sha256": "9925100729ca548f238ca4d3967efdece2e5587eeee1bc38fbce94ccf701100f",
+      "size": 2636
+    },
+    {
+      "mode": "0644",
+      "path": "release/getaip-distribution-trusted-keys.json",
+      "sha256": "fb539bb7ba3c9ad3616b46e63a3f3987164805c7387db7cf641ecf18f50306c9",
+      "size": 242
+    },
+    {
+      "mode": "0644",
+      "path": "rust-toolchain.toml",
+      "sha256": "4d9021a437cbf3407c41252f8b66905bdc304d913d582e0404cae9aa1d8f2b00",
+      "size": 67
+    },
+    {
+      "mode": "0644",
+      "path": "rustfmt.toml",
+      "sha256": "0fba2b2cac5520bc439e40c49e8c5275b43b34745a245f3571eeed758bd20788",
+      "size": 114
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/ack.schema.json",
+      "sha256": "96020a5c352463e25c0f7b8c4293f23bc3f39f0465ee246bc744172502de4ee4",
+      "size": 1791
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/action.schema.json",
+      "sha256": "5cd224279a8c5e5f1d082c1f5842639a62ece58945e91c2b33db78e68da122b1",
+      "size": 27342
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/action_events.schema.json",
+      "sha256": "6cadfb99ecdc67f81ccfdc301ad99cdbeaeebb37dd9ce658ce413c1dfbf2ab17",
+      "size": 16623
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/action_events_request.schema.json",
+      "sha256": "cfcf0dfd911bc048ef4bfcd83991641c93e5abfb6fe4b10626bd59c983d30c2a",
+      "size": 1454
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/action_list.schema.json",
+      "sha256": "3179b7865162cc05be5107ea2140e4933fbd9926a108b91e59cf8a279edc1cae",
+      "size": 32348
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/action_list_request.schema.json",
+      "sha256": "225c14e0d698767a3f4dd80a4f441a6c034b3893e45c7d38e4529b98454d34d6",
+      "size": 4705
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/action_result.schema.json",
+      "sha256": "49184c28445d052a96c52fbda6f719cbf3f4527996c86736423f2cf77d10d01b",
+      "size": 12234
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/action_result_request.schema.json",
+      "sha256": "8d6bd6376e17329efb7a31d6c916f174039b242071e09bc5e224ae083bb8f845",
+      "size": 1213
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/action_status.schema.json",
+      "sha256": "adfed0e552f06faeccc57cbc383d895bf651718083eea61df7962d35c85b6963",
+      "size": 31030
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/action_status_request.schema.json",
+      "sha256": "1749639b1c6854622fbde6fcd460df93fa406a5a00d42c27698484e55bb5558c",
+      "size": 1368
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/approval_decision.schema.json",
+      "sha256": "a7c3ef7c31e149e2194dfe271f59aa187fe02e9e1f3226a86bf86fc7b88534f6",
+      "size": 9040
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/approval_list.schema.json",
+      "sha256": "a753e1f992b19530c73d7a6c905ecfced282dd6e1104a283320eb77baddf0e9f",
+      "size": 65637
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/approval_list_request.schema.json",
+      "sha256": "f9f21c617e6ae251d8c72b182449aed41a77cf7c58cb1509b518f62e2c0bd931",
+      "size": 1750
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/approval_query_request.schema.json",
+      "sha256": "ed06fcf16a2aa250a8a66c586c3151893fd7f008da570ec654e8bb62587df7d7",
+      "size": 1387
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/approval_record_view.schema.json",
+      "sha256": "d85fd072006d7e5b54210c99b89b1265840e891ce30a6b99f85d4cbaa9df4d8a",
+      "size": 64863
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/approval_request.schema.json",
+      "sha256": "71150a1227a9091f9ca4d7ea670cb737c4a50e40d0d72e52bc98f7c12958532e",
+      "size": 29026
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/audit_query_request.schema.json",
+      "sha256": "ae0d4a632a16e0ba6a18f014c1c7cadb54d1fe71d9fefd5aa9f4401a68078b34",
+      "size": 2723
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/audit_query_result.schema.json",
+      "sha256": "aa99de54bd42037166a60f3848c5abb4c8709c0cbb94e7e69590a3a1316e1989",
+      "size": 17945
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/callback_delivery_list.schema.json",
+      "sha256": "0f228761263e2da909659c26b1dfd4324eaca3c890bbc127edbd03d93d98d3be",
+      "size": 19563
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/callback_delivery_list_request.schema.json",
+      "sha256": "250fb0eba3e6572e86379fb3d65df0484aae4ee10ac4dada35860f7080d261d8",
+      "size": 2814
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/callback_delivery_policy.schema.json",
+      "sha256": "369125a6a8cbfe648e2bc82f507d0fc926b5cb2ce415ede34d448e32b880f631",
+      "size": 2342
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/callback_delivery_query_request.schema.json",
+      "sha256": "b7f60414c78111eeb41958618e9f966965f457b78171f59fc5280e9b5b64b0bb",
+      "size": 763
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/callback_delivery_record.schema.json",
+      "sha256": "f338aec54dd876bdfd3ec3fa4cfcdcfca9164238e86d43515005c71d13f698c6",
+      "size": 18477
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/capability_contract.schema.json",
+      "sha256": "35fca798339f5fc43da772259c834825a1f66d75401b27669b4990c66d1168ce",
+      "size": 34934
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/channel_message.schema.json",
+      "sha256": "1c845d4c70a7750165212a950ea8414eae28a626acef05a8f13c7c9a60658b7a",
+      "size": 21473
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/delegation_request.schema.json",
+      "sha256": "5eb6a775b804a66cae98f31c0d1d739bf385351d5b83f7c3bbf5ea01e783233a",
+      "size": 29482
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/delegation_result.schema.json",
+      "sha256": "4f4c29831b4ed47c10b2d6c8bd3c10a7c087875b9dc6f372be51f17eb29b9968",
+      "size": 25581
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/envelope.schema.json",
+      "sha256": "dd5330a5758c9e70ba43825d7bb5e45cc3afa44445a8ee438d13d902bd3caf91",
+      "size": 214106
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/escalation.schema.json",
+      "sha256": "11685d7e371c7c0b77edba5eeb8ec7454ccb5d8355e3d1ae83c84d930945b721",
+      "size": 11403
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/event.schema.json",
+      "sha256": "3fe81ae93bc44addd1eb5d0ba1d96e5fafad6eedd4a36b0936cd4a56815b3331",
+      "size": 6645
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/event_stream.schema.json",
+      "sha256": "82fea70a56cacd95af92452e1d964ec0e9a3f646a3218f2d8ca97a70b361b0af",
+      "size": 7364
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/identity_context.schema.json",
+      "sha256": "3b058939326aaae37bbb5e41afd56ce01ca1fa3de1df9391d8f486152bbd6d8f",
+      "size": 10208
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/manifest.schema.json",
+      "sha256": "f59f3b2a3d2b2b187e0912c5701481007e8b51d1497689aa0082d1fd3d98b704",
+      "size": 48636
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/manifest_filter.schema.json",
+      "sha256": "af7c85e506f5cb4322a51ab65ce5be0ca7aec6fdd0b8c39776004324e374c51f",
+      "size": 4131
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/receipt_query_request.schema.json",
+      "sha256": "21a78715e9a13af08d28dee2f48af11f8237490dc48e283d48bb124f5863421f",
+      "size": 755
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/resource_list.schema.json",
+      "sha256": "8d3b07c86eeff0cc2ef8dada052158e814d98c6d5ec30aa5f589a502dca99ee2",
+      "size": 3998
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/resource_list_request.schema.json",
+      "sha256": "fa4d3eb99b013b10367e1e1f53fcd2dab3715003a27e69c34b715677c248eb7b",
+      "size": 1198
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/resource_read_request.schema.json",
+      "sha256": "397f05409cc9e2b5c8a98ea458c1aec5ab21e2e8453bba1b5320239a8e4ab5cd",
+      "size": 892
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/resource_read_result.schema.json",
+      "sha256": "3c5b4770191d386b3e34378444553487b82ee5d363cd6d5a95e52dce38e57030",
+      "size": 10893
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/session_close_request.schema.json",
+      "sha256": "65608cf917f06fe6fbe42dc3090eca3d8589e9b2d704b34145f2058a96b2c3c3",
+      "size": 688
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/session_list.schema.json",
+      "sha256": "13f8941fe5aad2be912fa5aa9d3551975560624a37ce90f4d4f05dfb661de58e",
+      "size": 8626
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/session_list_request.schema.json",
+      "sha256": "875a3ff3589f72d1b30ed402c302263e3f3b83b37d00f44d5b44dd5d3cf43331",
+      "size": 2672
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/session_request.schema.json",
+      "sha256": "03d80fdc48e0750c025362fa1bbd771231e54a9801cd58723d8d022e21c693d7",
+      "size": 549
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/session_resume.schema.json",
+      "sha256": "01e78e9aea97836bf4a7875c7020eb1cf4b5f724a82d43a84bbed85f5c57d00c",
+      "size": 10850
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/session_resume_request.schema.json",
+      "sha256": "80e5bb54e6b9acff052695cf8a9ad4d0c1a1e106e5d52b3966998aa8cf9fcf8c",
+      "size": 877
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/session_view.schema.json",
+      "sha256": "134bccec82b8b786600b2142d6f0d95d1c41fa2a45c8845802d55eb6ea0f8c96",
+      "size": 7916
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/stream_chunk.schema.json",
+      "sha256": "e14015412a889332314073ce622086ac3e73a2437368755acbb78e9e72db6038",
+      "size": 8863
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/transaction_plan.schema.json",
+      "sha256": "634efd55a1d666250ab4f7c6485a77272ab427fb53e57860679bf37e63b736e6",
+      "size": 34851
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/transaction_query_request.schema.json",
+      "sha256": "faee9d32867aac2207b455b8a6460f65ef17f859058089b21dcd9e035629e996",
+      "size": 1520
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/transaction_request.schema.json",
+      "sha256": "95936fcb99e9693f323017dfef9dae4335ebe34d037b33aef8541cbb08a6fce9",
+      "size": 30354
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/transaction_result.schema.json",
+      "sha256": "76a19b5901adc61a5ef2744b4b015b84b961c4de34b3183abbb93633bcfa0024",
+      "size": 58758
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/aip/transaction_view.schema.json",
+      "sha256": "538d0bee566aac38f923372b7355974b4a76928f55adc8c9c7b9f41bd003c96b",
+      "size": 54855
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/fixtures/invalid/manifest-missing-agent.json",
+      "sha256": "6961b803edd21105b14a5e0fc8b8f7efae3b90dfce02345f0f8906cc9692b209",
+      "size": 90
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/fixtures/valid/manifest.json",
+      "sha256": "8b2f53dd39481b70a0dd54b962bd9c3e2e8e18d0d68a8bc4357faead8e6e8bc6",
+      "size": 178
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/getaip/distribution-manifest-v1.schema.json",
+      "sha256": "c0458509256f167ba80f3c7c8d71189c4291c319cc54fb977fdabdcaeac7e67e",
+      "size": 4713
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/getaip/production-marker-v1.schema.json",
+      "sha256": "508a2d97160c3caf4236f7f8133629983fe0e488e090cb74a0472dc853a37068",
+      "size": 962
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/mcp/2024-11-05/schema.json",
+      "sha256": "61cea2392d4f284092d09bc84b9ac488c0d5618ac2b38a56942fc5b99fd960ce",
+      "size": 87877
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/mcp/2025-03-26/schema.json",
+      "sha256": "e720669548c8100a4282c49e580efd6ddf7f28899ea786fc8db251dbdb356131",
+      "size": 89428
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/mcp/2025-06-18/schema.json",
+      "sha256": "b3db8f1ca839bc5171ceb4ba013fdf240c5a8a13d4653bb1bdf21f94677aa220",
+      "size": 108236
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/mcp/2025-11-25/schema.json",
+      "sha256": "7b2d96fd95efd2216aa953606b83f5a740ddeaa5ebd3a5d27b45a8296545a118",
+      "size": 174326
+    },
+    {
+      "mode": "0644",
+      "path": "third_party/modelcontextprotocol/LICENSE",
+      "sha256": "0382b0057770ca05e9c350a50aa3b1c1fea84da0bc81d723bf00b9aa841be58a",
+      "size": 12227
+    },
+    {
+      "mode": "0755",
+      "path": "tools/ci/check-getaip-naming.py",
+      "sha256": "db6cec3a6eddc9b9486d696d6a65079273c2e8f4f6073b04f20c41478f552c36",
+      "size": 40885
+    },
+    {
+      "mode": "0755",
+      "path": "tools/ci/check-publication-hygiene.sh",
+      "sha256": "8fcdc5f25641efafdbb741c2f312347df52f9fc5dcc3af8e1ec3edd45627612d",
+      "size": 6631
+    },
+    {
+      "mode": "0755",
+      "path": "tools/ci/extended-gates.sh",
+      "sha256": "64684b2ccb7b294a1652a5d8060432a242b6467d02f23b5cc81418d9d4a5c1ba",
+      "size": 205
+    },
+    {
+      "mode": "0755",
+      "path": "tools/ci/install-syft.sh",
+      "sha256": "f680664f921ef19df6455c938d2c0e8cccee10b696313f2192d84c9fd5b3525f",
+      "size": 1269
+    },
+    {
+      "mode": "0755",
+      "path": "tools/getaip-server-mcp-stdio.sh",
+      "sha256": "bedfa31e5bdbbac68171ada898ce74e54140f085e16a119d39b3e9d995ec387f",
+      "size": 655
+    },
+    {
+      "mode": "0644",
+      "path": "tools/naming/getaip-rename-ledger.json",
+      "sha256": "6f099dbe4700d9f5f8b2dbb918d1e470357389ec5f6a2171f1e2ef608bf63947",
+      "size": 518521
+    },
+    {
+      "mode": "0644",
+      "path": "tools/npm/check-packages.mjs",
+      "sha256": "e5183cc669019ae6c13acb7d12e8d763abd7df31760460bb6aee925fc163e548",
+      "size": 6686
+    },
+    {
+      "mode": "0644",
+      "path": "tools/npm/create-first-publication-candidates.mjs",
+      "sha256": "740b4b2104d96b7977ddec48e04b6ca0a1363d588e489a327784e50a56fc81c5",
+      "size": 2711
+    },
+    {
+      "mode": "0755",
+      "path": "tools/release/check-code-only-release.sh",
+      "sha256": "75e32b54f4072a334c76a44dd0f4084089daaa2a823be1cd6528c0f9c34eec0f",
+      "size": 967
+    },
+    {
+      "mode": "0755",
+      "path": "tools/release/check-release-artifacts.sh",
+      "sha256": "925dba257657dd3c353d9757dfc7e92add3a40c1dfb785c3c761484b54cf0e4b",
+      "size": 718
+    },
+    {
+      "mode": "0755",
+      "path": "tools/release/create-production-marker.py",
+      "sha256": "3f32dd3466d55cc03676366e78803173d77034ca550582fdbea06dd5c299fe94",
+      "size": 14362
+    },
+    {
+      "mode": "0755",
+      "path": "tools/release/create_code_only_snapshot.py",
+      "sha256": "b34533382ce56381338143e0821fa7d09093f9116aae2644bb06453765ec475b",
+      "size": 13190
+    },
+    {
+      "mode": "0755",
+      "path": "tools/release/qualify-native-install.sh",
+      "sha256": "acc577987807a5e2b2a4df4166527c67446d2222f32e3a56d4c017841413d3a0",
+      "size": 8048
+    },
+    {
+      "mode": "0644",
+      "path": "tools/release/test_create_production_marker.py",
+      "sha256": "333d552d56d57629505183e966c21d6eedbc93f38c8dc2396e6858268242f388",
+      "size": 8113
+    },
+    {
+      "mode": "0644",
+      "path": "tools/release/test_github_release_policy.py",
+      "sha256": "e0a2aed4af10f7b5c4d3ccdb088bd185638505bbcd0380fa1c3e6f1ea735495c",
+      "size": 3751
+    },
+    {
+      "mode": "0755",
+      "path": "tools/release/verify_code_only_snapshot.py",
+      "sha256": "f18eb79c516d40cef0daedde9de5ba3cf54b22e6ca1b0087763987190ac969ec",
+      "size": 7357
+    },
+    {
+      "mode": "0755",
+      "path": "tools/schema/export-schemas.sh",
+      "sha256": "c2f748a51297149e7d5620455586c141ec78605eed2097c9f882fcde5d032910",
+      "size": 80
+    }
+  ],
+  "inventory_sha256": "dcf4d073ee42fea9761f5a774b3f4497558ce99dc0d3fcfce0c555f4e3bfb3e1",
+  "release": {
+    "aip_protocol_version": "1.0",
+    "version": "2.1.0"
+  },
+  "schema_version": 1,
+  "self_excluded_from_inventory": true,
+  "source": {
+    "revision": "c438ae68d6d377190f88797bd1981b0f25a9a543",
+    "tree": "a7468ea7365eed9d988ee0552aa4e285f80fe604"
+  }
+}

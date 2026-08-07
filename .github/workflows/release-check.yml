@@ -1,0 +1,74 @@
+name: release-check
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-check-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_INCREMENTAL: "0"
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
+
+jobs:
+  release-check:
+    name: complete-release-check
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Attach a tag dispatch to the publication branch
+        if: ${{ github.ref_type == 'tag' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git switch --force-create main "$GITHUB_SHA"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Install Node.js for the npm release boundary
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install pinned QA tools
+        run: |
+          cargo install cargo-nextest --version 0.9.140 --locked
+          cargo install cargo-deny --version 0.19.0 --locked
+          cargo install cargo-audit --version 0.22.2 --locked
+          cargo install cargo-machete --version 0.9.2 --locked
+          cargo install cargo-semver-checks --version 0.48.0 --locked
+
+      - name: Check publication hygiene
+        run: tools/ci/check-publication-hygiene.sh --code-only
+
+      - name: Run complete release gate once
+        run: tools/release/check-code-only-release.sh
+
+      - name: Scan Git history with Gitleaks
+        run: >-
+          docker run --rm
+          -v "$PWD:/repo"
+          -w /repo
+          ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+          detect --source . --redact --no-banner --no-color --verbose --exit-code 1

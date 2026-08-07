@@ -1,0 +1,1069 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ApprovalRequest",
+  "description": "First-class approval request.",
+  "type": "object",
+  "properties": {
+    "id": {
+      "description": "Stable approval workflow id.",
+      "$ref": "#/$defs/ApprovalId"
+    },
+    "action_id": {
+      "description": "Action requiring approval.",
+      "$ref": "#/$defs/ActionId"
+    },
+    "capability_id": {
+      "description": "Capability requiring approval.",
+      "$ref": "#/$defs/CapabilityId"
+    },
+    "requester": {
+      "description": "Principal requesting approval.",
+      "$ref": "#/$defs/Principal"
+    },
+    "subject": {
+      "description": "Principal whose work is being approved.",
+      "$ref": "#/$defs/Principal"
+    },
+    "approver_selector": {
+      "description": "Approver selector.",
+      "$ref": "#/$defs/ApproverSelector"
+    },
+    "reason": {
+      "description": "Human-readable reason.",
+      "type": "string"
+    },
+    "evidence": {
+      "description": "Evidence artifacts.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/EvidenceArtifact"
+      }
+    },
+    "expires_at": {
+      "description": "Expiration timestamp.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "policy_decision_id": {
+      "description": "External or internal policy decision id.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "identity": {
+      "description": "Identity context used by policy and audit.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/IdentityContext"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "policy_snapshot": {
+      "description": "Immutable approval policy snapshot evaluated for this request.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ApprovalPolicy"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "policy_hash": {
+      "description": "SHA-256 hash of the canonical policy snapshot and governed subject.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "operator": {
+      "description": "Principal operating the action, when distinct from the requester.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Principal"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "risk": {
+      "description": "Risk evaluated for delegated-authority limits.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RiskLevel"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "governed_value": {
+      "description": "Governed numeric value evaluated for delegated-authority limits.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint64",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "id",
+    "action_id",
+    "capability_id",
+    "requester",
+    "subject",
+    "approver_selector",
+    "reason"
+  ],
+  "$defs": {
+    "ApprovalId": {
+      "description": "Human approval workflow identifier.",
+      "type": "string"
+    },
+    "ActionId": {
+      "description": "Action identifier.",
+      "type": "string"
+    },
+    "CapabilityId": {
+      "description": "Stable capability identifier.",
+      "type": "string"
+    },
+    "Principal": {
+      "description": "Actor or authorizing entity in AIP.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable AIP principal id.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "kind": {
+          "description": "Principal category.",
+          "$ref": "#/$defs/PrincipalKind"
+        },
+        "display_name": {
+          "description": "Human-readable display name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trust_domain": {
+          "description": "Trust domain that owns this principal.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "did": {
+          "description": "DID identity, if available.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "external_refs": {
+          "description": "Product-specific identities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExternalRef"
+          }
+        },
+        "delegated_authority": {
+          "description": "Scoped delegated authority granted to this principal.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DelegatedAuthorityGrant"
+          }
+        },
+        "auth_context": {
+          "description": "Authentication metadata supplied by a profile or gateway."
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "PrincipalId": {
+      "description": "Stable principal identifier.",
+      "type": "string"
+    },
+    "PrincipalKind": {
+      "description": "Entity category for a protocol principal.",
+      "oneOf": [
+        {
+          "description": "A human user or operator.",
+          "type": "string",
+          "const": "human"
+        },
+        {
+          "description": "An autonomous or semi-autonomous agent.",
+          "type": "string",
+          "const": "agent"
+        },
+        {
+          "description": "A service account or machine identity.",
+          "type": "string",
+          "const": "service"
+        },
+        {
+          "description": "A tenant/account boundary.",
+          "type": "string",
+          "const": "tenant"
+        },
+        {
+          "description": "A customer identity.",
+          "type": "string",
+          "const": "customer"
+        },
+        {
+          "description": "A contact identity in a channel product.",
+          "type": "string",
+          "const": "contact"
+        },
+        {
+          "description": "A system-level actor.",
+          "type": "string",
+          "const": "system"
+        }
+      ]
+    },
+    "ExternalRef": {
+      "description": "Product-specific identity reference preserved by connectors.",
+      "type": "object",
+      "properties": {
+        "system": {
+          "description": "Source system name, for example `chatwoot` or `dify`.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Source-local entity type.",
+          "type": "string"
+        },
+        "id": {
+          "description": "Source-local entity id.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "system",
+        "type",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "DelegatedAuthorityGrant": {
+      "description": "Scoped authority delegated to this principal for another principal's work.\n\nDelegated authority is part of the native AIP identity model. It lets a\nruntime distinguish \"can read or operate on my own work\" from \"can read or\noperate on work owned by a specific principal\" without granting broad\n`*:any` scopes. Compatibility profiles may project this from their own\nauth systems, but the resulting grant is evaluated by AIP core/runtime\nsemantics.",
+      "type": "object",
+      "properties": {
+        "principal_id": {
+          "description": "Principal whose work is covered by the grant.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "scopes": {
+          "description": "Granted scope labels. `*` grants all scopes for this principal.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_at": {
+          "description": "Expiration timestamp. Expired grants MUST be ignored by runtimes.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "description": "Optional reason or authority reference retained for audit/debugging.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "principal_id"
+      ],
+      "additionalProperties": false
+    },
+    "ApproverSelector": {
+      "description": "Principal, role, group, policy, or external system that can approve work.",
+      "oneOf": [
+        {
+          "description": "Specific approving principal.",
+          "type": "object",
+          "properties": {
+            "id": {
+              "description": "Principal id.",
+              "$ref": "#/$defs/PrincipalId"
+            },
+            "type": {
+              "type": "string",
+              "const": "principal"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Role name.",
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Role identifier.",
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "role"
+            }
+          },
+          "required": [
+            "type",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Group name.",
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Group identifier.",
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "group"
+            }
+          },
+          "required": [
+            "type",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Tenant-owned approval policy.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "tenant_policy"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "External approval system.",
+          "type": "object",
+          "properties": {
+            "system": {
+              "description": "External system identifier.",
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "external_system"
+            }
+          },
+          "required": [
+            "type",
+            "system"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EvidenceArtifact": {
+      "description": "Evidence artifact used by approval and audit workflows.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stable artifact id.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Evidence kind.",
+          "type": "string"
+        },
+        "uri": {
+          "description": "URI for retrievable evidence.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hash": {
+          "description": "Integrity hash for the artifact or redacted view.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "redacted": {
+          "description": "Whether the artifact has been redacted.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "redacted"
+      ],
+      "additionalProperties": false
+    },
+    "IdentityContext": {
+      "description": "Identity, tenant, and credential mapping context for enterprise actions.",
+      "type": "object",
+      "properties": {
+        "tenant": {
+          "description": "Tenant boundary.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TenantRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "external_account": {
+          "description": "External account boundary.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExternalAccountRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "external_user": {
+          "description": "External user associated with the invocation.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExternalUserRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "human_actor": {
+          "description": "Human actor that initiated or owns the work.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Principal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "service_account": {
+          "description": "Service account executing the operation.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Principal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "acted_on_behalf_of": {
+          "description": "Principal on whose behalf the operation is performed.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Principal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "credential_ref": {
+          "description": "Reference to external credential material.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CredentialRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "oauth": {
+          "description": "OAuth lifecycle state without token material.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OAuthCredentialState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "TenantRef": {
+      "description": "Tenant reference used for policy and credential partitioning.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "AIP or external tenant id.",
+          "type": "string"
+        },
+        "system": {
+          "description": "Source system that owns the tenant id.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "ExternalAccountRef": {
+      "description": "External account reference used by product connectors.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Account id in the source system.",
+          "type": "string"
+        },
+        "system": {
+          "description": "Source system name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "system"
+      ],
+      "additionalProperties": false
+    },
+    "ExternalUserRef": {
+      "description": "External user reference used by product connectors.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "User id in the source system.",
+          "type": "string"
+        },
+        "system": {
+          "description": "Source system name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "system"
+      ],
+      "additionalProperties": false
+    },
+    "CredentialRef": {
+      "description": "Reference to credential material stored outside protocol envelopes.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Credential id or vault reference.",
+          "type": "string"
+        },
+        "issuer": {
+          "description": "Credential issuer or storage boundary.",
+          "type": "string"
+        },
+        "scopes": {
+          "description": "Granted scope labels known to the runtime.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "issuer"
+      ],
+      "additionalProperties": false
+    },
+    "OAuthCredentialState": {
+      "description": "OAuth credential lifecycle state without raw token material.",
+      "type": "object",
+      "properties": {
+        "issuer": {
+          "description": "Authorization server or provider id.",
+          "type": "string"
+        },
+        "client_id": {
+          "description": "OAuth client id or service identifier.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scopes": {
+          "description": "Granted scope labels.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_at": {
+          "description": "Token expiration timestamp, when known.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "refresh_available": {
+          "description": "Whether refresh is available without human reauthorization.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "issuer",
+        "refresh_available"
+      ],
+      "additionalProperties": false
+    },
+    "ApprovalPolicy": {
+      "description": "Approval policy declared by a capability.",
+      "type": "object",
+      "properties": {
+        "required": {
+          "description": "Whether approval is required before execution.",
+          "type": "boolean"
+        },
+        "reason": {
+          "description": "Reason shown to an approver or audit trail.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "approver_selector": {
+          "description": "Approver selection rule.",
+          "$ref": "#/$defs/ApproverSelector"
+        },
+        "ttl_ms": {
+          "description": "Time-to-live for approval requests.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "evidence_requirements": {
+          "description": "Required evidence.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvidenceRequirement"
+          }
+        },
+        "delegated_authority": {
+          "description": "Delegated approval authority.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DelegatedApprovalAuthority"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rule": {
+          "description": "Composable authority expression. When absent, the legacy\n`approver_selector` is interpreted as one leaf predicate.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ApprovalRule"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "minimum_distinct_principals": {
+          "description": "Minimum number of distinct approving principals for the workflow.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0,
+          "default": 1
+        },
+        "separation_of_duties": {
+          "description": "Separation-of-duties requirements.",
+          "$ref": "#/$defs/SeparationOfDuties",
+          "default": {
+            "requester_must_differ": false,
+            "operator_must_differ": false,
+            "allow_self_approval": false
+          }
+        },
+        "policy_version": {
+          "description": "Stable policy version retained in approval evidence.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "required",
+        "approver_selector"
+      ],
+      "additionalProperties": false
+    },
+    "EvidenceRequirement": {
+      "description": "Evidence required before approval can be decided.",
+      "oneOf": [
+        {
+          "description": "Human-readable reason.",
+          "type": "string",
+          "const": "reason"
+        },
+        {
+          "description": "Snapshot of the action input.",
+          "type": "string",
+          "const": "input_snapshot"
+        },
+        {
+          "description": "Policy engine decision.",
+          "type": "string",
+          "const": "policy_decision"
+        },
+        {
+          "description": "External ticket or case.",
+          "type": "string",
+          "const": "external_ticket"
+        },
+        {
+          "description": "Attachment or artifact.",
+          "type": "string",
+          "const": "attachment"
+        }
+      ]
+    },
+    "DelegatedApprovalAuthority": {
+      "description": "Delegated approval authority.",
+      "type": "object",
+      "properties": {
+        "principal": {
+          "description": "Principal receiving delegated approval authority.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "scope": {
+          "description": "Delegated scope labels.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_at": {
+          "description": "Expiration timestamp.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "principal"
+      ],
+      "additionalProperties": false
+    },
+    "ApprovalRule": {
+      "description": "Composable approval authority expression.\n\nLeaf predicates are evaluated only against authority memberships returned\nby a trusted resolver. Values carried in an action or decision payload are\nnever sufficient to satisfy a predicate.",
+      "oneOf": [
+        {
+          "description": "Every child expression must be satisfied.",
+          "type": "object",
+          "properties": {
+            "rules": {
+              "description": "Child expressions.",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ApprovalRule"
+              }
+            },
+            "allow_decision_reuse": {
+              "description": "Explicitly permits one verified decision to satisfy more than one child.",
+              "type": "boolean",
+              "default": false
+            },
+            "operator": {
+              "type": "string",
+              "const": "all"
+            }
+          },
+          "required": [
+            "operator",
+            "rules"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "At least one child expression must be satisfied.",
+          "type": "object",
+          "properties": {
+            "rules": {
+              "description": "Child expressions.",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ApprovalRule"
+              }
+            },
+            "operator": {
+              "type": "string",
+              "const": "any"
+            }
+          },
+          "required": [
+            "operator",
+            "rules"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "At least `required` distinct matching decisions must be present.",
+          "type": "object",
+          "properties": {
+            "required": {
+              "description": "Required number of decisions.",
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            },
+            "rules": {
+              "description": "Expressions that can contribute to the quorum.",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ApprovalRule"
+              }
+            },
+            "distinct_principals": {
+              "description": "Whether one principal may contribute at most one vote.",
+              "type": "boolean",
+              "default": true
+            },
+            "operator": {
+              "type": "string",
+              "const": "quorum"
+            }
+          },
+          "required": [
+            "operator",
+            "required",
+            "rules"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A specific principal must approve.",
+          "type": "object",
+          "properties": {
+            "id": {
+              "description": "Required principal id.",
+              "$ref": "#/$defs/PrincipalId"
+            },
+            "operator": {
+              "type": "string",
+              "const": "principal"
+            }
+          },
+          "required": [
+            "operator",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A member of a trusted role must approve.",
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Required role name.",
+              "type": "string"
+            },
+            "operator": {
+              "type": "string",
+              "const": "role"
+            }
+          },
+          "required": [
+            "operator",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A member of a trusted group must approve.",
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Required group name.",
+              "type": "string"
+            },
+            "operator": {
+              "type": "string",
+              "const": "group"
+            }
+          },
+          "required": [
+            "operator",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A member authorized by a tenant policy must approve.",
+          "type": "object",
+          "properties": {
+            "policy_id": {
+              "description": "Stable tenant policy id.",
+              "type": "string"
+            },
+            "operator": {
+              "type": "string",
+              "const": "tenant_policy"
+            }
+          },
+          "required": [
+            "operator",
+            "policy_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A verified external approval system must approve.",
+          "type": "object",
+          "properties": {
+            "system": {
+              "description": "External system id.",
+              "type": "string"
+            },
+            "operator": {
+              "type": "string",
+              "const": "external_system"
+            }
+          },
+          "required": [
+            "operator",
+            "system"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A non-revoked delegated authority grant must match the operation.",
+          "type": "object",
+          "properties": {
+            "scope": {
+              "description": "Required delegated scope.",
+              "type": "string"
+            },
+            "max_risk": {
+              "description": "Maximum accepted risk for this grant.",
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/RiskLevel"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "max_value": {
+              "description": "Maximum governed numeric value for this grant.",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0
+            },
+            "operator": {
+              "type": "string",
+              "const": "delegated_authority"
+            }
+          },
+          "required": [
+            "operator",
+            "scope"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "RiskLevel": {
+      "description": "Operational risk classification.",
+      "oneOf": [
+        {
+          "description": "Low-risk capability.",
+          "type": "string",
+          "const": "low"
+        },
+        {
+          "description": "Medium-risk capability.",
+          "type": "string",
+          "const": "medium"
+        },
+        {
+          "description": "High-risk capability.",
+          "type": "string",
+          "const": "high"
+        },
+        {
+          "description": "Critical-risk capability.",
+          "type": "string",
+          "const": "critical"
+        }
+      ]
+    },
+    "SeparationOfDuties": {
+      "description": "Separation-of-duties requirements for an approval workflow.",
+      "type": "object",
+      "properties": {
+        "requester_must_differ": {
+          "description": "The requester cannot approve the request.",
+          "type": "boolean",
+          "default": false
+        },
+        "operator_must_differ": {
+          "description": "The action operator cannot approve the request.",
+          "type": "boolean",
+          "default": false
+        },
+        "allow_self_approval": {
+          "description": "Explicitly permits self-approval when no stricter rule prohibits it.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/approval_request.schema.json",
+  "additionalProperties": false
+}

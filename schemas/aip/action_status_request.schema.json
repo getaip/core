@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ActionStatusRequest",
+  "description": "Request for the durable lifecycle view of one action.",
+  "type": "object",
+  "properties": {
+    "action_id": {
+      "description": "Action to inspect.",
+      "$ref": "#/$defs/ActionId"
+    },
+    "tenant_id": {
+      "description": "Optional tenant boundary expected by the caller.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "include_result": {
+      "description": "Include the final result when available.",
+      "type": "boolean",
+      "default": false
+    },
+    "include_receipts": {
+      "description": "Include the receipt chain when available.",
+      "type": "boolean",
+      "default": false
+    },
+    "include_chunks": {
+      "description": "Include durable stream chunks for the action.",
+      "type": "boolean",
+      "default": false
+    },
+    "wait_ms": {
+      "description": "Optional bounded wait preference in milliseconds.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint64",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "action_id"
+  ],
+  "$defs": {
+    "ActionId": {
+      "description": "Action identifier.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/action_status_request.schema.json",
+  "additionalProperties": false
+}

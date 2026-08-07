@@ -1,0 +1,43 @@
+[package]
+name = "aip-connector-hermes-agent"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-connector.workspace = true
+aip-core.workspace = true
+aip-crypto.workspace = true
+aip-gateway.workspace = true
+aip-mcp-client.workspace = true
+aip-profile-mcp.workspace = true
+aip-runtime.workspace = true
+async-trait.workspace = true
+bytes.workspace = true
+clap.workspace = true
+futures-util.workspace = true
+hex.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+time.workspace = true
+uuid.workspace = true
+tokio.workspace = true
+url.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+aip-auth.workspace = true
+aip-conformance.workspace = true
+aip-schema.workspace = true
+axum.workspace = true
+time.workspace = true
+tokio.workspace = true

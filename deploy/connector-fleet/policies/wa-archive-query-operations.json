@@ -1,0 +1,5 @@
+[
+  "archive.account.get",
+  "archive.message.list",
+  "archive.outbox.list"
+]

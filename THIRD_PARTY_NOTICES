@@ -1,0 +1,18 @@
+# Third-Party Notices
+
+This repository contains stable Model Context Protocol JSON Schema snapshots
+under `schemas/mcp/`. The snapshots are used by AIP's independently written MCP
+compatibility conformance implementation.
+
+## Model Context Protocol schemas
+
+- Upstream project: `modelcontextprotocol/modelcontextprotocol`
+- Upstream revision: `433d59ca12c6637a072a9de24e74f37d9f135854`
+- Imported paths: `schema/<version>/schema.json`
+- Local paths: `schemas/mcp/<version>/schema.json`
+- Integrity records: `tools/ci/check-publication-hygiene.sh`
+- Applicable upstream license text: `third_party/modelcontextprotocol/LICENSE`
+
+The imported schema files are retained byte-for-byte. AIP-owned material remains
+governed by the repository's root `LICENSE`; the upstream license applies to the
+imported MCP material according to its terms.

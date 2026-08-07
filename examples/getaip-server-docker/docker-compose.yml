@@ -1,0 +1,177 @@
+services:
+  nats:
+    image: nats:2.11-alpine
+    command:
+      - "/bin/sh"
+      - "-ec"
+      - 'exec nats-server -m 8222 --user getaip-server --pass "$$(cat /run/secrets/getaip-server-nats-password)"'
+    ports:
+      - "127.0.0.1:14222:4222"
+    volumes:
+      - ./secrets/nats-password:/run/secrets/getaip-server-nats-password:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8222/healthz | grep -q 'ok'"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 2s
+    restart: unless-stopped
+
+  runtime-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: aip_runtime
+      POSTGRES_USER: aip_runtime
+      POSTGRES_PASSWORD: ${GETAIP_SERVER_RUNTIME_POSTGRES_PASSWORD:?set in .env}
+    volumes:
+      - runtime-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aip_runtime -d aip_runtime -h 127.0.0.1 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 5s
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  support-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: aip_support_sandbox
+      POSTGRES_USER: aip_support
+      POSTGRES_PASSWORD: ${AIP_SUPPORT_SANDBOX_POSTGRES_PASSWORD:?set in .env}
+    ports:
+      - "127.0.0.1:15432:5432"
+    volumes:
+      - support-postgres-data:/var/lib/postgresql/data
+      - ../support-sandbox/postgres/init:/docker-entrypoint-initdb.d:ro
+      - ../support-sandbox/queries:/queries:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U aip_support -d aip_support_sandbox -h 127.0.0.1 || exit 1"
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  getaip-server:
+    build:
+      context: ../..
+      dockerfile: crates/getaip-server-legacy-bundled/Dockerfile
+    image: getaip/server:local
+    command:
+      - "--bind"
+      - "0.0.0.0:8080"
+      - "--service-id"
+      - "agent:getaip:server:docker"
+      - "--trust-domain"
+      - "local.docker"
+    environment:
+      AIP_HERMES_ENDPOINTS: "${AIP_HERMES_ENDPOINTS:-}"
+      AIP_HERMES_API_KEY: "${AIP_HERMES_API_KEY:-}"
+      AIP_HERMES_OPERATOR_DELEGATION_ENABLED: "${AIP_HERMES_OPERATOR_DELEGATION_ENABLED:-false}"
+      AIP_HERMES_OPERATOR_CAPABILITY_PREFIXES: "cap:support_sandbox:,cap:enterprise_sandbox:"
+      AIP_HERMES_OPERATOR_APPROVAL_EXEMPT_CAPABILITY_PREFIXES: "cap:support_sandbox:support.case.get"
+      AIP_HERMES_OPERATOR_SCOPE_PREFIXES: "support.,enterprise."
+      AIP_HERMES_OPERATOR_MODEL: "${AIP_HERMES_OPERATOR_MODEL:-cohere/north-mini-code:free}"
+      GETAIP_SERVER_NATS_URL: "nats://nats:4222"
+      GETAIP_SERVER_NATS_USERNAME: "getaip-server"
+      GETAIP_SERVER_NATS_PASSWORD_FILE: "/run/secrets/getaip-server-nats-password"
+      GETAIP_SERVER_NATS_TRUST_DOMAIN: "local.docker"
+      GETAIP_SERVER_NATS_SERVICE: "getaip-server"
+      GETAIP_SERVER_NATS_QUEUE_GROUP: "getaip-server-docker"
+      GETAIP_SERVER_TRUSTED_SIGNERS: "${GETAIP_SERVER_TRUSTED_SIGNERS:?set in .env}"
+      GETAIP_SERVER_POSTGRES_URL: "postgres://aip_runtime:${GETAIP_SERVER_RUNTIME_POSTGRES_PASSWORD:?set in .env}@runtime-postgres:5432/aip_runtime"
+      GETAIP_SERVER_APPROVAL_AUTHORITY_FILE: "/etc/getaip-server/approval-authorities.json"
+      GETAIP_SERVER_NATIVE_BEARER_TOKEN: "${GETAIP_SERVER_NATIVE_BEARER_TOKEN:-aip-local-approver-token-change-me}"
+      GETAIP_SERVER_NATIVE_PRINCIPAL: "human:aip-e2e-approver"
+      GETAIP_SERVER_NATIVE_PRINCIPAL_SCOPES: "approval:decide,action:write,action:read,audit:read,receipt:read"
+      AIP_SUPPORT_SANDBOX_DATABASE_URL: "postgres://aip_support:${AIP_SUPPORT_SANDBOX_POSTGRES_PASSWORD:?set in .env}@support-postgres:5432/aip_support_sandbox"
+      AIP_ENTERPRISE_SANDBOX_DATABASE_URL: "postgres://aip_support:${AIP_SUPPORT_SANDBOX_POSTGRES_PASSWORD:?set in .env}@support-postgres:5432/aip_support_sandbox"
+      GETAIP_SERVER_MCP_PRINCIPAL_SCOPES: "approval:decide,action:write,action:read,audit:read,receipt:read,transaction:read,delegation:create"
+      GETAIP_SERVER_MCP_RESOURCE: "http://127.0.0.1:18080/mcp"
+      GETAIP_SERVER_MCP_AUTHORIZATION_SERVERS: "https://local-idp.test"
+      GETAIP_SERVER_MCP_SCOPES: "mcp:connect,approval:decide,action:write,action:read,audit:read,receipt:read,transaction:read,delegation:create"
+      GETAIP_SERVER_MCP_REQUIRED_SCOPES: "mcp:connect"
+      GETAIP_SERVER_MCP_INTROSPECTION_URL: "http://127.0.0.1:19090/introspect"
+      GETAIP_SERVER_MCP_INTROSPECTION_ISSUER: "https://local-idp.test"
+      GETAIP_SERVER_MCP_INTROSPECTION_CLIENT_ID: "getaip-server-local-docker"
+      GETAIP_SERVER_MCP_INTROSPECTION_CLIENT_SECRET_FILE: "/run/secrets/getaip-server-introspection-client-secret"
+      GETAIP_SERVER_MCP_INTROSPECTION_ALLOW_LOOPBACK_HTTP: "true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      nats:
+        condition: service_healthy
+      support-postgres:
+        condition: service_healthy
+      runtime-postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:18080:8080"
+    volumes:
+      - ./approval-authorities.json:/etc/getaip-server/approval-authorities.json:ro
+      - ./secrets/introspection-client-secret:/run/secrets/getaip-server-introspection-client-secret:ro
+      - ./secrets/nats-password:/run/secrets/getaip-server-nats-password:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  oauth-introspection:
+    image: python:3.13-alpine
+    network_mode: "service:getaip-server"
+    depends_on:
+      getaip-server:
+        condition: service_started
+    command: ["python", "-u", "/fixture/oauth-introspection.py"]
+    environment:
+      INTROSPECTION_CLIENT_ID: "getaip-server-local-docker"
+      INTROSPECTION_CLIENT_SECRET_FILE: "/run/secrets/getaip-server-introspection-client-secret"
+      INTROSPECTION_IDENTITIES_FILE: "/run/secrets/getaip-server-introspection-identities.json"
+      INTROSPECTION_ISSUER: "https://local-idp.test"
+      INTROSPECTION_AUDIENCE: "http://127.0.0.1:18080/mcp"
+    volumes:
+      - ./oauth-introspection.py:/fixture/oauth-introspection.py:ro
+      - ./secrets/introspection-client-secret:/run/secrets/getaip-server-introspection-client-secret:ro
+      - ./secrets/introspection-identities.json:/run/secrets/getaip-server-introspection-identities.json:ro
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:19090/health', timeout=2).read()"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 2s
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+volumes:
+  runtime-postgres-data:
+  support-postgres-data:

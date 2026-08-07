@@ -1,0 +1,52 @@
+[package]
+name = "getaip-server-legacy-bundled"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "getaip-server-legacy-bundled"
+path = "src/main.rs"
+
+[dependencies]
+aip-auth.workspace = true
+aip-connector.workspace = true
+aip-connector-cal-diy.workspace = true
+aip-connector-enterprise-sandbox.workspace = true
+aip-connector-hermes-agent.workspace = true
+aip-connector-registry-postgres.workspace = true
+aip-connector-remote.workspace = true
+aip-connector-support-sandbox.workspace = true
+aip-core.workspace = true
+aip-crypto.workspace = true
+aip-discovery.workspace = true
+aip-gateway.workspace = true
+aip-mcp-session.workspace = true
+aip-profile-mcp.workspace = true
+aip-runtime.workspace = true
+aip-transport-mcp-stdio.workspace = true
+aip-transport-mcp-streamable-http.workspace = true
+aip-transport-nats.workspace = true
+getaip-server = { path = "../getaip-server" }
+async-trait.workspace = true
+axum.workspace = true
+clap.workspace = true
+hex.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+time.workspace = true
+tokio.workspace = true
+
+[dev-dependencies]
+aip-mcp-client.workspace = true
+aip-mcp-conformance.workspace = true
+hmac.workspace = true
+tower.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ResourceReadRequest",
+  "description": "Native resource read request.",
+  "type": "object",
+  "properties": {
+    "resource_id": {
+      "description": "Resource id to read.",
+      "type": "string"
+    },
+    "tenant_id": {
+      "description": "Optional tenant boundary expected by the caller.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "version": {
+      "description": "Optional resource version selector.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "accept": {
+      "description": "Acceptable MIME types or profile labels.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "resource_id"
+  ],
+  "$id": "https://getaip.org/schemas/aip/resource_read_request.schema.json",
+  "additionalProperties": false
+}

@@ -1,0 +1,552 @@
+name: ci
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: "0"
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
+
+jobs:
+  npm-bootstrap:
+    name: npm-bootstrap-node-${{ matrix.node }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["22.14.0", "24"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Verify bootstrap tests and exact package tarballs without lifecycle scripts
+        run: |
+          npm ci --ignore-scripts
+          npm test
+          npm run check
+          git diff --exit-code
+
+  rust-core:
+    name: rust-core
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Check publication hygiene
+        run: |
+          python3 tools/ci/check-getaip-naming.py enforce
+          tools/ci/check-publication-hygiene.sh --code-only
+
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+      - name: Check core and fleet boundary
+        run: |
+          cargo run -p xtask -- check-getaip-server-boundary
+          cargo run -p xtask -- check-private-sdk-boundary
+          cargo run -p xtask -- private-sdk-inventory --output .getaip-private-sdk-inventory.json
+          cargo run -p xtask -- connector-repository-inventory --output .getaip-connector-repository-inventory.json
+
+      - name: Upload reproducible repository-boundary inventories
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: repository-boundary-${{ github.sha }}
+          path: |
+            .getaip-private-sdk-inventory.json
+            .getaip-connector-repository-inventory.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Run core Clippy
+        run: >-
+          cargo clippy --workspace --all-targets --all-features
+          --exclude aip
+          --exclude getaip-server-legacy-bundled
+          --exclude aip-connector-cal-diy
+          --exclude aip-connector-chatwoot
+          --exclude aip-connector-crewai
+          --exclude aip-connector-twenty
+          --exclude aip-connector-dify
+          --exclude aip-connector-hermes-agent
+          --exclude aip-connector-wa-archive
+          --exclude aip-connector-support-sandbox
+          --exclude aip-connector-enterprise-sandbox
+          --exclude aip-connector-fleet-fixture
+          --exclude aip-host-cal-diy
+          --exclude aip-host-chatwoot
+          --exclude aip-host-crewai
+          --exclude aip-host-twenty
+          --exclude aip-host-dify
+          --exclude aip-host-hermes-agent
+          --exclude aip-host-wa-archive
+          --exclude aip-host-support-sandbox
+          --exclude aip-host-enterprise-sandbox
+          -- -D warnings
+
+      - name: Run full-core facade Clippy
+        run: cargo clippy -p aip --all-targets --features full-core -- -D warnings
+
+      - name: Run core tests
+        run: >-
+          cargo test --workspace --all-features
+          --exclude aip
+          --exclude getaip-server-legacy-bundled
+          --exclude aip-connector-cal-diy
+          --exclude aip-connector-chatwoot
+          --exclude aip-connector-crewai
+          --exclude aip-connector-twenty
+          --exclude aip-connector-dify
+          --exclude aip-connector-hermes-agent
+          --exclude aip-connector-wa-archive
+          --exclude aip-connector-support-sandbox
+          --exclude aip-connector-enterprise-sandbox
+          --exclude aip-connector-fleet-fixture
+          --exclude aip-host-cal-diy
+          --exclude aip-host-chatwoot
+          --exclude aip-host-crewai
+          --exclude aip-host-twenty
+          --exclude aip-host-dify
+          --exclude aip-host-hermes-agent
+          --exclude aip-host-wa-archive
+          --exclude aip-host-support-sandbox
+          --exclude aip-host-enterprise-sandbox
+
+      - name: Run full-core facade tests
+        run: cargo test -p aip --features full-core
+
+      - name: Check generated schemas
+        run: |
+          cargo run -p xtask -- schema
+          git diff --exit-code -- schemas/aip
+
+  connector-catalog:
+    name: connector-catalog-migration
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+          components: clippy
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Run migration connector Clippy
+        run: >-
+          cargo clippy
+          -p getaip-server-legacy-bundled
+          -p aip-connector-cal-diy
+          -p aip-connector-chatwoot
+          -p aip-connector-crewai
+          -p aip-connector-twenty
+          -p aip-connector-dify
+          -p aip-connector-hermes-agent
+          -p aip-connector-wa-archive
+          -p aip-connector-support-sandbox
+          -p aip-connector-enterprise-sandbox
+          -p aip-connector-fleet-fixture
+          -p aip-host-cal-diy
+          -p aip-host-chatwoot
+          -p aip-host-crewai
+          -p aip-host-twenty
+          -p aip-host-dify
+          -p aip-host-hermes-agent
+          -p aip-host-wa-archive
+          -p aip-host-support-sandbox
+          -p aip-host-enterprise-sandbox
+          --all-targets --all-features -- -D warnings
+
+      - name: Run migration connector tests
+        run: >-
+          cargo test
+          -p getaip-server-legacy-bundled
+          -p aip-connector-cal-diy
+          -p aip-connector-chatwoot
+          -p aip-connector-crewai
+          -p aip-connector-twenty
+          -p aip-connector-dify
+          -p aip-connector-hermes-agent
+          -p aip-connector-wa-archive
+          -p aip-connector-support-sandbox
+          -p aip-connector-enterprise-sandbox
+          -p aip-connector-fleet-fixture
+          -p aip-host-cal-diy
+          -p aip-host-chatwoot
+          -p aip-host-crewai
+          -p aip-host-twenty
+          -p aip-host-dify
+          -p aip-host-hermes-agent
+          -p aip-host-wa-archive
+          -p aip-host-support-sandbox
+          -p aip-host-enterprise-sandbox
+          --all-features
+
+      - name: Run legacy full facade compatibility
+        run: cargo test -p aip --all-features
+
+  msrv:
+    name: rust-msrv-1.88
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install minimum Rust
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: 1.88.0
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Check workspace at MSRV
+        run: >-
+          cargo check --workspace --all-targets --all-features
+          --exclude aip
+          --exclude getaip-server-legacy-bundled
+          --exclude aip-connector-cal-diy
+          --exclude aip-connector-chatwoot
+          --exclude aip-connector-crewai
+          --exclude aip-connector-twenty
+          --exclude aip-connector-dify
+          --exclude aip-connector-hermes-agent
+          --exclude aip-connector-wa-archive
+          --exclude aip-connector-support-sandbox
+          --exclude aip-connector-enterprise-sandbox
+          --exclude aip-connector-fleet-fixture
+          --exclude aip-host-cal-diy
+          --exclude aip-host-chatwoot
+          --exclude aip-host-crewai
+          --exclude aip-host-twenty
+          --exclude aip-host-dify
+          --exclude aip-host-hermes-agent
+          --exclude aip-host-wa-archive
+          --exclude aip-host-support-sandbox
+          --exclude aip-host-enterprise-sandbox
+
+      - name: Check full-core facade at MSRV
+        run: cargo check -p aip --all-targets --features full-core
+
+  macos-core:
+    name: macos-core
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Run portable core tests
+        run: >-
+          cargo test
+          -p aip-core
+          -p aip-schema
+          -p aip-crypto
+          -p aip-auth
+          -p aip-profile-mcp
+          -p aip-profile-a2a
+          --all-features
+
+  nats:
+    name: nats-native
+    runs-on: ubuntu-24.04
+    services:
+      nats:
+        image: nats:2.11-alpine@sha256:e4bf19f15fd3218814a4e3c9e0064e1334bd8aa20d5984b9f1a0afd084f8cc00
+        ports:
+          - 4222:4222
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Run native NATS tests
+        run: cargo test -p aip-transport-nats -p getaip-server --all-features --all-targets
+
+  postgres:
+    name: postgres-runtime-and-fleet
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+        env:
+          POSTGRES_DB: aip_test
+          POSTGRES_USER: aip
+          POSTGRES_PASSWORD: aip
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aip -d aip_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      AIP_POSTGRES_TEST_URL: postgres://aip:aip@127.0.0.1:5432/aip_test
+      AIP_POSTGRES_SCALE_TEST_URL: postgres://aip:aip@127.0.0.1:5432/aip_test
+      AIP_POSTGRES_DATA_TEST_URL: postgres://aip_data:aip_data@127.0.0.1:5432/aip_test
+      AIP_POSTGRES_CONTROL_TEST_URL: postgres://aip_lifecycle:aip_lifecycle@127.0.0.1:5432/aip_test
+      AIP_SCALE_ENVIRONMENT_LABEL: github-ubuntu-24.04-postgres-17.6
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Run PostgreSQL recovery tests
+        run: cargo test -p aip-storage-postgres --test runtime_recovery --all-features
+
+      - name: Run connector registry and install schema
+        run: cargo test -p aip-connector-registry-postgres --test registry catalog_and_route_survive_concurrent_resolve_and_reconnect -- --nocapture
+
+      - name: Create restricted data-plane and lifecycle roles
+        env:
+          PGPASSWORD: aip
+        run: |
+          psql -h 127.0.0.1 -U aip -d aip_test -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE aip_data LOGIN PASSWORD 'aip_data';
+          GRANT CONNECT ON DATABASE aip_test TO aip_data;
+          GRANT USAGE ON SCHEMA public TO aip_data;
+          GRANT SELECT ON ALL TABLES IN SCHEMA public TO aip_data;
+          GRANT INSERT, UPDATE ON aip_connector_replicas TO aip_data;
+          GRANT INSERT, UPDATE ON aip_route_assignments TO aip_data;
+          GRANT INSERT, UPDATE ON aip_connector_admission_counters TO aip_data;
+          CREATE ROLE aip_lifecycle LOGIN PASSWORD 'aip_lifecycle';
+          GRANT CONNECT ON DATABASE aip_test TO aip_lifecycle;
+          GRANT USAGE ON SCHEMA public TO aip_lifecycle;
+          GRANT SELECT ON ALL TABLES IN SCHEMA public TO aip_lifecycle;
+          GRANT INSERT, UPDATE ON aip_connector_replicas TO aip_lifecycle;
+          GRANT INSERT, UPDATE, DELETE ON aip_connector_control_replay TO aip_lifecycle;
+          SQL
+
+      - name: Prove standalone lifecycle service has no catalog admin pool
+        run: cargo test -p aip-connector-control-plane --test postgres_control_plane -- --nocapture
+
+      - name: Prove data-plane role cannot mutate catalog
+        run: cargo test -p aip-connector-registry-postgres --test registry data_plane_pool_has_no_catalog_control_credentials -- --nocapture
+
+      - name: Run bounded fleet-scale qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test -p aip-connector-registry-postgres --test scale indexed_catalog_and_routing_remain_bounded_at_fleet_scale -- --nocapture 2>&1 \
+            | tee .getaip-scale-qualification.log
+
+      - name: Upload numeric fleet qualification evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: fleet-scale-${{ github.sha }}
+          path: .getaip-scale-qualification.log
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
+
+  python:
+    name: python
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            crates/aip-connector-crewai/sidecar/pyproject.toml
+            crates/aip-connector-crewai/sidecar/uv.lock
+            examples/restaurant-booking/coordinator/requirements.txt
+
+      - name: Install Python checks
+        run: |
+          python -m pip install --disable-pip-version-check uv==0.8.17
+          python -m pip install --disable-pip-version-check ruff==0.12.10
+          uv sync --project crates/aip-connector-crewai/sidecar --frozen --extra test
+          python -m venv .venv-coordinator
+          .venv-coordinator/bin/python -m pip install --disable-pip-version-check -r examples/restaurant-booking/coordinator/requirements.txt
+
+      - name: Check Python formatting and lint
+        run: |
+          git ls-files -z '*.py' | xargs -0 ruff format --check
+          git ls-files -z '*.py' | xargs -0 ruff check
+
+      - name: Test CrewAI sidecar
+        run: crates/aip-connector-crewai/sidecar/.venv/bin/python -m pytest crates/aip-connector-crewai/sidecar/tests
+
+      - name: Test restaurant coordinator
+        shell: bash
+        run: |
+          set -euo pipefail
+          secret_dir=$(mktemp -d)
+          trap 'rm -rf "$secret_dir"' EXIT
+          umask 077
+          printf '%s\n' 'ci-aip-token' > "$secret_dir/aip-token"
+          printf '%s\n' 'ci-introspection-secret' > "$secret_dir/introspection-secret"
+          export CAL_EVENT_TYPE_ID=1
+          export DEFAULT_CUSTOMER_TIME_ZONE=UTC
+          export DATABASE_URL=postgresql://aip:aip@127.0.0.1:5432/aip
+          export AIP_MCP_URL=http://127.0.0.1:18080/mcp
+          export AIP_MCP_TOKEN_FILE="$secret_dir/aip-token"
+          export INTROSPECTION_URL=http://127.0.0.1:19090/introspect
+          export INTROSPECTION_ISSUER=http://127.0.0.1:19090
+          export INTROSPECTION_AUDIENCE=restaurant-coordinator
+          export INTROSPECTION_CLIENT_ID=restaurant-coordinator
+          export INTROSPECTION_CLIENT_SECRET_FILE="$secret_dir/introspection-secret"
+          export MCP_ALLOWED_SUBJECT=ci-operator
+          export RESTAURANT_NAME='AIP Bistro'
+          export MCP_RESOURCE_URL=http://127.0.0.1:8081/mcp
+          ../../../.venv-coordinator/bin/python -m unittest test_dialogue.py
+        working-directory: examples/restaurant-booking/coordinator
+
+      - name: Test governed-tool plugin
+        run: python -m unittest test_plugin.py
+        working-directory: examples/restaurant-booking/hermes-plugins/aip-governed-tool-policy
+
+  secrets:
+    name: secret-scan
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Scan Git history with Gitleaks
+        run: >-
+          docker run --rm
+          -v "$PWD:/repo"
+          -w /repo
+          ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+          detect --source . --redact --no-banner --no-color --verbose --exit-code 1
+
+  migration-images:
+    name: migration-images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install pinned Syft
+        run: tools/ci/install-syft.sh
+
+      - name: Build and distinguish core and migration daemon artifacts
+        run: deploy/connector-fleet/verify-migration-images.sh
+
+      - name: Upload daemon image evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: migration-image-evidence
+          path: .getaip-migration-image-qualification
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
+  connector-fleet-runtime:
+    name: connector-fleet-runtime-and-product-images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      # Public pull requests cannot depend on the separately qualified private
+      # WA Archive provider image. The open connector host is still built and
+      # inspected here; the exact provider integration remains mandatory in
+      # the canonical Gitea fleet gate.
+      AIP_WA_ARCHIVE_PROVIDER_REQUIRED: "0"
+      WA_ARCHIVE_ACCOUNT_ID: "971500000000@c.us"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install pinned Syft
+        run: tools/ci/install-syft.sh
+
+      - name: Execute the clean multiprocess qualification and failure matrix
+        run: deploy/connector-fleet/verify-failure-matrix.sh
+
+      - name: Build and inspect every product host artifact
+        run: deploy/connector-fleet/verify-product-images.sh
+
+      - name: Upload bounded failure evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: connector-fleet-failure-evidence
+          path: |
+            .getaip-fleet-qualification
+            .getaip-product-image-qualification
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
+  connector-fleet:
+    name: connector-fleet-and-product-images
+    if: ${{ always() }}
+    needs:
+      - migration-images
+      - connector-fleet-runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require every fleet and image qualification
+        env:
+          MIGRATION_IMAGES_RESULT: ${{ needs.migration-images.result }}
+          CONNECTOR_FLEET_RESULT: ${{ needs.connector-fleet-runtime.result }}
+        run: |
+          test "$MIGRATION_IMAGES_RESULT" = success
+          test "$CONNECTOR_FLEET_RESULT" = success

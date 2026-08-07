@@ -1,0 +1,24 @@
+[package]
+name = "aip-connector"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-core.workspace = true
+aip-discovery.workspace = true
+aip-runtime.workspace = true
+async-trait.workspace = true
+constant_time_eq.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+zeroize.workspace = true
+
+[lints]
+workspace = true

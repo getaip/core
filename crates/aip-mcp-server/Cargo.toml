@@ -1,0 +1,31 @@
+[package]
+name = "aip-mcp-server"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-auth.workspace = true
+aip-connector-registry.workspace = true
+aip-core.workspace = true
+aip-discovery.workspace = true
+aip-gateway.workspace = true
+aip-mcp-session.workspace = true
+aip-profile-mcp.workspace = true
+aip-schema.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+time.workspace = true
+tokio.workspace = true
+
+[dev-dependencies]
+aip-runtime.workspace = true
+
+[lints]
+workspace = true

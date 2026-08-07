@@ -1,0 +1,14 @@
+[
+  {
+    "principal_id": "human:aip-e2e-approver",
+    "tenant_id": "tenant-acme",
+    "roles": ["operator_approver"],
+    "groups": [],
+    "tenant_policies": ["local.docker.operator_approval"],
+    "external_systems": [],
+    "delegated_scopes": [],
+    "revision": 1,
+    "expires_at": null,
+    "revoked": false
+  }
+]

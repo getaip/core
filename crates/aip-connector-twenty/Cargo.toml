@@ -1,0 +1,36 @@
+[package]
+name = "aip-connector-twenty"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-connector.workspace = true
+aip-core.workspace = true
+aip-discovery.workspace = true
+aip-profile-webhook.workspace = true
+aip-runtime.workspace = true
+async-trait.workspace = true
+futures-util.workspace = true
+hex.workspace = true
+hmac.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+time.workspace = true
+tokio.workspace = true
+url.workspace = true
+uuid = { workspace = true, features = ["v5"] }
+
+[dev-dependencies]
+axum.workspace = true
+jsonschema.workspace = true
+
+[lints]
+workspace = true

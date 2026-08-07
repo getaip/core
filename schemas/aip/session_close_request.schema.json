@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SessionCloseRequest",
+  "description": "Request to close one session.",
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "description": "Session to close.",
+      "$ref": "#/$defs/SessionId"
+    },
+    "reason": {
+      "description": "Optional operator-visible reason.",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "session_id"
+  ],
+  "$defs": {
+    "SessionId": {
+      "description": "Session identifier.",
+      "type": "string"
+    }
+  },
+  "$id": "https://getaip.org/schemas/aip/session_close_request.schema.json",
+  "additionalProperties": false
+}

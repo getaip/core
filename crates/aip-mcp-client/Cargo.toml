@@ -1,0 +1,43 @@
+[package]
+name = "aip-mcp-client"
+version.workspace = true
+publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aip-connector.workspace = true
+aip-core.workspace = true
+aip-discovery.workspace = true
+aip-mcp-session.workspace = true
+aip-profile-mcp.workspace = true
+aip-runtime.workspace = true
+aip-schema.workspace = true
+aip-transport-mcp-stdio.workspace = true
+aip-transport-mcp-legacy-http-sse.workspace = true
+aip-transport-mcp-streamable-http.workspace = true
+async-trait.workspace = true
+base64.workspace = true
+bytes.workspace = true
+constant_time_eq.workspace = true
+futures-util.workspace = true
+reqwest.workspace = true
+rand_core.workspace = true
+serde_json.workspace = true
+serde.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+time.workspace = true
+tokio.workspace = true
+
+[target.'cfg(unix)'.dependencies]
+nix.workspace = true
+
+[dev-dependencies]
+axum.workspace = true
+
+[lints]
+workspace = true
