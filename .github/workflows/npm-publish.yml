@@ -193,9 +193,9 @@ jobs:
           npm view "getaip@${version}" \
             name version dependencies dist.integrity dist.tarball dist.attestations engines repository --json > short-registry-evidence.json
           for evidence in scoped-registry-evidence.json short-registry-evidence.json; do
-            test "$(jq -er '.dist.attestations.provenance.predicateType' "$evidence")" = \
+            test "$(jq -er '(."dist.attestations" // .dist.attestations).provenance.predicateType' "$evidence")" = \
               https://slsa.dev/provenance/v1
-            jq -er '.dist.attestations.url | startswith("https://registry.npmjs.org/-/npm/v1/attestations/")' \
+            jq -er '(."dist.attestations" // .dist.attestations).url | startswith("https://registry.npmjs.org/-/npm/v1/attestations/")' \
               "$evidence" > /dev/null
           done
 
