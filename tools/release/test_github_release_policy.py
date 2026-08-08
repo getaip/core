@@ -9,6 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+CI = ROOT / ".github/workflows/ci.yml"
 PRIVATE_RELEASE = ROOT / ".github/workflows/release.yml"
 RELEASE_CHECK = ROOT / ".github/workflows/release-check.yml"
 PUBLIC_PROMOTION = ROOT / ".github/workflows/promote-public-release.yml"
@@ -42,10 +43,17 @@ class GitHubReleasePolicyTests(unittest.TestCase):
         verification = workflow.index("gh attestation verify")
         containers = workflow.index("visibility=$(gh api")
         publication = workflow.index("--draft=false")
+        promotion_evidence = workflow.index("name: Upload promotion evidence")
+        dispatch = workflow.index("gh workflow run npm-publish.yml")
         self.assertLess(attestation, verification)
         self.assertLess(verification, publication)
         self.assertLess(containers, publication)
+        self.assertLess(publication, dispatch)
+        self.assertLess(promotion_evidence, dispatch)
         self.assertIn('"$visibility" != public', workflow)
+        self.assertIn("NPM_TRUSTED_PUBLISHING_READY", workflow)
+        self.assertIn('--ref "$TAG"', workflow[dispatch:])
+        self.assertRegex(workflow, r"(?m)^  actions: write$")
         self.assertIn("docker manifest inspect", workflow)
         self.assertIn("cosign verify", workflow)
         self.assertRegex(workflow, r"(?m)^\s+attestations:\s+write$")
@@ -74,11 +82,48 @@ class GitHubReleasePolicyTests(unittest.TestCase):
         self.assertIn("workflow_dispatch:", trusted)
         self.assertIn("dist.attestations", first)
         self.assertIn("dist.attestations", trusted)
+        self.assertNotIn("dist.integrity --json", first)
+        self.assertEqual(
+            first.count('npm view "@getaip/cli@${BOOTSTRAP_VERSION}" --json'), 1
+        )
+        self.assertEqual(
+            first.count('npm view "getaip@${BOOTSTRAP_VERSION}" --json'), 1
+        )
+        self.assertEqual(trusted.count('npm view "@getaip/cli@${version}" --json'), 2)
+        self.assertEqual(trusted.count('npm view "getaip@${version}" --json'), 2)
         production_marker = trusted[
             trusted.index("name: attest-final-production-marker") :
         ]
         self.assertIn('["dist.integrity"] // .dist.integrity', production_marker)
         self.assertIn('["dist.attestations"] // .dist.attestations', production_marker)
+
+    def test_heavy_ci_jobs_wait_for_the_release_preflight(self) -> None:
+        workflow = CI.read_text(encoding="utf-8")
+
+        def job_block(name: str) -> str:
+            match = re.search(
+                rf"(?ms)^  {re.escape(name)}:\n(.*?)(?=^  [a-z][a-z0-9-]*:\n|\Z)",
+                workflow,
+            )
+            self.assertIsNotNone(match, name)
+            assert match is not None
+            return match.group(1)
+
+        preflight = job_block("release-preflight")
+        self.assertIn("ruff format --check", preflight)
+        self.assertIn("ruff check", preflight)
+        self.assertIn("unittest discover -s tools/release", preflight)
+        for job in [
+            "rust-core",
+            "connector-catalog",
+            "msrv",
+            "macos-core",
+            "nats",
+            "postgres",
+            "migration-images",
+            "connector-fleet-runtime",
+        ]:
+            self.assertIn("needs: release-preflight", job_block(job), job)
 
 
 if __name__ == "__main__":

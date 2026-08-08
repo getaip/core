@@ -10,7 +10,7 @@ on:
 
 permissions:
   contents: write
-  actions: read
+  actions: write
   attestations: write
   id-token: write
   packages: write
@@ -63,6 +63,7 @@ jobs:
         id: private
         env:
           GH_TOKEN: ${{ github.token }}
+          NPM_TRUSTED_PUBLISHING_READY: ${{ vars.NPM_TRUSTED_PUBLISHING_READY }}
           TAG: ${{ steps.release.outputs.tag }}
         shell: bash
         run: |
@@ -76,6 +77,7 @@ jobs:
           test -z "$(git ls-files | awk 'tolower($0) ~ /\.md$/')"
           test ! -e CHANGELOG
           test "$(gh api "repos/$GITHUB_REPOSITORY" --jq .visibility)" = public
+          test "$NPM_TRUSTED_PUBLISHING_READY" = true
           test "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true
 
           immutable_run=$(gh run list \
@@ -266,7 +268,7 @@ jobs:
           )
           PY
 
-      - name: Publish the exact verified draft and trigger the gated npm boundary
+      - name: Publish the exact verified draft
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.release.outputs.tag }}
@@ -287,3 +289,15 @@ jobs:
           path: public-promotion-evidence.json
           if-no-files-found: error
           retention-days: 90
+
+      - name: Dispatch Trusted Publishing from the exact immutable tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run npm-publish.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$TAG" \
+            --raw-field "tag=$TAG"

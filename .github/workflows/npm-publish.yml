@@ -187,11 +187,10 @@ jobs:
 
       - name: Retain registry identity and integrity evidence
         run: |
+          set -euo pipefail
           version=${{ steps.release.outputs.version }}
-          npm view "@getaip/cli@${version}" \
-            name version dist.integrity dist.tarball dist.attestations engines repository --json > scoped-registry-evidence.json
-          npm view "getaip@${version}" \
-            name version dependencies dist.integrity dist.tarball dist.attestations engines repository --json > short-registry-evidence.json
+          npm view "@getaip/cli@${version}" --json > scoped-registry-evidence.json
+          npm view "getaip@${version}" --json > short-registry-evidence.json
           for evidence in scoped-registry-evidence.json short-registry-evidence.json; do
             test "$(jq -er '(."dist.attestations" // .dist.attestations).provenance.predicateType' "$evidence")" = \
               https://slsa.dev/provenance/v1
@@ -371,12 +370,8 @@ jobs:
           while read -r _digest name; do
             gh attestation verify "native-release/$name" --repo "$GITHUB_REPOSITORY"
           done < native-release/SHA256SUMS
-          npm view "@getaip/cli@${version}" \
-            name version dist.integrity dist.tarball dist.attestations engines repository --json \
-            > scoped-registry-evidence.json
-          npm view "getaip@${version}" \
-            name version dependencies dist.integrity dist.tarball dist.attestations engines repository --json \
-            > short-registry-evidence.json
+          npm view "@getaip/cli@${version}" --json > scoped-registry-evidence.json
+          npm view "getaip@${version}" --json > short-registry-evidence.json
           test "$(jq -er '(.["dist.integrity"] // .dist.integrity)' scoped-registry-evidence.json)" = "${{ needs.publish.outputs.scoped_integrity }}"
           test "$(jq -er '(.["dist.integrity"] // .dist.integrity)' short-registry-evidence.json)" = "${{ needs.publish.outputs.short_integrity }}"
           for evidence in scoped-registry-evidence.json short-registry-evidence.json; do

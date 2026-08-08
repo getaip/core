@@ -110,11 +110,24 @@ def npm_record(path: Path, expected_name: str, version: str) -> dict[str, object
     if value.get("name") != expected_name or value.get("version") != version:
         fail(f"npm evidence identity mismatch for {expected_name}")
     distribution = value.get("dist")
+    if distribution is None:
+        distribution = {}
     if not isinstance(distribution, dict):
-        fail(f"npm evidence omits dist for {expected_name}")
-    integrity = distribution.get("integrity")
-    tarball = distribution.get("tarball")
-    attestations = distribution.get("attestations")
+        fail(f"npm evidence has an invalid dist object for {expected_name}")
+
+    def field(name: str) -> object:
+        flat_name = f"dist.{name}"
+        has_flat = flat_name in value
+        has_nested = name in distribution
+        if has_flat and has_nested and value[flat_name] != distribution[name]:
+            fail(f"npm evidence has conflicting {flat_name} for {expected_name}")
+        if has_flat:
+            return value[flat_name]
+        return distribution.get(name)
+
+    integrity = field("integrity")
+    tarball = field("tarball")
+    attestations = field("attestations")
     if not isinstance(integrity, str) or not integrity.startswith("sha512-"):
         fail(f"npm integrity is invalid for {expected_name}")
     if not isinstance(tarball, str) or not tarball.startswith(

@@ -32,6 +32,28 @@ def digest(path: Path) -> str:
 
 
 class ProductionMarkerTest(unittest.TestCase):
+    def test_flat_npm_projection_is_accepted_and_conflicts_are_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            evidence = Path(temporary) / "scoped.json"
+            flat = {
+                "name": "@getaip/cli",
+                "version": "2.1.0",
+                "dist.integrity": "sha512-scoped",
+                "dist.tarball": "https://registry.npmjs.org/@getaip/cli/-/cli-2.1.0.tgz",
+                "dist.attestations": {
+                    "url": "https://registry.npmjs.org/-/npm/v1/attestations/@getaip%2fcli@2.1.0",
+                    "provenance": {"predicateType": "https://slsa.dev/provenance/v1"},
+                },
+            }
+            write_json(evidence, flat)
+            record = MODULE.npm_record(evidence, "@getaip/cli", "2.1.0")
+            self.assertEqual(record["integrity"], "sha512-scoped")
+
+            flat["dist"] = {"integrity": "sha512-conflicting"}
+            write_json(evidence, flat)
+            with self.assertRaisesRegex(SystemExit, "conflicting dist.integrity"):
+                MODULE.npm_record(evidence, "@getaip/cli", "2.1.0")
+
     def test_exact_evidence_creates_one_bound_marker(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

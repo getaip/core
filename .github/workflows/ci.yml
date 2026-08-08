@@ -20,6 +20,27 @@ env:
   CARGO_PROFILE_TEST_DEBUG: "0"
 
 jobs:
+  release-preflight:
+    name: release-preflight
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Install the exact Python formatter and linter
+        run: python -m pip install --disable-pip-version-check ruff==0.12.10
+
+      - name: Reject release-policy and formatting defects before heavy jobs
+        run: |
+          git ls-files -z '*.py' | xargs -0 ruff format --check
+          git ls-files -z '*.py' | xargs -0 ruff check
+          python -m unittest discover -s tools/release -p 'test_*.py'
+
   npm-bootstrap:
     name: npm-bootstrap-node-${{ matrix.node }}
     runs-on: ubuntu-24.04
@@ -46,6 +67,7 @@ jobs:
 
   rust-core:
     name: rust-core
+    needs: release-preflight
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -152,6 +174,7 @@ jobs:
 
   connector-catalog:
     name: connector-catalog-migration
+    needs: release-preflight
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -221,6 +244,7 @@ jobs:
 
   msrv:
     name: rust-msrv-1.88
+    needs: release-preflight
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -264,6 +288,7 @@ jobs:
 
   macos-core:
     name: macos-core
+    needs: release-preflight
     runs-on: macos-15
     steps:
       - name: Checkout
@@ -290,6 +315,7 @@ jobs:
 
   nats:
     name: nats-native
+    needs: release-preflight
     runs-on: ubuntu-24.04
     services:
       nats:
@@ -313,6 +339,7 @@ jobs:
 
   postgres:
     name: postgres-runtime-and-fleet
+    needs: release-preflight
     runs-on: ubuntu-24.04
     services:
       postgres:
@@ -476,6 +503,7 @@ jobs:
 
   migration-images:
     name: migration-images
+    needs: release-preflight
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -500,6 +528,7 @@ jobs:
 
   connector-fleet-runtime:
     name: connector-fleet-runtime-and-product-images
+    needs: release-preflight
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
