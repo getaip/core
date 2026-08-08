@@ -40,11 +40,12 @@ class GitHubReleasePolicyTests(unittest.TestCase):
         workflow = PUBLIC_PROMOTION.read_text(encoding="utf-8")
         attestation = workflow.index(ATTEST_ACTION)
         verification = workflow.index("gh attestation verify")
-        containers = workflow.index("visibility=public")
+        containers = workflow.index("visibility=$(gh api")
         publication = workflow.index("--draft=false")
         self.assertLess(attestation, verification)
         self.assertLess(verification, publication)
         self.assertLess(containers, publication)
+        self.assertIn('"$visibility" != public', workflow)
         self.assertIn("docker manifest inspect", workflow)
         self.assertIn("cosign verify", workflow)
         self.assertRegex(workflow, r"(?m)^\s+attestations:\s+write$")
@@ -73,6 +74,9 @@ class GitHubReleasePolicyTests(unittest.TestCase):
         self.assertIn("workflow_dispatch:", trusted)
         self.assertIn("dist.attestations", first)
         self.assertIn("dist.attestations", trusted)
+        production_marker = trusted[trusted.index("name: attest-final-production-marker") :]
+        self.assertIn('["dist.integrity"] // .dist.integrity', production_marker)
+        self.assertIn('["dist.attestations"] // .dist.attestations', production_marker)
 
 
 if __name__ == "__main__":
