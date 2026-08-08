@@ -204,6 +204,7 @@ jobs:
           clone="$RUNNER_TEMP/getaip-core-public-clone-back"
           gh repo clone "$GITHUB_REPOSITORY" "$clone" -- --no-tags
           git -C "$clone" fetch --no-tags origin "refs/tags/$TAG:refs/tags/$TAG"
+          git -C "$clone" checkout --detach "refs/tags/$TAG^{commit}"
           test "$(git -C "$clone" rev-parse HEAD)" = "${{ steps.private.outputs.release_commit }}"
           test "$(git -C "$clone" rev-parse 'HEAD^{tree}')" = "$(git rev-parse 'HEAD^{tree}')"
           test "$(git -C "$clone" rev-list --count HEAD)" = 1
