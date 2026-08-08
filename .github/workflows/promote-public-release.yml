@@ -153,7 +153,7 @@ jobs:
       - name: Install Cosign for the public container boundary
         uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62 # v3.10.0
 
-      - name: Publish and anonymously verify every immutable container digest
+      - name: Verify every public immutable container digest
         env:
           GH_TOKEN: ${{ github.token }}
           IMMUTABLE_RUN: ${{ steps.private.outputs.immutable_run }}
@@ -176,9 +176,13 @@ jobs:
                 fi
                 package=${BASH_REMATCH[1]}
                 encoded=$(jq -rn --arg value "$package" '$value | @uri')
-                gh api --method PATCH \
+                visibility=$(gh api \
                   "/orgs/getaip/packages/container/${encoded}" \
-                  -f visibility=public > /dev/null
+                  --jq '.visibility')
+                if [[ "$visibility" != public ]]; then
+                  echo "container package is not public: $package ($visibility)" >&2
+                  exit 1
+                fi
                 DOCKER_CONFIG="$anonymous_docker" docker manifest inspect "$reference" \
                   > "public-image-verification/${package}.manifest.json"
                 cosign verify \
@@ -190,7 +194,7 @@ jobs:
           test "$(find public-image-verification -type f -name '*.manifest.json' | wc -l | tr -d ' ')" = 14
           test "$(find public-image-verification -type f -name '*.cosign.json' | wc -l | tr -d ' ')" = 14
 
-      - name: Repeat clean clone-back verification after the visibility change
+      - name: Repeat clean clone-back verification after public container verification
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.release.outputs.tag }}
