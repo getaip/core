@@ -137,14 +137,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          published=$(npm view "@getaip/cli@${BOOTSTRAP_VERSION}" dist.integrity --json 2>/dev/null | tr -d '"' || true)
+          published=$(npm view "@getaip/cli@${BOOTSTRAP_VERSION}" dist.integrity 2>/dev/null || true)
           if test -z "$published" || test "$published" = null; then
             test -n "$NODE_AUTH_TOKEN"
             npm publish "npm-candidate/$TARBALL" \
               --access public --tag bootstrap --provenance
           fi
           for attempt in 1 2 3 4 5 6; do
-            published=$(npm view "@getaip/cli@${BOOTSTRAP_VERSION}" dist.integrity --json 2>/dev/null | tr -d '"' || true)
+            published=$(npm view "@getaip/cli@${BOOTSTRAP_VERSION}" dist.integrity 2>/dev/null || true)
             test "$published" = "$EXPECTED_INTEGRITY" && break
             test "$attempt" -lt 6
             sleep 10
@@ -175,14 +175,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          published=$(npm view "getaip@${BOOTSTRAP_VERSION}" dist.integrity --json 2>/dev/null | tr -d '"' || true)
+          published=$(npm view "getaip@${BOOTSTRAP_VERSION}" dist.integrity 2>/dev/null || true)
           if test -z "$published" || test "$published" = null; then
             test -n "$NODE_AUTH_TOKEN"
             npm publish "npm-candidate/$TARBALL" \
               --access public --tag bootstrap --provenance
           fi
           for attempt in 1 2 3 4 5 6; do
-            published=$(npm view "getaip@${BOOTSTRAP_VERSION}" dist.integrity --json 2>/dev/null | tr -d '"' || true)
+            published=$(npm view "getaip@${BOOTSTRAP_VERSION}" dist.integrity 2>/dev/null || true)
             test "$published" = "$EXPECTED_INTEGRITY" && break
             test "$attempt" -lt 6
             sleep 10
@@ -220,11 +220,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm view "@getaip/cli@${BOOTSTRAP_VERSION}" \
-            name version dist.integrity dist.tarball dist.attestations engines repository --json \
+          npm view "@getaip/cli@${BOOTSTRAP_VERSION}" --json \
             > scoped-registry-evidence.json
-          npm view "getaip@${BOOTSTRAP_VERSION}" \
-            name version dependencies dist.integrity dist.tarball dist.attestations engines repository --json \
+          npm view "getaip@${BOOTSTRAP_VERSION}" --json \
             > short-registry-evidence.json
           for evidence in scoped-registry-evidence.json short-registry-evidence.json; do
             test "$(jq -er '.dist.attestations.provenance.predicateType' "$evidence")" = \
