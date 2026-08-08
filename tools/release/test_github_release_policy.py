@@ -74,7 +74,9 @@ class GitHubReleasePolicyTests(unittest.TestCase):
         self.assertIn("workflow_dispatch:", trusted)
         self.assertIn("dist.attestations", first)
         self.assertIn("dist.attestations", trusted)
-        production_marker = trusted[trusted.index("name: attest-final-production-marker") :]
+        production_marker = trusted[
+            trusted.index("name: attest-final-production-marker") :
+        ]
         self.assertIn('["dist.integrity"] // .dist.integrity', production_marker)
         self.assertIn('["dist.attestations"] // .dist.attestations', production_marker)
 
