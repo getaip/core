@@ -14,6 +14,7 @@ from typing import NoReturn
 
 SOURCE_SNAPSHOT = "SOURCE_SNAPSHOT.json"
 PUBLICATION_MANIFEST = "PUBLICATION_MANIFEST.json"
+ROOT_README = "README.md"
 
 
 def fail(message: str) -> NoReturn:
@@ -72,6 +73,16 @@ def require_object_id(value: object, label: str) -> str:
     return value
 
 
+def included_markdown(snapshot: dict[str, object]) -> list[str]:
+    boundary = snapshot.get("publication_boundary")
+    if not isinstance(boundary, dict) or boundary.get("excluded_markdown") is not True:
+        fail("SOURCE_SNAPSHOT does not declare the Markdown publication boundary")
+    included = boundary.get("included_markdown", [])
+    if included not in ([], [ROOT_README]):
+        fail("SOURCE_SNAPSHOT contains an invalid Markdown allowlist")
+    return included
+
+
 def verify(arguments: argparse.Namespace) -> None:
     repository = arguments.repository.resolve(strict=True)
     if (
@@ -92,11 +103,6 @@ def verify(arguments: argparse.Namespace) -> None:
     tracked = sorted(path for path in git(repository, "ls-files").splitlines() if path)
     if PUBLICATION_MANIFEST not in tracked or SOURCE_SNAPSHOT not in tracked:
         fail("publication metadata files are not tracked")
-    for path in tracked:
-        if path.lower().endswith(".md") or path == "CHANGELOG":
-            fail(f"forbidden documentation file is tracked: `{path}`")
-        if path.startswith((".gitea/", "artifacts/")):
-            fail(f"internal source-only path is tracked: `{path}`")
 
     snapshot = read_json(repository / SOURCE_SNAPSHOT)
     manifest = read_json(repository / PUBLICATION_MANIFEST)
@@ -105,6 +111,15 @@ def verify(arguments: argparse.Namespace) -> None:
         or snapshot.get("mode") != "code-only-single-root"
     ):
         fail("SOURCE_SNAPSHOT schema or mode is invalid")
+    markdown_allowlist = included_markdown(snapshot)
+    tracked_markdown = sorted(path for path in tracked if path.lower().endswith(".md"))
+    if tracked_markdown != markdown_allowlist:
+        fail("tracked Markdown files differ from the publication allowlist")
+    for path in tracked:
+        if path == "CHANGELOG":
+            fail(f"forbidden documentation file is tracked: `{path}`")
+        if path.startswith((".gitea/", "artifacts/")):
+            fail(f"internal source-only path is tracked: `{path}`")
     if (
         manifest.get("schema_version") != 1
         or manifest.get("self_excluded_from_inventory") is not True

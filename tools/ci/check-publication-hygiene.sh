@@ -50,8 +50,8 @@ if [ "$MODE" = "--source" ]; then
     test "$markdown_files" = "README.md" || \
         fail "the canonical source branch must track README.md as its only Markdown file"
 else
-    test -z "$markdown_files" || \
-        fail "the code-only publication must not track Markdown files"
+    test "$markdown_files" = "README.md" || \
+        fail "the code-only publication must track README.md as its only Markdown file"
     test ! -e CHANGELOG || \
         fail "the code-only publication must not contain CHANGELOG"
 fi
@@ -185,6 +185,7 @@ if mode == "--code-only":
     assert source["export_method"] == "reviewed-filtered-index"
     boundary = data["publication_boundary"]
     assert boundary["excluded_markdown"] is True
+    assert boundary.get("included_markdown") in (None, ["README.md"])
     assert boundary["excluded_changelog"] is True
     assert boundary["publication_manifest"] == "PUBLICATION_MANIFEST.json"
 PY

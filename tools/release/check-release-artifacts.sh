@@ -2,7 +2,8 @@
 set -eu
 
 # Full canonical-source gate. The filtered GitHub snapshot intentionally uses
-# check-code-only-release.sh because it excludes Markdown and CHANGELOG.
+# check-code-only-release.sh because it retains only README.md and excludes
+# every other Markdown file plus CHANGELOG.
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 cd "$ROOT"

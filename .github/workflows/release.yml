@@ -647,5 +647,5 @@ jobs:
           test "$(git -C "$clone" rev-parse 'HEAD^{tree}')" = "$(git rev-parse 'HEAD^{tree}')"
           test "$(git -C "$clone" rev-list --count HEAD)" = 1
           test -z "$(git -C "$clone" status --short)"
-          test -z "$(git -C "$clone" ls-files | awk 'tolower($0) ~ /\.md$/')"
+          test "$(git -C "$clone" ls-files | awk 'tolower($0) ~ /\.md$/')" = "README.md"
           test ! -e "$clone/CHANGELOG"
