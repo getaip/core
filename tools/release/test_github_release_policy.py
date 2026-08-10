@@ -101,6 +101,33 @@ class GitHubReleasePolicyTests(unittest.TestCase):
         self.assertIn('["dist.integrity"] // .dist.integrity', production_marker)
         self.assertIn('["dist.attestations"] // .dist.attestations', production_marker)
 
+    def test_trusted_npm_publication_includes_the_canonical_readme(self) -> None:
+        workflow = TRUSTED_NPM_PUBLICATION.read_text(encoding="utf-8")
+        source_verification = workflow.index(
+            "name: Verify npm source, tests, and exact package contents"
+        )
+        readme_staging = workflow.index(
+            "name: Stage the canonical README in both npm packages"
+        )
+        package_packing = workflow.index("name: Pack both immutable npm candidates")
+        scoped_publish = workflow.index(
+            "name: Publish or prove the exact scoped bootstrap first"
+        )
+
+        self.assertLess(source_verification, readme_staging)
+        self.assertLess(readme_staging, package_packing)
+        self.assertLess(package_packing, scoped_publish)
+        self.assertEqual(workflow.count("install -m 0644 README.md packages/"), 2)
+        self.assertEqual(workflow.count("package/README.md)"), 2)
+        self.assertEqual(
+            workflow.count('npm view "@getaip/cli@${version}" readme --json'),
+            1,
+        )
+        self.assertEqual(
+            workflow.count('npm view "getaip@${version}" readme --json'), 1
+        )
+        self.assertEqual(workflow.count("--rawfile canonical_readme README.md"), 2)
+
     def test_heavy_ci_jobs_wait_for_the_release_preflight(self) -> None:
         workflow = CI.read_text(encoding="utf-8")
 

@@ -111,6 +111,15 @@ jobs:
           npm run check
           git diff --exit-code
 
+      - name: Stage the canonical README in both npm packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -m 0644 README.md packages/getaip-cli/README.md
+          install -m 0644 README.md packages/getaip/README.md
+          cmp README.md packages/getaip-cli/README.md
+          cmp README.md packages/getaip/README.md
+
       - name: Pack both immutable npm candidates
         id: packages
         shell: bash
@@ -121,6 +130,12 @@ jobs:
             --pack-destination npm-candidate > scoped-pack.json
           npm pack ./packages/getaip --json --ignore-scripts \
             --pack-destination npm-candidate > short-pack.json
+          jq -e '.[0].files | any(.path == "README.md")' scoped-pack.json > /dev/null
+          jq -e '.[0].files | any(.path == "README.md")' short-pack.json > /dev/null
+          scoped_tarball=$(jq -er '.[0].filename' scoped-pack.json)
+          short_tarball=$(jq -er '.[0].filename' short-pack.json)
+          cmp README.md <(tar -xOf "npm-candidate/$scoped_tarball" package/README.md)
+          cmp README.md <(tar -xOf "npm-candidate/$short_tarball" package/README.md)
           echo "scoped_integrity=$(jq -er '.[0].integrity' scoped-pack.json)" >> "$GITHUB_OUTPUT"
           echo "short_integrity=$(jq -er '.[0].integrity' short-pack.json)" >> "$GITHUB_OUTPUT"
 
@@ -191,6 +206,12 @@ jobs:
           version=${{ steps.release.outputs.version }}
           npm view "@getaip/cli@${version}" --json > scoped-registry-evidence.json
           npm view "getaip@${version}" --json > short-registry-evidence.json
+          npm view "@getaip/cli@${version}" readme --json > scoped-readme-evidence.json
+          npm view "getaip@${version}" readme --json > short-readme-evidence.json
+          jq -e --rawfile canonical_readme README.md \
+            '. == $canonical_readme' scoped-readme-evidence.json > /dev/null
+          jq -e --rawfile canonical_readme README.md \
+            '. == $canonical_readme' short-readme-evidence.json > /dev/null
           for evidence in scoped-registry-evidence.json short-registry-evidence.json; do
             test "$(jq -er '(."dist.attestations" // .dist.attestations).provenance.predicateType' "$evidence")" = \
               https://slsa.dev/provenance/v1
@@ -207,6 +228,8 @@ jobs:
             short-pack.json
             scoped-registry-evidence.json
             short-registry-evidence.json
+            scoped-readme-evidence.json
+            short-readme-evidence.json
             npm-candidate/*.tgz
           if-no-files-found: error
           retention-days: 90
