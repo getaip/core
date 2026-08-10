@@ -20,7 +20,7 @@ test ! -e CHANGELOG
 test -d schemas/aip
 test -f schemas/aip/envelope.schema.json
 test -f schemas/aip/manifest.schema.json
-test -z "$(git ls-files | awk 'tolower($0) ~ /\.md$/')"
+test "$(git ls-files | awk 'tolower($0) ~ /\.md$/')" = "README.md"
 python3 tools/release/verify_code_only_snapshot.py \
     --repository . \
     --expected-source-branch "$EXPECTED_SOURCE_BRANCH"

@@ -15,6 +15,10 @@ RELEASE_CHECK = ROOT / ".github/workflows/release-check.yml"
 PUBLIC_PROMOTION = ROOT / ".github/workflows/promote-public-release.yml"
 FIRST_NPM_PUBLICATION = ROOT / ".github/workflows/npm-first-publication.yml"
 TRUSTED_NPM_PUBLICATION = ROOT / ".github/workflows/npm-publish.yml"
+PUBLICATION_HYGIENE = ROOT / "tools/ci/check-publication-hygiene.sh"
+CODE_ONLY_RELEASE = ROOT / "tools/release/check-code-only-release.sh"
+SNAPSHOT_BUILDER = ROOT / "tools/release/create_code_only_snapshot.py"
+SNAPSHOT_VERIFIER = ROOT / "tools/release/verify_code_only_snapshot.py"
 ATTEST_ACTION = "actions/attest-build-provenance@"
 
 
@@ -124,6 +128,25 @@ class GitHubReleasePolicyTests(unittest.TestCase):
             "connector-fleet-runtime",
         ]:
             self.assertIn("needs: release-preflight", job_block(job), job)
+
+    def test_public_snapshot_retains_only_the_root_readme(self) -> None:
+        exact_readme_check = '= "README.md"'
+        for path in (
+            PUBLICATION_HYGIENE,
+            CODE_ONLY_RELEASE,
+            PRIVATE_RELEASE,
+            PUBLIC_PROMOTION,
+        ):
+            self.assertIn(exact_readme_check, path.read_text(encoding="utf-8"), path)
+
+        builder = SNAPSHOT_BUILDER.read_text(encoding="utf-8")
+        self.assertIn('ROOT_README = "README.md"', builder)
+        self.assertIn("path != ROOT_README", builder)
+        self.assertIn('"included_markdown": [ROOT_README]', builder)
+
+        verifier = SNAPSHOT_VERIFIER.read_text(encoding="utf-8")
+        self.assertIn('boundary.get("included_markdown", [])', verifier)
+        self.assertIn("tracked_markdown != markdown_allowlist", verifier)
 
 
 if __name__ == "__main__":

@@ -19,6 +19,7 @@ from typing import NoReturn
 
 SOURCE_SNAPSHOT = "SOURCE_SNAPSHOT.json"
 PUBLICATION_MANIFEST = "PUBLICATION_MANIFEST.json"
+ROOT_README = "README.md"
 CANONICAL_REMOTE = "http://localhost:3000/admin/core.git"
 PUBLIC_REPOSITORY = "https://github.com/getaip/core"
 VERSION = "2.1.0"
@@ -156,7 +157,7 @@ def tracked_files(source: Path) -> list[SourceFile]:
 def exclusion_reason(path: str) -> str | None:
     if path in {"CHANGELOG", SOURCE_SNAPSHOT, PUBLICATION_MANIFEST}:
         return path
-    if path.lower().endswith(".md"):
+    if path.lower().endswith(".md") and path != ROOT_README:
         return "markdown"
     for prefix in EXCLUDED_PREFIXES:
         if path.startswith(prefix):
@@ -243,6 +244,11 @@ def create_snapshot(arguments: argparse.Namespace) -> dict[str, str]:
         fail("source commit or tree is not a full SHA-1 object id")
 
     records = tracked_files(source)
+    tracked_markdown = [
+        record.path for record in records if record.path.lower().endswith(".md")
+    ]
+    if tracked_markdown != [ROOT_README]:
+        fail("canonical source must track README.md as its only Markdown file")
     excluded: dict[str, int] = {}
     exported = 0
     for record in records:
@@ -276,6 +282,7 @@ def create_snapshot(arguments: argparse.Namespace) -> dict[str, str]:
         "publication_boundary": {
             "excluded_changelog": True,
             "excluded_markdown": True,
+            "included_markdown": [ROOT_README],
             "excluded_paths": list(EXCLUDED_PREFIXES),
             "publication_manifest": PUBLICATION_MANIFEST,
         },
