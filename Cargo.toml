@@ -140,7 +140,7 @@ aip-transport-nats = { path = "crates/aip-transport-nats", version = "2.1.0" }
 aip-transport-sse = { path = "crates/aip-transport-sse", version = "2.1.0" }
 aip-transport-websocket = { path = "crates/aip-transport-websocket", version = "2.1.0" }
 getaip-distribution = { path = "crates/getaip-distribution", version = "2.1.0" }
-aes-gcm = "0.10"
+aes-gcm = "0.11"
 async-trait = "0.1"
 async-nats = "0.49"
 axum = "0.8"
