@@ -51,7 +51,7 @@ jobs:
           components: clippy, rustfmt
 
       - name: Cache Cargo
-        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        uses: Swatinem/rust-cache@a45951ff880207c249adf57334cf2e9bd81d6e1e # v2
 
       - name: Install Node.js for the npm release boundary
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -122,7 +122,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Cache Cargo
-        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        uses: Swatinem/rust-cache@a45951ff880207c249adf57334cf2e9bd81d6e1e # v2
         with:
           key: native-${{ matrix.target }}
 
@@ -233,7 +233,7 @@ jobs:
           toolchain: stable
 
       - name: Cache Cargo
-        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        uses: Swatinem/rust-cache@a45951ff880207c249adf57334cf2e9bd81d6e1e # v2
         with:
           key: native-release-assembly
 
@@ -529,7 +529,7 @@ jobs:
           toolchain: stable
 
       - name: Cache Cargo
-        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        uses: Swatinem/rust-cache@a45951ff880207c249adf57334cf2e9bd81d6e1e # v2
         with:
           key: native-qualification-${{ matrix.asset }}
 
@@ -576,7 +576,7 @@ jobs:
           toolchain: stable
 
       - name: Cache Cargo
-        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        uses: Swatinem/rust-cache@a45951ff880207c249adf57334cf2e9bd81d6e1e # v2
         with:
           key: native-release-clone-back
 
