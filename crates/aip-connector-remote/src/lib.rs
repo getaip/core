@@ -507,7 +507,13 @@ pub struct ConnectorEventIngressLimits {
     pub max_stream_chunk_bytes: usize,
     /// Maximum concurrent storage operations through this daemon.
     pub max_in_flight: usize,
-    /// Maximum age accepted for a connector-originated event.
+    /// Maximum age accepted for the signed transport envelope.
+    ///
+    /// The events inside the envelope may describe arbitrarily old source
+    /// observations. Authenticity and replay protection are provided by the
+    /// fresh signed envelope, the active connector lease, and stable event
+    /// identifiers; `Event::occurred_at` is source chronology, not transport
+    /// freshness.
     pub max_event_age: Duration,
     /// Maximum accepted future clock skew.
     pub max_future_skew: Duration,
@@ -741,6 +747,7 @@ impl ConnectorEventIngress {
             .ok_or_else(|| connector_event_denied("connector event route metadata is missing"))?;
         let route: ConnectorEventRoute = serde_json::from_value(route_value)
             .map_err(|error| connector_event_denied(format!("invalid event route: {error}")))?;
+        self.validate_event_envelope_timestamp(envelope)?;
         self.authorize_event_route(&route, sender, signer_did)
             .await?;
         if stream.next_cursor.is_some()
@@ -780,6 +787,24 @@ impl ConnectorEventIngress {
                 next_cursor: None,
             }),
         )
+    }
+
+    fn validate_event_envelope_timestamp(&self, envelope: &Envelope) -> Result<(), ProtocolError> {
+        let now = OffsetDateTime::now_utc();
+        let oldest = now
+            - time::Duration::seconds(
+                self.limits.max_event_age.as_secs().min(i64::MAX as u64) as i64
+            );
+        let newest = now
+            + time::Duration::seconds(
+                self.limits.max_future_skew.as_secs().min(i64::MAX as u64) as i64
+            );
+        if envelope.sent_at < oldest || envelope.sent_at > newest {
+            return Err(connector_event_invalid(
+                "connector event envelope timestamp is outside the accepted window",
+            ));
+        }
+        Ok(())
     }
 
     async fn handle_stream_callback(
@@ -885,7 +910,15 @@ impl ConnectorEventIngress {
                 ConnectorReplicaStatus::Ready | ConnectorReplicaStatus::Draining
             )
             || replica.lease_expires_at <= now
-            || replica.health_revision != route.lease_sequence
+            // Event batches are durably queued before transport. A heartbeat can
+            // advance the replica revision after the batch is signed but before
+            // it reaches ingress, so equality would reject an authenticated
+            // batch from the same still-leased replica. A zero or future
+            // sequence is never valid; an earlier positive sequence remains
+            // fenced by the current replica identity, DID, version, status, and
+            // unexpired lease checks around it.
+            || route.lease_sequence == 0
+            || route.lease_sequence > replica.health_revision
             || replica.peer_principal_id != sender.id
             || replica.peer_principal_kind != sender.kind
             || replica.peer_did != signer_did
@@ -1038,17 +1071,13 @@ impl ConnectorEventIngress {
             ));
         }
         let now = OffsetDateTime::now_utc();
-        let oldest = now
-            - time::Duration::seconds(
-                self.limits.max_event_age.as_secs().min(i64::MAX as u64) as i64
-            );
         let newest = now
             + time::Duration::seconds(
                 self.limits.max_future_skew.as_secs().min(i64::MAX as u64) as i64
             );
-        if event.occurred_at < oldest || event.occurred_at > newest {
+        if event.occurred_at > newest {
             return Err(connector_event_invalid(
-                "connector event timestamp is outside the accepted window",
+                "connector event occurrence timestamp exceeds the accepted future skew",
             ));
         }
         if event.actor.as_ref().is_some_and(|actor| actor != sender) {
@@ -2494,11 +2523,12 @@ mod tests {
         )
         .expect("event ingress")
         .with_stream_callbacks(registry.clone(), stream_sink.clone());
-        let request = |event: Event, lease_sequence: u64| {
+        let request_at = |event: Event, lease_sequence: u64, sent_at: OffsetDateTime| {
             let mut envelope = Envelope::new(MessageBody::EventStream(EventStream {
                 events: vec![event],
                 next_cursor: None,
             }));
+            envelope.sent_at = sent_at;
             envelope.to = Some(daemon_signer.principal.clone());
             envelope.security = Some(json!({
                 "connector_event": {
@@ -2513,7 +2543,13 @@ mod tests {
             }));
             sign_native_envelope(envelope, &host_signer).expect("signed connector event")
         };
+        let request = |event: Event, lease_sequence: u64| {
+            request_at(event, lease_sequence, OffsetDateTime::now_utc())
+        };
         let mut event = Event::new("orders.updated");
+        // A connector archive must preserve source chronology. Transport
+        // freshness is established by the independently signed envelope.
+        event.occurred_at = OffsetDateTime::UNIX_EPOCH;
         event.data = Some(json!({ "provider_order_id": "order-17" }));
         let signed = request(event.clone(), 1);
         let response = ingress.handle(&signed).await.expect("accepted event");
@@ -2532,6 +2568,20 @@ mod tests {
             .handle(&request(event.clone(), 2))
             .await
             .expect("idempotent replay after lease renewal");
+        ingress
+            .handle(&request(event.clone(), 1))
+            .await
+            .expect("durably queued replay from the prior heartbeat revision");
+        let stale_transport = ingress
+            .handle(&request_at(
+                Event::new("orders.updated"),
+                2,
+                OffsetDateTime::now_utc() - Duration::hours(25),
+            ))
+            .await
+            .expect_err("stale signed transport envelope");
+        assert_eq!(stale_transport.code, "connector_event.invalid");
+        assert!(stale_transport.message.contains("envelope timestamp"));
         let stored = event_log
             .stream(&EventStreamRequest {
                 cursor: None,

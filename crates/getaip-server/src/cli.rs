@@ -249,7 +249,8 @@ pub struct CoreArgs {
     /// Maximum concurrent connector-event storage operations.
     #[arg(long = "connector-event-max-in-flight", value_name = "COUNT")]
     connector_event_max_in_flight: Option<usize>,
-    /// Maximum accepted age of a connector-originated event in seconds.
+    /// Maximum accepted age of a signed connector-event envelope in seconds.
+    /// Historical `event.occurred_at` values are preserved independently.
     #[arg(long = "connector-event-max-age-seconds", value_name = "SECONDS")]
     connector_event_max_age_seconds: Option<u64>,
     /// Maximum accepted future clock skew for connector events in seconds.
