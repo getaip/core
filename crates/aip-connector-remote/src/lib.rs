@@ -910,7 +910,15 @@ impl ConnectorEventIngress {
                 ConnectorReplicaStatus::Ready | ConnectorReplicaStatus::Draining
             )
             || replica.lease_expires_at <= now
-            || replica.health_revision != route.lease_sequence
+            // Event batches are durably queued before transport. A heartbeat can
+            // advance the replica revision after the batch is signed but before
+            // it reaches ingress, so equality would reject an authenticated
+            // batch from the same still-leased replica. A zero or future
+            // sequence is never valid; an earlier positive sequence remains
+            // fenced by the current replica identity, DID, version, status, and
+            // unexpired lease checks around it.
+            || route.lease_sequence == 0
+            || route.lease_sequence > replica.health_revision
             || replica.peer_principal_id != sender.id
             || replica.peer_principal_kind != sender.kind
             || replica.peer_did != signer_did
@@ -2560,6 +2568,10 @@ mod tests {
             .handle(&request(event.clone(), 2))
             .await
             .expect("idempotent replay after lease renewal");
+        ingress
+            .handle(&request(event.clone(), 1))
+            .await
+            .expect("durably queued replay from the prior heartbeat revision");
         let stale_transport = ingress
             .handle(&request_at(
                 Event::new("orders.updated"),
