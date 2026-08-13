@@ -88,17 +88,11 @@ pub const MAX_CONNECTOR_HOST_CONTROL_BYTES: usize = 64 * 1024;
 
 const CONNECTOR_HOST_CONTROL_TTL_MS: i64 = 30_000;
 const CONNECTOR_HOST_CONTROL_CLOCK_SKEW_MS: i64 = 5_000;
-const CONNECTOR_EVENT_OUTBOX_PREFIX: &str = "aip.connector.event_outbox.v2";
+const CONNECTOR_EVENT_OUTBOX_PREFIX: &str = "aip.connector.event_outbox.v1";
 const CONNECTOR_EVENT_OUTBOX_MAX_PENDING: usize = 10_000;
 const CONNECTOR_EVENT_OUTBOX_BATCH_LIMIT: usize = 100;
 const CONNECTOR_EVENT_OUTBOX_LEASE_MS: i64 = 30_000;
 const CONNECTOR_EVENT_OUTBOX_SCAN_LIMIT: usize = 100;
-/// Maximum canonical JSON bytes accepted for the event array of one connector
-/// publication. The central signed-envelope limit is 4 MiB; the remaining
-/// 1 MiB is reserved for the envelope, authenticated route, principals, and
-/// signature so a locally durable batch can never be intrinsically too large
-/// for the default central ingress.
-pub const MAX_CONNECTOR_EVENT_BATCH_JSON_BYTES: usize = 3 * 1024 * 1024;
 
 /// Non-secret credential revision policy evaluated before provider side effects.
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
@@ -438,9 +432,6 @@ pub enum ConnectorEventPublishOutcome {
     CentrallyAcknowledged,
     /// The batch is durable locally and the background publisher owns delivery.
     DurablyQueued,
-    /// Central AIP permanently rejected the exact batch. The immutable payload
-    /// is retained in a bounded quarantine and is never hot-looped.
-    DurablyQuarantined,
 }
 
 impl ConnectorEventPublishOutcome {
@@ -450,41 +441,14 @@ impl ConnectorEventPublishOutcome {
         match self {
             Self::CentrallyAcknowledged => "centrally_acknowledged",
             Self::DurablyQueued => "durably_queued",
-            Self::DurablyQuarantined => "durably_quarantined",
         }
     }
-}
-
-/// Scheduling class for one durable connector-event publication.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum ConnectorEventDeliveryClass {
-    /// Latency-sensitive provider activity and active conversations.
-    #[default]
-    Realtime,
-    /// Historical reconciliation that must never block realtime delivery.
-    Backfill,
-}
-
-impl ConnectorEventDeliveryClass {
-    const fn namespace_component(self) -> &'static str {
-        match self {
-            Self::Realtime => "realtime",
-            Self::Backfill => "backfill",
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-struct ConnectorEventOutboxPayload {
-    channel_id: String,
-    events: Vec<Event>,
-    created_at_ms: i64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-struct ConnectorEventOutboxQueueRecord {
-    payload_key: String,
-    delivery_class: String,
+struct ConnectorEventOutboxRecord {
+    channel_id: String,
+    events: Vec<Event>,
     created_at_ms: i64,
     attempts: u32,
     next_attempt_at_ms: i64,
@@ -498,10 +462,7 @@ struct ConnectorHostEventPublisherInner {
     target: Url,
     dispatcher: GatewayCallbackDispatcher,
     profile_state: ProfileStateStore,
-    payload_namespace: String,
-    realtime_queue_namespace: String,
-    backfill_queue_namespace: String,
-    quarantine_namespace: String,
+    namespace: String,
     worker_id: String,
     wake: Notify,
 }
@@ -511,7 +472,7 @@ impl fmt::Debug for ConnectorHostEventPublisher {
         formatter
             .debug_struct("ConnectorHostEventPublisher")
             .field("target", &self.inner.target)
-            .field("payload_namespace", &self.inner.payload_namespace)
+            .field("namespace", &self.inner.namespace)
             .finish_non_exhaustive()
     }
 }
@@ -532,21 +493,16 @@ impl ConnectorHostEventPublisher {
         channel_id: &str,
         events: Vec<Event>,
     ) -> Result<(), ConnectorHostError> {
-        let batch = self
-            .enqueue_batch(channel_id, events, ConnectorEventDeliveryClass::Realtime)
-            .await?;
-        let outcome = self.inner.deliver_key(batch.class, &batch.key).await?;
+        let key = self.enqueue_batch(channel_id, events).await?;
+        let delivered = self.inner.deliver_key(&key).await?;
         self.inner.wake.notify_one();
-        match outcome {
-            ConnectorEventPublishOutcome::CentrallyAcknowledged => Ok(()),
-            ConnectorEventPublishOutcome::DurablyQueued => Err(ConnectorHostError::Server(
+        if delivered {
+            Ok(())
+        } else {
+            Err(ConnectorHostError::Server(
                 "connector event batch is durably queued but not yet centrally acknowledged"
                     .to_owned(),
-            )),
-            ConnectorEventPublishOutcome::DurablyQuarantined => Err(ConnectorHostError::Server(
-                "connector event batch is durably quarantined after permanent central rejection"
-                    .to_owned(),
-            )),
+            ))
         }
     }
 
@@ -563,23 +519,10 @@ impl ConnectorHostEventPublisher {
         channel_id: &str,
         events: Vec<Event>,
     ) -> Result<ConnectorEventPublishOutcome, ConnectorHostError> {
-        self.enqueue_with_class(channel_id, events, ConnectorEventDeliveryClass::Realtime)
-            .await
-    }
-
-    /// Durably accepts a connector event batch in an explicit scheduling lane.
-    /// Realtime is always scanned before backfill and permanent central
-    /// rejections are retained outside both hot queues.
-    pub async fn enqueue_with_class(
-        &self,
-        channel_id: &str,
-        events: Vec<Event>,
-        class: ConnectorEventDeliveryClass,
-    ) -> Result<ConnectorEventPublishOutcome, ConnectorHostError> {
-        let batch = self.enqueue_batch(channel_id, events, class).await?;
-        let outcome = match self.inner.deliver_key(batch.class, &batch.key).await {
-            Ok(outcome) => outcome,
-            Err(_) => ConnectorEventPublishOutcome::DurablyQueued,
+        let key = self.enqueue_batch(channel_id, events).await?;
+        let outcome = match self.inner.deliver_key(&key).await {
+            Ok(true) => ConnectorEventPublishOutcome::CentrallyAcknowledged,
+            Ok(false) | Err(_) => ConnectorEventPublishOutcome::DurablyQueued,
         };
         self.inner.wake.notify_one();
         Ok(outcome)
@@ -589,8 +532,7 @@ impl ConnectorHostEventPublisher {
         &self,
         channel_id: &str,
         mut events: Vec<Event>,
-        class: ConnectorEventDeliveryClass,
-    ) -> Result<EnqueuedConnectorEventBatch, ConnectorHostError> {
+    ) -> Result<String, ConnectorHostError> {
         if events.is_empty() || events.len() > CONNECTOR_EVENT_OUTBOX_BATCH_LIMIT {
             return Err(ConnectorHostError::Configuration(
                 "connector event publication requires 1 to 100 events".to_owned(),
@@ -601,41 +543,18 @@ impl ConnectorHostEventPublisher {
         for event in &events {
             aip_runtime::validate_event_record_size(event)?;
         }
-        let encoded_bytes = serde_json::to_vec(&events)
-            .map_err(|error| {
-                ConnectorHostError::Configuration(format!(
-                    "connector event batch encoding failed: {error}"
-                ))
-            })?
-            .len();
-        if encoded_bytes > MAX_CONNECTOR_EVENT_BATCH_JSON_BYTES {
-            return Err(ConnectorHostError::Configuration(format!(
-                "connector event batch exceeds the {MAX_CONNECTOR_EVENT_BATCH_JSON_BYTES}-byte signed-envelope budget"
-            )));
-        }
-        self.inner.enqueue(channel_id, events, class).await
+        self.inner.enqueue(channel_id, events).await
     }
 
     /// Returns the current pending durable batches for bounded diagnostics.
     pub async fn pending_batches(&self) -> Result<usize, ConnectorHostError> {
-        self.inner.pending_batches().await
-    }
-
-    /// Returns permanently rejected batches retained for explicit recovery.
-    pub async fn quarantined_batches(&self) -> Result<usize, ConnectorHostError> {
         self.inner
             .profile_state
-            .list(&self.inner.quarantine_namespace, None)
+            .list(&self.inner.namespace, None)
             .await
             .map(|entries| entries.len())
             .map_err(ConnectorHostError::from)
     }
-}
-
-#[derive(Clone, Debug)]
-struct EnqueuedConnectorEventBatch {
-    key: String,
-    class: ConnectorEventDeliveryClass,
 }
 
 impl ConnectorHostEventPublisherInner {
@@ -643,33 +562,24 @@ impl ConnectorHostEventPublisherInner {
         &self,
         channel_id: &str,
         events: Vec<Event>,
-        class: ConnectorEventDeliveryClass,
-    ) -> Result<EnqueuedConnectorEventBatch, ConnectorHostError> {
+    ) -> Result<String, ConnectorHostError> {
         let batch = json!({ "channel_id": channel_id, "events": events });
         let key = digest_json(&batch)?.replace(':', "_");
         if self
             .profile_state
-            .get(&self.quarantine_namespace, &key)
+            .get(&self.namespace, &key)
             .await?
             .is_some()
         {
-            return Ok(EnqueuedConnectorEventBatch { key, class });
+            return Ok(key);
         }
-        let queue_namespace = self.queue_namespace(class);
-        if self
-            .profile_state
-            .get(queue_namespace, &key)
-            .await?
-            .is_some()
-        {
-            return Ok(EnqueuedConnectorEventBatch { key, class });
-        }
-        if self.retained_batches().await? >= CONNECTOR_EVENT_OUTBOX_MAX_PENDING {
+        let pending = self.profile_state.list(&self.namespace, None).await?;
+        if pending.len() >= CONNECTOR_EVENT_OUTBOX_MAX_PENDING {
             return Err(ConnectorHostError::Server(
                 "connector event outbox reached its bounded pending-batch capacity".to_owned(),
             ));
         }
-        let payload = ConnectorEventOutboxPayload {
+        let record = ConnectorEventOutboxRecord {
             channel_id: channel_id.to_owned(),
             events: serde_json::from_value(batch["events"].clone()).map_err(|error| {
                 ConnectorHostError::Server(format!(
@@ -677,38 +587,6 @@ impl ConnectorHostEventPublisherInner {
                 ))
             })?,
             created_at_ms: now_ms(),
-        };
-        let payload_value = serde_json::to_value(&payload).map_err(|error| {
-            ConnectorHostError::Server(format!(
-                "connector event outbox payload encoding failed: {error}"
-            ))
-        })?;
-        match self
-            .profile_state
-            .create(&self.payload_namespace, &key, payload_value)
-            .await?
-        {
-            ProfileStateCasOutcome::Applied(_) => {}
-            ProfileStateCasOutcome::Conflict(Some(existing)) => {
-                let existing = decode_outbox_payload(&existing)?;
-                if existing.channel_id != payload.channel_id || existing.events != payload.events {
-                    return Err(ConnectorHostError::Server(
-                        "connector event outbox digest collision identifies different payload"
-                            .to_owned(),
-                    ));
-                }
-            }
-            ProfileStateCasOutcome::Conflict(None) => {
-                return Err(ConnectorHostError::Server(
-                    "connector event outbox payload create conflicted without a current record"
-                        .to_owned(),
-                ));
-            }
-        }
-        let record = ConnectorEventOutboxQueueRecord {
-            payload_key: key.clone(),
-            delivery_class: class.namespace_component().to_owned(),
-            created_at_ms: payload.created_at_ms,
             attempts: 0,
             next_attempt_at_ms: now_ms(),
             lease_owner: None,
@@ -718,142 +596,63 @@ impl ConnectorHostEventPublisherInner {
         match self
             .profile_state
             .create(
-                queue_namespace,
+                &self.namespace,
                 &key,
                 serde_json::to_value(record).map_err(|error| {
                     ConnectorHostError::Server(format!(
-                        "connector event outbox queue encoding failed: {error}"
+                        "connector event outbox encoding failed: {error}"
                     ))
                 })?,
             )
             .await?
         {
             ProfileStateCasOutcome::Applied(_) | ProfileStateCasOutcome::Conflict(Some(_)) => {
-                Ok(EnqueuedConnectorEventBatch { key, class })
+                Ok(key)
             }
             ProfileStateCasOutcome::Conflict(None) => Err(ConnectorHostError::Server(
-                "connector event outbox queue create conflicted without a current record"
-                    .to_owned(),
+                "connector event outbox create conflicted without a current record".to_owned(),
             )),
         }
     }
 
-    async fn pending_batches(&self) -> Result<usize, ConnectorHostError> {
-        let realtime = self
-            .profile_state
-            .list(&self.realtime_queue_namespace, None)
-            .await?
-            .len();
-        let backfill = self
-            .profile_state
-            .list(&self.backfill_queue_namespace, None)
-            .await?
-            .len();
-        Ok(realtime.saturating_add(backfill))
-    }
-
-    async fn retained_batches(&self) -> Result<usize, ConnectorHostError> {
-        let pending = self.pending_batches().await?;
-        let quarantined = self
-            .profile_state
-            .list(&self.quarantine_namespace, None)
-            .await?
-            .len();
-        Ok(pending.saturating_add(quarantined))
-    }
-
-    fn queue_namespace(&self, class: ConnectorEventDeliveryClass) -> &str {
-        match class {
-            ConnectorEventDeliveryClass::Realtime => &self.realtime_queue_namespace,
-            ConnectorEventDeliveryClass::Backfill => &self.backfill_queue_namespace,
-        }
-    }
-
-    async fn deliver_key(
-        &self,
-        class: ConnectorEventDeliveryClass,
-        key: &str,
-    ) -> Result<ConnectorEventPublishOutcome, ConnectorHostError> {
-        if self
-            .profile_state
-            .get(&self.quarantine_namespace, key)
-            .await?
-            .is_some()
-        {
-            return Ok(ConnectorEventPublishOutcome::DurablyQuarantined);
-        }
-        let Some((entry, record)) = self.claim(class, key).await? else {
-            return Ok(ConnectorEventPublishOutcome::DurablyQueued);
+    async fn deliver_key(&self, key: &str) -> Result<bool, ConnectorHostError> {
+        let Some((entry, record)) = self.claim(key).await? else {
+            return self
+                .profile_state
+                .get(&self.namespace, key)
+                .await
+                .map(|entry| entry.is_none())
+                .map_err(ConnectorHostError::from);
         };
-        let payload_entry = self
-            .profile_state
-            .get(&self.payload_namespace, &record.payload_key)
-            .await?
-            .ok_or_else(|| {
-                ConnectorHostError::Server(format!(
-                    "connector event outbox payload `{}` is missing",
-                    record.payload_key
-                ))
-            });
-        let payload = match payload_entry {
-            Ok(payload_entry) => decode_outbox_payload(&payload_entry),
-            Err(error) => Err(error),
-        };
-        let result = match payload.as_ref() {
-            Ok(payload) => self.dispatch(payload).await,
-            Err(error) => Err(ConnectorHostError::Server(error.to_string())),
-        };
+        let result = self.dispatch(&record).await;
         match result {
             Ok(()) => {
-                let queue_deleted = self
+                if !self
                     .profile_state
-                    .delete(self.queue_namespace(class), key, entry.revision)
-                    .await?;
-                if !queue_deleted {
-                    self.wake.notify_one();
-                    return Ok(ConnectorEventPublishOutcome::CentrallyAcknowledged);
-                }
-                if let Some(payload_entry) = self
-                    .profile_state
-                    .get(&self.payload_namespace, &record.payload_key)
+                    .delete(&self.namespace, key, entry.revision)
                     .await?
                 {
-                    let _ = self
-                        .profile_state
-                        .delete(
-                            &self.payload_namespace,
-                            &record.payload_key,
-                            payload_entry.revision,
-                        )
-                        .await?;
+                    self.wake.notify_one();
                 }
-                Ok(ConnectorEventPublishOutcome::CentrallyAcknowledged)
+                Ok(true)
             }
             Err(error) => {
-                if connector_event_error_is_permanent(&error) {
-                    self.quarantine(class, key, entry, record, &error).await?;
-                    Ok(ConnectorEventPublishOutcome::DurablyQuarantined)
-                } else {
-                    self.release_after_failure(class, key, entry, record, &error)
-                        .await?;
-                    Err(error)
-                }
+                self.release_after_failure(key, entry, record, &error)
+                    .await?;
+                Err(error)
             }
         }
     }
 
     async fn claim(
         &self,
-        class: ConnectorEventDeliveryClass,
         key: &str,
-    ) -> Result<Option<(ProfileStateEntry, ConnectorEventOutboxQueueRecord)>, ConnectorHostError>
-    {
-        let queue_namespace = self.queue_namespace(class);
+    ) -> Result<Option<(ProfileStateEntry, ConnectorEventOutboxRecord)>, ConnectorHostError> {
         for _ in 0..32 {
-            let Some(entry) = self.profile_state.get(queue_namespace, key).await? else {
+            let Some(entry) = self.profile_state.get(&self.namespace, key).await? else {
                 return Ok(None);
             };
-            let mut record = decode_outbox_queue_record(&entry, class)?;
+            let mut record = decode_outbox_record(&entry)?;
             let now = now_ms();
             if record.next_attempt_at_ms > now || record.lease_expires_at_ms > now {
                 return Ok(None);
@@ -867,7 +666,7 @@ impl ConnectorHostEventPublisherInner {
             })?;
             match self
                 .profile_state
-                .compare_and_set(queue_namespace, key, Some(entry.revision), value)
+                .compare_and_set(&self.namespace, key, Some(entry.revision), value)
                 .await?
             {
                 ProfileStateCasOutcome::Applied(claimed) => return Ok(Some((claimed, record))),
@@ -881,15 +680,15 @@ impl ConnectorHostEventPublisherInner {
 
     async fn dispatch(
         &self,
-        payload: &ConnectorEventOutboxPayload,
+        record: &ConnectorEventOutboxRecord,
     ) -> Result<(), ConnectorHostError> {
         if !self.state.event_publish_ready() {
             return Err(ConnectorHostError::ControlPlane(
                 "connector event publication requires an active ready replica lease".to_owned(),
             ));
         }
-        let route = self.state.event_route(&payload.channel_id)?;
-        let mut events = payload.events.clone();
+        let route = self.state.event_route(&record.channel_id)?;
+        let mut events = record.events.clone();
         // Records written by hosts predating actor normalization must remain
         // recoverable after an upgrade. Reapply the idempotent projection at
         // dispatch time so the central ingress can authenticate the host as
@@ -916,10 +715,9 @@ impl ConnectorHostEventPublisherInner {
 
     async fn release_after_failure(
         &self,
-        class: ConnectorEventDeliveryClass,
         key: &str,
         entry: ProfileStateEntry,
-        mut record: ConnectorEventOutboxQueueRecord,
+        mut record: ConnectorEventOutboxRecord,
         error: &ConnectorHostError,
     ) -> Result<(), ConnectorHostError> {
         record.attempts = record.attempts.saturating_add(1);
@@ -939,52 +737,9 @@ impl ConnectorHostEventPublisherInner {
         })?;
         let _ = self
             .profile_state
-            .compare_and_set(
-                self.queue_namespace(class),
-                key,
-                Some(entry.revision),
-                value,
-            )
+            .compare_and_set(&self.namespace, key, Some(entry.revision), value)
             .await?;
         self.wake.notify_one();
-        Ok(())
-    }
-
-    async fn quarantine(
-        &self,
-        class: ConnectorEventDeliveryClass,
-        key: &str,
-        entry: ProfileStateEntry,
-        mut record: ConnectorEventOutboxQueueRecord,
-        error: &ConnectorHostError,
-    ) -> Result<(), ConnectorHostError> {
-        record.attempts = record.attempts.saturating_add(1);
-        record.lease_owner = None;
-        record.lease_expires_at_ms = 0;
-        record.next_attempt_at_ms = i64::MAX;
-        record.last_error = Some(bounded_detail(error.to_string()));
-        let value = serde_json::to_value(record).map_err(|encode_error| {
-            ConnectorHostError::Server(format!(
-                "connector event quarantine encoding failed: {encode_error}"
-            ))
-        })?;
-        match self
-            .profile_state
-            .create(&self.quarantine_namespace, key, value)
-            .await?
-        {
-            ProfileStateCasOutcome::Applied(_) | ProfileStateCasOutcome::Conflict(Some(_)) => {}
-            ProfileStateCasOutcome::Conflict(None) => {
-                return Err(ConnectorHostError::Server(
-                    "connector event quarantine create conflicted without a current record"
-                        .to_owned(),
-                ));
-            }
-        }
-        let _ = self
-            .profile_state
-            .delete(self.queue_namespace(class), key, entry.revision)
-            .await?;
         Ok(())
     }
 }
@@ -1022,59 +777,28 @@ fn normalize_connector_events_for_publication(
     Ok(())
 }
 
-fn decode_outbox_payload(
+fn decode_outbox_record(
     entry: &ProfileStateEntry,
-) -> Result<ConnectorEventOutboxPayload, ConnectorHostError> {
-    let payload = serde_json::from_value::<ConnectorEventOutboxPayload>(entry.value.clone())
+) -> Result<ConnectorEventOutboxRecord, ConnectorHostError> {
+    let record = serde_json::from_value::<ConnectorEventOutboxRecord>(entry.value.clone())
         .map_err(|error| {
             ConnectorHostError::Server(format!(
-                "connector event outbox payload `{}` is invalid: {error}",
+                "connector event outbox record `{}` is invalid: {error}",
                 entry.key
             ))
         })?;
-    let encoded_bytes = serde_json::to_vec(&payload.events)
-        .map_err(|error| ConnectorHostError::Server(error.to_string()))?
-        .len();
-    if payload.channel_id.trim().is_empty()
-        || payload.channel_id.len() > 256
-        || payload.events.is_empty()
-        || payload.events.len() > CONNECTOR_EVENT_OUTBOX_BATCH_LIMIT
-        || encoded_bytes > MAX_CONNECTOR_EVENT_BATCH_JSON_BYTES
-    {
-        return Err(ConnectorHostError::Server(format!(
-            "connector event outbox payload `{}` violates bounded invariants",
-            entry.key
-        )));
-    }
-    Ok(payload)
-}
-
-fn decode_outbox_queue_record(
-    entry: &ProfileStateEntry,
-    class: ConnectorEventDeliveryClass,
-) -> Result<ConnectorEventOutboxQueueRecord, ConnectorHostError> {
-    let record = serde_json::from_value::<ConnectorEventOutboxQueueRecord>(entry.value.clone())
-        .map_err(|error| {
-            ConnectorHostError::Server(format!(
-                "connector event outbox queue record `{}` is invalid: {error}",
-                entry.key
-            ))
-        })?;
-    if record.payload_key != entry.key
-        || record.delivery_class != class.namespace_component()
+    if record.channel_id.trim().is_empty()
+        || record.channel_id.len() > 256
+        || record.events.is_empty()
+        || record.events.len() > CONNECTOR_EVENT_OUTBOX_BATCH_LIMIT
         || record.attempts > 1_000_000
     {
         return Err(ConnectorHostError::Server(format!(
-            "connector event outbox queue record `{}` violates bounded invariants",
+            "connector event outbox record `{}` violates bounded invariants",
             entry.key
         )));
     }
     Ok(record)
-}
-
-fn connector_event_error_is_permanent(error: &ConnectorHostError) -> bool {
-    matches!(error, ConnectorHostError::Configuration(_))
-        || error.to_string().contains("returned permanent status")
 }
 
 fn spawn_event_outbox_worker(inner: &Arc<ConnectorHostEventPublisherInner>) {
@@ -1089,34 +813,13 @@ async fn connector_event_outbox_loop(inner: Weak<ConnectorHostEventPublisherInne
         let Some(publisher) = inner.upgrade() else {
             break;
         };
-        for class in [
-            ConnectorEventDeliveryClass::Realtime,
-            ConnectorEventDeliveryClass::Backfill,
-        ] {
-            if let Ok(entries) = publisher
-                .profile_state
-                .list(publisher.queue_namespace(class), None)
-                .await
-            {
-                let now = now_ms();
-                let mut ready = entries
-                    .into_iter()
-                    .filter_map(|entry| {
-                        decode_outbox_queue_record(&entry, class)
-                            .ok()
-                            .filter(|record| {
-                                record.next_attempt_at_ms <= now
-                                    && record.lease_expires_at_ms <= now
-                            })
-                            .map(|record| {
-                                (record.next_attempt_at_ms, record.created_at_ms, entry.key)
-                            })
-                    })
-                    .collect::<Vec<_>>();
-                ready.sort();
-                for (_, _, key) in ready.into_iter().take(CONNECTOR_EVENT_OUTBOX_SCAN_LIMIT) {
-                    let _ = publisher.deliver_key(class, &key).await;
-                }
+        if let Ok(entries) = publisher
+            .profile_state
+            .list(&publisher.namespace, None)
+            .await
+        {
+            for entry in entries.into_iter().take(CONNECTOR_EVENT_OUTBOX_SCAN_LIMIT) {
+                let _ = publisher.deliver_key(&entry.key).await;
             }
         }
         let delay_ms = 750_u64.saturating_add(u64::from(OsRng.next_u32() % 500));
@@ -3039,23 +2742,11 @@ where
         config: ConnectorHostEventConfig,
     ) -> Result<ConnectorHostEventPublisher, ConnectorHostError> {
         config.validate(&self.state.config.host_signer).await?;
-        let instance_id = self.state.config.instance_id.to_string();
-        let payload_namespace = format!("{CONNECTOR_EVENT_OUTBOX_PREFIX}.payload.{instance_id}");
-        let realtime_queue_namespace =
-            format!("{CONNECTOR_EVENT_OUTBOX_PREFIX}.queue.realtime.{instance_id}");
-        let backfill_queue_namespace =
-            format!("{CONNECTOR_EVENT_OUTBOX_PREFIX}.queue.backfill.{instance_id}");
-        let quarantine_namespace =
-            format!("{CONNECTOR_EVENT_OUTBOX_PREFIX}.quarantine.{instance_id}");
-        if [
-            &payload_namespace,
-            &realtime_queue_namespace,
-            &backfill_queue_namespace,
-            &quarantine_namespace,
-        ]
-        .into_iter()
-        .any(|namespace| namespace.len() > 255)
-        {
+        let namespace = format!(
+            "{CONNECTOR_EVENT_OUTBOX_PREFIX}.{}",
+            self.state.config.instance_id
+        );
+        if namespace.len() > 255 {
             return Err(ConnectorHostError::Configuration(
                 "connector event outbox namespace exceeds the runtime storage limit".to_owned(),
             ));
@@ -3068,10 +2759,7 @@ where
                 config.policy,
             ),
             profile_state: self.state.runtime.profile_state.clone(),
-            payload_namespace,
-            realtime_queue_namespace,
-            backfill_queue_namespace,
-            quarantine_namespace,
+            namespace,
             worker_id: self.state.config.replica_id.to_string(),
             wake: Notify::new(),
         });
@@ -4128,15 +3816,15 @@ fn now_ms() -> i64 {
 #[cfg(test)]
 mod tests {
     use super::{
-        CONNECTOR_HOST_CONTROL_PATH, ConnectorEventDeliveryClass, ConnectorEventPublishOutcome,
-        ConnectorHost, ConnectorHostCallbackDispatcher, ConnectorHostConfig,
-        ConnectorHostControlCommand, ConnectorHostControlOutcome, ConnectorHostControlPlane,
+        CONNECTOR_HOST_CONTROL_PATH, ConnectorEventPublishOutcome, ConnectorHost,
+        ConnectorHostCallbackDispatcher, ConnectorHostConfig, ConnectorHostControlCommand,
+        ConnectorHostControlOutcome, ConnectorHostControlPlane,
         ConnectorHostControlPlaneHttpService, ConnectorHostError, ConnectorHostEventConfig,
         ConnectorHostHeartbeat, ConnectorHostLease, ConnectorHostLimits, ConnectorHostRegistration,
         ConnectorHostTransition, CredentialRevisionPolicy, HttpConnectorHostControlPlane,
-        MAX_CONNECTOR_EVENT_BATCH_JSON_BYTES, RegistryConnectorHostControlPlane,
-        StaticCredentialRevisionProvider, heartbeat_initial_delay,
-        normalize_connector_events_for_publication, now_ms, renew_or_recover_host_lease,
+        RegistryConnectorHostControlPlane, StaticCredentialRevisionProvider,
+        heartbeat_initial_delay, normalize_connector_events_for_publication, now_ms,
+        renew_or_recover_host_lease,
     };
     use aip_auth::{AuthorityMembership, CredentialHandle, VerifiedTenant};
     use aip_connector::{
@@ -4177,7 +3865,6 @@ mod tests {
         body::{Body, to_bytes},
         extract::State,
         http::{Request, StatusCode},
-        response::{IntoResponse, Response},
         routing::post,
     };
     use serde_json::{Value, json};
@@ -4304,16 +3991,6 @@ mod tests {
         envelopes: Arc<Mutex<Vec<Envelope>>>,
     }
 
-    #[derive(Clone, Default)]
-    struct PermanentEventReceiverState {
-        attempts: Arc<AtomicU64>,
-    }
-
-    #[derive(Clone, Default)]
-    struct UnavailableEventReceiverState {
-        attempts: Arc<AtomicU64>,
-    }
-
     async fn receive_connector_callback(
         State(state): State<CallbackReceiverState>,
         Json(envelope): Json<Envelope>,
@@ -4331,32 +4008,6 @@ mod tests {
         }
         state.envelopes.lock().await.push(envelope);
         StatusCode::OK
-    }
-
-    async fn reject_connector_event_permanently(
-        State(state): State<PermanentEventReceiverState>,
-        Json(_envelope): Json<Envelope>,
-    ) -> Response {
-        state.attempts.fetch_add(1, Ordering::SeqCst);
-        (
-            StatusCode::BAD_REQUEST,
-            Json(json!({
-                "error": {
-                    "code": "connector_event.invalid",
-                    "message": "permanent test rejection",
-                    "retryable": false
-                }
-            })),
-        )
-            .into_response()
-    }
-
-    async fn reject_connector_event_transiently(
-        State(state): State<UnavailableEventReceiverState>,
-        Json(_envelope): Json<Envelope>,
-    ) -> StatusCode {
-        state.attempts.fetch_add(1, Ordering::SeqCst);
-        StatusCode::SERVICE_UNAVAILABLE
     }
 
     #[async_trait]
@@ -5096,204 +4747,6 @@ mod tests {
             tokio::time::sleep(Duration::from_millis(50)).await;
         }
         server.abort();
-    }
-
-    #[tokio::test]
-    async fn event_outbox_retries_only_small_queue_metadata_and_keeps_payload_immutable() {
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
-            .await
-            .expect("event listener");
-        let address = listener.local_addr().expect("event address");
-        let receiver = UnavailableEventReceiverState::default();
-        let app = Router::new()
-            .route(
-                "/aip/v1/connector-events",
-                post(reject_connector_event_transiently),
-            )
-            .with_state(receiver.clone());
-        let server = tokio::spawn(async move {
-            axum::serve(listener, app).await.expect("event server");
-        });
-        let (host, _, _, _) = host().await;
-        host.register().await.expect("register event host");
-        let publisher = host
-            .event_publisher(ConnectorHostEventConfig {
-                target: Url::parse(&format!("http://{address}/aip/v1/connector-events"))
-                    .expect("event target"),
-                policy: GatewayCallbackPolicy {
-                    allowed_hosts: HashSet::from(["127.0.0.1".to_owned()]),
-                    allow_http: true,
-                    allow_private_networks: true,
-                    signer: Some(host.state.config.host_signer.clone()),
-                    ..GatewayCallbackPolicy::default()
-                },
-            })
-            .await
-            .expect("event publisher");
-        let mut event = Event::new("test.connector.large_retry");
-        event.data = Some(json!({ "body": "x".repeat(200_000) }));
-        assert_eq!(
-            publisher
-                .enqueue_with_class(
-                    "test-events",
-                    vec![event],
-                    ConnectorEventDeliveryClass::Backfill,
-                )
-                .await
-                .expect("durable backfill enqueue"),
-            ConnectorEventPublishOutcome::DurablyQueued
-        );
-
-        let payload_before = publisher
-            .inner
-            .profile_state
-            .list(&publisher.inner.payload_namespace, None)
-            .await
-            .expect("payload records");
-        assert_eq!(payload_before.len(), 1);
-        assert_eq!(payload_before[0].revision, 1);
-        assert!(
-            serde_json::to_vec(&payload_before[0].value)
-                .expect("payload bytes")
-                .len()
-                > 190_000
-        );
-
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
-        while receiver.attempts.load(Ordering::SeqCst) < 2 {
-            assert!(
-                tokio::time::Instant::now() < deadline,
-                "transient outbox retry did not run"
-            );
-            tokio::time::sleep(Duration::from_millis(50)).await;
-        }
-        let payload_after = publisher
-            .inner
-            .profile_state
-            .list(&publisher.inner.payload_namespace, None)
-            .await
-            .expect("payload records after retry");
-        assert_eq!(payload_after.len(), 1);
-        assert_eq!(payload_after[0].revision, 1);
-        let queue = publisher
-            .inner
-            .profile_state
-            .list(&publisher.inner.backfill_queue_namespace, None)
-            .await
-            .expect("backfill queue");
-        assert_eq!(queue.len(), 1);
-        assert!(queue[0].revision >= 4);
-        assert!(
-            serde_json::to_vec(&queue[0].value)
-                .expect("queue bytes")
-                .len()
-                < 2_048
-        );
-        server.abort();
-    }
-
-    #[tokio::test]
-    async fn permanent_connector_event_rejection_is_quarantined_without_hot_retry() {
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
-            .await
-            .expect("event listener");
-        let address = listener.local_addr().expect("event address");
-        let receiver = PermanentEventReceiverState::default();
-        let app = Router::new()
-            .route(
-                "/aip/v1/connector-events",
-                post(reject_connector_event_permanently),
-            )
-            .with_state(receiver.clone());
-        let server = tokio::spawn(async move {
-            axum::serve(listener, app).await.expect("event server");
-        });
-        let (host, _, _, _) = host().await;
-        host.register().await.expect("register event host");
-        let publisher = host
-            .event_publisher(ConnectorHostEventConfig {
-                target: Url::parse(&format!("http://{address}/aip/v1/connector-events"))
-                    .expect("event target"),
-                policy: GatewayCallbackPolicy {
-                    allowed_hosts: HashSet::from(["127.0.0.1".to_owned()]),
-                    allow_http: true,
-                    allow_private_networks: true,
-                    signer: Some(host.state.config.host_signer.clone()),
-                    ..GatewayCallbackPolicy::default()
-                },
-            })
-            .await
-            .expect("event publisher");
-        let mut event = Event::new("test.connector.permanent_rejection");
-        event.data = Some(json!({ "delivery_id": "permanent-1" }));
-        let outcome = publisher
-            .enqueue_with_class(
-                "test-events",
-                vec![event],
-                ConnectorEventDeliveryClass::Backfill,
-            )
-            .await
-            .expect("durable quarantine");
-        assert!(matches!(
-            outcome,
-            ConnectorEventPublishOutcome::DurablyQueued
-                | ConnectorEventPublishOutcome::DurablyQuarantined
-        ));
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
-        while publisher
-            .quarantined_batches()
-            .await
-            .expect("quarantine count")
-            != 1
-        {
-            assert!(
-                tokio::time::Instant::now() < deadline,
-                "permanent rejection was not quarantined"
-            );
-            tokio::time::sleep(Duration::from_millis(25)).await;
-        }
-        assert_eq!(publisher.pending_batches().await.expect("pending count"), 0);
-        let attempts = receiver.attempts.load(Ordering::SeqCst);
-        tokio::time::sleep(Duration::from_millis(1_500)).await;
-        assert_eq!(receiver.attempts.load(Ordering::SeqCst), attempts);
-        assert_eq!(attempts, 1);
-        server.abort();
-    }
-
-    #[tokio::test]
-    async fn connector_event_batch_budget_reserves_signed_envelope_overhead() {
-        let (host, _, _, _) = host().await;
-        host.register().await.expect("register event host");
-        let publisher = host
-            .event_publisher(ConnectorHostEventConfig {
-                target: Url::parse("http://127.0.0.1:9/aip/v1/connector-events")
-                    .expect("event target"),
-                policy: GatewayCallbackPolicy {
-                    allowed_hosts: HashSet::from(["127.0.0.1".to_owned()]),
-                    allow_http: true,
-                    allow_private_networks: true,
-                    signer: Some(host.state.config.host_signer.clone()),
-                    ..GatewayCallbackPolicy::default()
-                },
-            })
-            .await
-            .expect("event publisher");
-        let mut events = Vec::new();
-        while serde_json::to_vec(&events)
-            .expect("event batch bytes")
-            .len()
-            <= MAX_CONNECTOR_EVENT_BATCH_JSON_BYTES
-        {
-            let mut event = Event::new("test.connector.batch_budget");
-            event.data = Some(json!({ "body": "x".repeat(240_000) }));
-            events.push(event);
-        }
-        let error = publisher
-            .enqueue("test-events", events)
-            .await
-            .expect_err("oversized event array must fail before durable acceptance");
-        assert!(error.to_string().contains("signed-envelope budget"));
-        assert_eq!(publisher.pending_batches().await.expect("pending count"), 0);
     }
 
     #[test]

@@ -2928,35 +2928,9 @@ async fn post_secure_callback(
         .await
         .map_err(|error| RuntimeError::Handler(format!("callback request failed: {error}")))?;
     if !response.status().is_success() {
-        let status = response.status();
-        let permanent = status.is_client_error() && !matches!(status.as_u16(), 408 | 425 | 429);
-        let detail_limit = policy.max_response_bytes.min(8 * 1024);
-        let mut detail_bytes = Vec::new();
-        let mut stream = response.bytes_stream();
-        while let Some(chunk) = stream.next().await {
-            let chunk = chunk.map_err(|error| {
-                RuntimeError::Handler(format!(
-                    "callback target returned status {status}; error body failed: {error}"
-                ))
-            })?;
-            let remaining = detail_limit.saturating_sub(detail_bytes.len());
-            if remaining == 0 {
-                break;
-            }
-            detail_bytes.extend_from_slice(&chunk[..chunk.len().min(remaining)]);
-        }
-        let detail = String::from_utf8_lossy(&detail_bytes)
-            .split_whitespace()
-            .collect::<Vec<_>>()
-            .join(" ");
-        let class = if permanent { "permanent" } else { "retryable" };
-        let suffix = if detail.is_empty() {
-            String::new()
-        } else {
-            format!(": {detail}")
-        };
         return Err(RuntimeError::Handler(format!(
-            "callback target returned {class} status {status}{suffix}"
+            "callback target returned status {}",
+            response.status()
         )));
     }
     Ok(())
